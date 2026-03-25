@@ -1,12 +1,14 @@
-import React from 'react'
-import Nav from './components/Nav'
+import React from "react";
+import Nav from "./components/Nav";
+import FloatingSidebar from "./components/FloatingSidebar";
 
 const page = () => {
   return (
     <main>
-      <Nav/>
+      <Nav />
+      <FloatingSidebar />
     </main>
-  )
-}
+  );
+};
 
-export default page
+export default page;
