@@ -9,8 +9,7 @@ const page = () => {
       <Nav />
       {/* Sidebar - Positioned for the dashboard layout */}
       <FloatingSidebar />
-         <AdminTabBar />
-     
+      
       <main className="pl-24 pr-8 py-10 md:py-16">
         <div className="max-w-6xl mx-auto space-y-12">
           {/* System At-A-Glance Stats Section */}
