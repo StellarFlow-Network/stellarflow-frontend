@@ -1,5 +1,4 @@
 import React from "react";
-import Breadcrumb from "./Breadcrumb";
 
 interface StatsCardProps {
   label: string;
@@ -29,14 +28,9 @@ const StatsCard = ({ label, value, showDot = false }: StatsCardProps) => {
   );
 };
 
-
-
 const SystemStats = () => {
   return (
     <section className="w-full max-w-7xl mx-auto px-4 sm:px-6">
-      {/* Breadcrumb Navigation */}
-      <Breadcrumb />
-
       {/* Container Label */}
       <h2 className="text-white text-xl font-bold mb-6 tracking-tight flex items-center gap-2">
         ORACLE STATUS
