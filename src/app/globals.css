@@ -36,3 +36,111 @@ body {
   transform: translateY(-2px);
   box-shadow: 0 10px 15px -3px rgb(185 249 124 / 0.4);
 }
+
+/* ─── Admin Tab Bar ──────────────────────────────────────── */
+
+.admin-tabbar-wrapper {
+  width: 100%;
+  background: rgba(10, 10, 10, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .admin-tabbar-wrapper {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+.admin-tabbar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 72rem;
+  margin: 0 auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.admin-tabbar::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.25rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  color: rgba(255, 255, 255, 0.4);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.25s ease, background 0.25s ease;
+  border-radius: 0;
+  outline: none;
+}
+
+.admin-tab:hover {
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.admin-tab:focus-visible {
+  outline: 2px solid #99DC1B;
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+
+/* ── Active state ── */
+
+.admin-tab--active {
+  color: #99DC1B;
+}
+
+.admin-tab--active:hover {
+  color: #99DC1B;
+  background: rgba(153, 220, 27, 0.06);
+}
+
+/* ── Cyber Lime underline indicator ── */
+
+.admin-tab__indicator {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2.5px;
+  background: #99DC1B;
+  border-radius: 2px 2px 0 0;
+  transform: translateX(-50%) scaleX(0);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s ease;
+  box-shadow: none;
+}
+
+.admin-tab--active .admin-tab__indicator {
+  width: 60%;
+  transform: translateX(-50%) scaleX(1);
+  box-shadow: 0 0 10px rgba(153, 220, 27, 0.5),
+              0 0 20px rgba(153, 220, 27, 0.2);
+}
+
+/* ── Hover underline hint (non-active tabs) ── */
+
+.admin-tab:not(.admin-tab--active):hover .admin-tab__indicator {
+  width: 30%;
+  transform: translateX(-50%) scaleX(1);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: none;
+}
