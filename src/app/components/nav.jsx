@@ -2,9 +2,11 @@
 
 import Image from 'next/image';
 import React from 'react';
-import { FaWallet } from 'react-icons/fa6';
+import { FaWallet, FaBell, FaUserCircle, FaSignOutAlt } from 'react-icons/fa6';
 
 const Nav = () => {
+  const hasAnomaly = true; // replace with real signal condition (e.g., Coinbase GHS Offline)
+
   const handleConnectWallet = () => {
     alert('Connect Wallet clicked! (Add your Web3 logic here)');
   };
@@ -34,18 +36,48 @@ const Nav = () => {
           </h1>
         </div>
 
-        {/* Connect Wallet Button*/}
-        <button
-          onClick={handleConnectWallet}
-          className="wallet-btn group flex items-center gap-2.5 sm:gap-3 
-                     px-5 sm:px-7 py-3 rounded-2xl font-semibold 
-                     text-sm sm:text-base transition-all duration-300 
-                     hover:shadow-xl active:scale-95 whitespace-nowrap"
-        >
-          <FaWallet className="w-5 h-5 transition-transform group-hover:rotate-12" />
-          <span>Connect <span className='max-md:hidden'>Wallet</span></span>
-        
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleConnectWallet}
+            className="wallet-btn group flex items-center gap-2.5 sm:gap-3 
+                       px-5 sm:px-7 py-3 rounded-2xl font-semibold 
+                       text-sm sm:text-base transition-all duration-300 
+                       hover:shadow-xl active:scale-95 whitespace-nowrap"
+          >
+            <FaWallet className="w-5 h-5 transition-transform group-hover:rotate-12" />
+            <span>Connect <span className='max-md:hidden'>Wallet</span></span>
+          </button>
+
+          <button
+            aria-label="System anomaly alerts"
+            className="relative p-2 rounded-xl hover:bg-zinc-800 transition-colors"
+            onClick={() => alert('View current system anomalies (implement dashboard logic)')}
+          >
+            <FaBell className="w-6 h-6 text-slate-200" />
+            {hasAnomaly && (
+              <span className="absolute -top-1 -right-1 inline-flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600" />
+              </span>
+            )}
+          </button>
+
+          <button
+            aria-label="User profile"
+            className="p-2 rounded-xl hover:bg-zinc-800 transition-colors"
+            onClick={() => alert('User settings (implement)')}
+          >
+            <FaUserCircle className="w-6 h-6 text-slate-200" />
+          </button>
+
+          <button
+            aria-label="Sign out"
+            className="p-2 rounded-xl hover:bg-zinc-800 transition-colors"
+            onClick={() => alert('Sign out (implement)')}
+          >
+            <FaSignOutAlt className="w-6 h-6 text-slate-200" />
+          </button>
+        </div>
 
       </div>
     </main>
