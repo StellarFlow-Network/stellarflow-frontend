@@ -1,10 +1,9 @@
 import React from "react";
-import Nav from "./components/Nav";
-import AdminTabBar from "./components/AdminTabBar";
+import Nav from "./components/nav";
 
 const page = () => {
   return (
-    <main className="min-h-screen bg-[#f5f5f5]">
+    <main className="border border-white/10 rounded-2xl m-4 min-h-[calc(100vh-2rem)]">
       <Nav />
       <AdminTabBar />
     </main>
