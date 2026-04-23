@@ -18,7 +18,7 @@ const navItems = [
 ];
 
 export default function FloatingSidebar() {
-  const [active, setActive] = useState("Dashboard");
+  const [active, setActive] = useState("Data");
   const [hovered, setHovered] = useState<string | null>(null);
 
   return (
