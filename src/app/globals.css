@@ -10,6 +10,9 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-neon-green: #39FF14;
+  --color-oracle-navy: #0A0F1E;
+  --color-oracle-border: #1B2A3B;
 }
 
 @media (prefers-color-scheme: dark) {

@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import React from 'react';
-import { FaWallet, FaBell, FaUserCircle, FaSignOutAlt } from 'react-icons/fa6';
+import { FaWallet, FaBell, FaCircleUser, FaRightFromBracket } from 'react-icons/fa6';
 
 const Nav = () => {
   const hasAnomaly = true; // replace with real signal condition (e.g., Coinbase GHS Offline)
@@ -67,7 +67,7 @@ const Nav = () => {
             className="p-2 rounded-xl hover:bg-zinc-800 transition-colors"
             onClick={() => alert('User settings (implement)')}
           >
-            <FaUserCircle className="w-6 h-6 text-slate-200" />
+            <FaCircleUser className="w-6 h-6 text-slate-200" />
           </button>
 
           <button
@@ -75,7 +75,7 @@ const Nav = () => {
             className="p-2 rounded-xl hover:bg-zinc-800 transition-colors"
             onClick={() => alert('Sign out (implement)')}
           >
-            <FaSignOutAlt className="w-6 h-6 text-slate-200" />
+            <FaRightFromBracket className="w-6 h-6 text-slate-200" />
           </button>
         </div>
 
