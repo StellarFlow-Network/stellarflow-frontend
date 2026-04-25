@@ -5,6 +5,12 @@
   --foreground: #171717;
 }
 
+/* Dark theme — class applied by next-themes */
+.dark {
+  --background: #0d1117;
+  --foreground: #ededed;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -13,13 +19,6 @@
   --color-neon-green: #39FF14;
   --color-oracle-navy: #0A0F1E;
   --color-oracle-border: #1B2A3B;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {

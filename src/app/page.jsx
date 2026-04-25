@@ -4,6 +4,7 @@ import Nav from "./components/nav";
 import FloatingSidebar from "./components/FloatingSidebar";
 import SystemStats from "./components/SystemStats";
 import ModularStatsCard from "./components/ModularStatsCard";
+import PriceFeedCard from "./components/PriceFeedCard";
 
 const LoadingChartState = () => {
   return (
@@ -53,6 +54,11 @@ const page = () => {
             <ModularStatsCard label="Total Value Locked" value={85432000} trend={-2.4} unit="USD" />
             <ModularStatsCard label="Active Nodes" value={1240} trend={0.8} />
             <ModularStatsCard label="Oracle Accuracy" value={99.98} trend={0.01} unit="%" />
+          </section>
+
+          {/* Dynamic Price Feed — NGN/XLM */}
+          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <PriceFeedCard refreshInterval={30000} />
           </section>
           
           {/* Chart loading state and source table shell */}
