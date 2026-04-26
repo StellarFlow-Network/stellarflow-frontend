@@ -5,6 +5,35 @@ import FloatingSidebar from "./components/FloatingSidebar";
 import SystemStats from "./components/SystemStats";
 import ModularStatsCard from "./components/ModularStatsCard";
 import PriceFeedCard from "./components/PriceFeedCard";
+import RateSparklineCard from "./components/RateSparklineCard";
+import RelayerStatusTable from "./components/RelayerStatusTable";
+
+const mockRelayers = [
+  { id: "r1", name: "Abuja Relayer", status: "Online", latency: 34 },
+  { id: "r2", name: "Lagos Relayer", status: "Syncing", latency: 72 },
+  { id: "r3", name: "Cape Town Relayer", status: "Online", latency: 48 },
+];
+
+const rateCards = [
+  {
+    currency: "NGN",
+    rate: 13.42,
+    trend: 1.8,
+    sparklineData: [12.9, 13.1, 13.0, 13.3, 13.5, 13.4, 13.42],
+  },
+  {
+    currency: "KES",
+    rate: 0.30,
+    trend: -0.6,
+    sparklineData: [0.31, 0.305, 0.302, 0.300, 0.299, 0.301, 0.300],
+  },
+  {
+    currency: "GHS",
+    rate: 0.11,
+    trend: 0.9,
+    sparklineData: [0.108, 0.109, 0.110, 0.111, 0.110, 0.109, 0.110],
+  },
+];
 
 const LoadingChartState = () => {
   return (
@@ -56,6 +85,13 @@ const page = () => {
             <ModularStatsCard label="Oracle Accuracy" value={99.98} trend={0.01} unit="%" />
           </section>
 
+          {/* Local FX rates with memoized sparklines */}
+          <section className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {rateCards.map((card) => (
+              <RateSparklineCard key={card.currency} {...card} />
+            ))}
+          </section>
+
           {/* Dynamic Price Feed — NGN/XLM */}
           <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <PriceFeedCard refreshInterval={30000} />
@@ -63,7 +99,7 @@ const page = () => {
           
           {/* Relayer Status Table */}
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold text-white uppercase tracking-wider text-sm mb-4">Relayer Network Status</h2>
+            <h2 className="text-xl font-semibold text-white uppercase tracking-wider mb-4">Relayer Network Status</h2>
             <RelayerStatusTable relayers={mockRelayers} />
           </section>
 
