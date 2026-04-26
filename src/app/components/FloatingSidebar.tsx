@@ -30,6 +30,7 @@ export default function FloatingSidebar() {
         WebkitBackdropFilter: "blur(16px)",
         border: "1px solid rgba(255,255,255,0.08)",
         boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+        willChange: "transform",
       }}
     >
       {navItems.map(({ icon: Icon, label, href }) => {
