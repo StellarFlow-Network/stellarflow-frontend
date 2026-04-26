@@ -5,12 +5,17 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React from 'react';
 import { FaWallet, FaBell, FaCircleUser, FaRightFromBracket } from 'react-icons/fa6';
+import { useProgressBar } from './TopLoadingBar';
 
 const Nav = () => {
   const hasAnomaly = true; // replace with real signal condition (e.g., Coinbase GHS Offline)
   const router = useRouter();
 
-  const handleConnectWallet = () => {
+  const handleConnectWallet = async () => {
+    start();
+    // Simulate async wallet connection; replace with real Web3 logic
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    done();
     alert('Connect Wallet clicked! (Add your Web3 logic here)');
   };
 
