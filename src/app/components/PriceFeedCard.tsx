@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { RefreshCw } from "lucide-react";
+import { useProgressBar } from "./TopLoadingBar";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -92,9 +93,13 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const { start, done } = useProgressBar();
 
   const load = useCallback(async (manual = false) => {
-    if (manual) setIsRefreshing(true);
+    if (manual) {
+      setIsRefreshing(true);
+      start();
+    }
     setError(null);
 
     try {
@@ -106,8 +111,9 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
     } finally {
       setLoading(false);
       setIsRefreshing(false);
+      if (manual) done();
     }
-  }, []);
+  }, [start, done]);
 
   // Initial fetch + polling
   useEffect(() => {
