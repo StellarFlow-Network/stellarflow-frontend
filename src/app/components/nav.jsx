@@ -1,11 +1,14 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import React from 'react';
 import { FaWallet, FaBell, FaCircleUser, FaRightFromBracket } from 'react-icons/fa6';
 
 const Nav = () => {
   const hasAnomaly = true; // replace with real signal condition (e.g., Coinbase GHS Offline)
+  const router = useRouter();
 
   const handleConnectWallet = () => {
     alert('Connect Wallet clicked! (Add your Web3 logic here)');
@@ -62,13 +65,15 @@ const Nav = () => {
             )}
           </button>
 
-          <button
-            aria-label="User profile"
+          <Link
+            href="/admin/settings"
+            prefetch={false}
+            onMouseEnter={() => router.prefetch('/admin/settings')}
+            aria-label="Admin settings"
             className="p-2 rounded-xl hover:bg-zinc-800 transition-colors"
-            onClick={() => alert('User settings (implement)')}
           >
             <FaCircleUser className="w-6 h-6 text-slate-200" />
-          </button>
+          </Link>
 
           <button
             aria-label="Sign out"
