@@ -7,6 +7,7 @@ import ModularStatsCard from "./components/ModularStatsCard";
 import PriceFeedCard from "./components/PriceFeedCard";
 import RateSparklineCard from "./components/RateSparklineCard";
 import RelayerStatusTable from "./components/RelayerStatusTable";
+import SmartContractLogViewer from "./components/SmartContractLogViewer";
 
 const mockRelayers = [
   { id: "r1", name: "Abuja Relayer", status: "Online", latency: 34 },
@@ -32,6 +33,68 @@ const rateCards = [
     rate: 0.11,
     trend: 0.9,
     sparklineData: [0.108, 0.109, 0.110, 0.111, 0.110, 0.109, 0.110],
+  },
+];
+
+const mockTransactionEvents = [
+  {
+    id: "tx-1",
+    hash: "0x7f8a9b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a",
+    ledger: 52345678,
+    timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+    sourceAccount: "0x9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7",
+    contractAddress: "0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3",
+    functionName: "update_price",
+    status: "success",
+    gasUsed: 12453,
+    memo: "NGN/XLM price update",
+  },
+  {
+    id: "tx-2",
+    hash: "0x8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0",
+    ledger: 52345672,
+    timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+    sourceAccount: "0xb9c8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8",
+    contractAddress: "0x2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4",
+    functionName: "submit_swap",
+    status: "success",
+    gasUsed: 28765,
+  },
+  {
+    id: "tx-3",
+    hash: "0x9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1",
+    ledger: 52345665,
+    timestamp: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
+    sourceAccount: "0xc8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7",
+    contractAddress: "0x3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5",
+    functionName: "mint_tokens",
+    status: "pending",
+    gasUsed: 0,
+    memo: "USDC liquidity provision",
+  },
+  {
+    id: "tx-4",
+    hash: "0xa1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2",
+    ledger: 52345658,
+    timestamp: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+    sourceAccount: "0xd7e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6",
+    contractAddress: "0x4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6",
+    functionName: "claim_reward",
+    status: "failed",
+    gasUsed: 8923,
+    memo: "Staking rewards distribution",
+  },
+  {
+    id: "tx-5",
+    hash: "0xb2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3",
+    ledger: 52345651,
+    timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+    sourceAccount: "0xe6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5",
+    contractAddress: "0x5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7",
+    functionName: "update_price",
+    status: "success",
+    gasUsed: 11567,
+    memo: "KES/XLM price update",
   },
 ];
 
@@ -101,6 +164,12 @@ const page = () => {
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-white uppercase tracking-wider mb-4">Relayer Network Status</h2>
             <RelayerStatusTable relayers={mockRelayers} />
+          </section>
+
+          {/* Smart Contract Log Viewer */}
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold text-white uppercase tracking-wider mb-4">Smart Contract Events</h2>
+            <SmartContractLogViewer events={mockTransactionEvents} />
           </section>
 
           {/* Chart loading state and source table shell */}

@@ -32,3 +32,18 @@ export interface PriceData {
   confidenceScore: number;
   metadata?: unknown; // Using unknown as per guardrail (no 'any')
 }
+
+export type TransactionStatus = 'success' | 'failed' | 'pending';
+
+export interface StellarTransactionEvent {
+  readonly id: string;
+  readonly hash: string;
+  readonly ledger: number;
+  readonly timestamp: string; // ISO 8601 string
+  readonly sourceAccount: string;
+  readonly contractAddress: string;
+  readonly functionName: string;
+  readonly status: TransactionStatus;
+  readonly gasUsed: number;
+  readonly memo?: string;
+}
