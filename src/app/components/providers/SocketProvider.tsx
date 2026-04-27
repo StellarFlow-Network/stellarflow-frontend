@@ -7,6 +7,7 @@ import { PriceData } from '@/types'
 interface SocketContextType {
   isConnected: boolean
   lastUpdate: PriceData | null
+  prices: Record<string, PriceData>
   error: string | null
   reconnectAttempts: number
   subscribeToAsset: (assetId: string) => void

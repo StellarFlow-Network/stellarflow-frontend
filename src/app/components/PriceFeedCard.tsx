@@ -103,7 +103,7 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   // WebSocket hook for delta updates
   const {
     isConnected,
-    lastUpdate: wsUpdate,
+    prices,
     error: wsError,
     subscribeToAsset,
     unsubscribeFromAsset,
@@ -111,6 +111,8 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
     assetIds: enableWebSocket ? [assetId] : [],
     enableDeltaUpdates: true,
   });
+
+  const wsUpdate = prices[assetId];
 
   const load = useCallback(async (manual = false) => {
     if (manual) {
@@ -135,22 +137,24 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   // Handle WebSocket delta updates
   useEffect(() => {
     if (wsUpdate && enableWebSocket) {
-      // Convert WebSocket update to PriceFeedData format
-      const updatedData: PriceFeedData = {
-        price: wsUpdate.price || data?.price || 0,
-        change_24h: wsUpdate.price ? 0 : (data?.change_24h || 0), // Reset 24h change on new price
-        high_24h: wsUpdate.price ? Math.max(wsUpdate.price, data?.high_24h || 0) : (data?.high_24h || 0),
-        low_24h: wsUpdate.price ? Math.min(wsUpdate.price, data?.low_24h || Infinity) : (data?.low_24h || 0),
-        volume_24h: data?.volume_24h || 0, // Preserve volume from API
-        last_updated: wsUpdate.timestamp ? new Date(wsUpdate.timestamp).toISOString() : (data?.last_updated || new Date().toISOString()),
-      };
+      setData(prev => {
+        // Convert WebSocket update to PriceFeedData format
+        const updatedData: PriceFeedData = {
+          price: wsUpdate.price || prev?.price || 0,
+          change_24h: wsUpdate.price ? 0 : (prev?.change_24h || 0), // Reset 24h change on new price
+          high_24h: wsUpdate.price ? Math.max(wsUpdate.price, prev?.high_24h || 0) : (prev?.high_24h || 0),
+          low_24h: wsUpdate.price ? Math.min(wsUpdate.price, prev?.low_24h || Infinity) : (prev?.low_24h || 0),
+          volume_24h: prev?.volume_24h || 0, // Preserve volume from API
+          last_updated: wsUpdate.timestamp ? new Date(wsUpdate.timestamp).toISOString() : (prev?.last_updated || new Date().toISOString()),
+        };
+        return updatedData;
+      });
       
-      setData(updatedData);
       setLastRefresh(new Date());
       setLoading(false);
       setError(null);
     }
-  }, [wsUpdate, data, enableWebSocket]);
+  }, [wsUpdate, enableWebSocket]);
 
   // Handle WebSocket errors
   useEffect(() => {
