@@ -5,6 +5,8 @@ import { RefreshCw } from "lucide-react";
 import { useProgressBar } from "./TopLoadingBar";
 import { Shimmer } from "@/components/skeletons";
 import { useDebounce } from "../hooks/useDebounce";
+import { useSocket } from "../hooks/useSocket";
+import { Shimmer } from "@/components/skeletons/Shimmer";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,6 +22,10 @@ interface PriceFeedData {
 interface PriceFeedCardProps {
   /** Polling interval in milliseconds. Defaults to 30 000 (30 s). */
   refreshInterval?: number;
+  /** Asset ID for WebSocket delta updates. Defaults to 'NGN-XLM'. */
+  assetId?: string;
+  /** Enable WebSocket delta updates. Defaults to true. */
+  enableWebSocket?: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -83,6 +89,8 @@ function formatTime(iso: string): string {
 
 const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   refreshInterval = 30_000,
+  assetId = "NGN-XLM",
+  enableWebSocket = true,
 }) => {
   const [data, setData] = useState<PriceFeedData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -92,6 +100,18 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   const [filterInput, setFilterInput] = useState("");
   const debouncedFilter = useDebounce(filterInput, 300);
   const { start, done } = useProgressBar();
+
+  // WebSocket hook for delta updates
+  const {
+    isConnected,
+    lastUpdate: wsUpdate,
+    error: wsError,
+    subscribeToAsset,
+    unsubscribeFromAsset,
+  } = useSocket({
+    assetIds: enableWebSocket ? [assetId] : [],
+    enableDeltaUpdates: true,
+  });
 
   const load = useCallback(async (manual = false) => {
     if (manual) {
@@ -113,12 +133,41 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
     }
   }, [start, done]);
 
-  // Initial fetch + polling
+  // Handle WebSocket delta updates
   useEffect(() => {
-    load();
-    const id = setInterval(() => load(), refreshInterval);
-    return () => clearInterval(id);
-  }, [load, refreshInterval]);
+    if (wsUpdate && enableWebSocket) {
+      // Convert WebSocket update to PriceFeedData format
+      const updatedData: PriceFeedData = {
+        price: wsUpdate.price || data?.price || 0,
+        change_24h: wsUpdate.price ? 0 : (data?.change_24h || 0), // Reset 24h change on new price
+        high_24h: wsUpdate.price ? Math.max(wsUpdate.price, data?.high_24h || 0) : (data?.high_24h || 0),
+        low_24h: wsUpdate.price ? Math.min(wsUpdate.price, data?.low_24h || Infinity) : (data?.low_24h || 0),
+        volume_24h: data?.volume_24h || 0, // Preserve volume from API
+        last_updated: wsUpdate.timestamp ? new Date(wsUpdate.timestamp).toISOString() : (data?.last_updated || new Date().toISOString()),
+      };
+      
+      setData(updatedData);
+      setLastRefresh(new Date());
+      setLoading(false);
+      setError(null);
+    }
+  }, [wsUpdate, data, enableWebSocket]);
+
+  // Handle WebSocket errors
+  useEffect(() => {
+    if (wsError && enableWebSocket) {
+      setError(`WebSocket error: ${wsError}`);
+    }
+  }, [wsError, enableWebSocket]);
+
+  // Initial fetch + fallback polling (only when WebSocket is disabled or disconnected)
+  useEffect(() => {
+    if (!enableWebSocket || !isConnected) {
+      load();
+      const id = setInterval(() => load(), refreshInterval);
+      return () => clearInterval(id);
+    }
+  }, [load, refreshInterval, enableWebSocket, isConnected]);
 
   // ── Guardrail: Up/Down arrow is STRICTLY driven by the 24h_change field ──
   const isUp = data !== null && data.change_24h >= 0;
@@ -161,12 +210,22 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
 
         {/* Live badge + refresh button */}
         <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 rounded-full border border-[#39FF14]/20 bg-[#39FF14]/10 px-2.5 py-1 text-[10px] font-semibold text-[#39FF14]">
+          <span className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
+            enableWebSocket && isConnected
+              ? "border-[#39FF14]/20 bg-[#39FF14]/10 text-[#39FF14]"
+              : "border-yellow-500/20 bg-yellow-500/10 text-yellow-500"
+          }`}>
             <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#39FF14] opacity-60" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#39FF14]" />
+              <span className={`absolute inline-flex h-full w-full rounded-full ${
+                enableWebSocket && isConnected
+                  ? "animate-ping bg-[#39FF14] opacity-60"
+                  : "bg-yellow-500 opacity-60"
+              }`} />
+              <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${
+                enableWebSocket && isConnected ? "bg-[#39FF14]" : "bg-yellow-500"
+              }`} />
             </span>
-            LIVE
+            {enableWebSocket ? (isConnected ? "WS LIVE" : "WS OFF") : "POLLING"}
           </span>
 
           <button
