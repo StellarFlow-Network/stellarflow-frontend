@@ -1,5 +1,4 @@
-import React from "react";
-import Breadcrumb from "./Breadcrumb";
+import * as React from "react";
 import GlobalHealthIndicator from "./GlobalHealthIndicator";
 
 interface StatsCardProps {
