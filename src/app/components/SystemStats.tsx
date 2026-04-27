@@ -1,6 +1,5 @@
 import React from "react";
-import Breadcrumb from "./Breadcrumb";
-import GlobalHealthIndicator from "./GlobalHealthIndicator";
+import OperationalStatusBadge from "./OperationalStatusBadge";
 
 interface StatsCardProps {
   label: string;
@@ -42,7 +41,7 @@ const SystemStats = () => {
 
         {/* Global Health row */}
         <div className="px-6 py-4">
-          <GlobalHealthIndicator status="ACTIVE" />
+          <OperationalStatusBadge />
         </div>
 
         {/* Green separator */}
