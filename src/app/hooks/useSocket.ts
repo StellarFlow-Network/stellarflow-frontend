@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { unstable_batchedUpdates } from 'react-dom'
 import { PriceData } from '@/types'
 
 interface SocketMessage {
@@ -20,6 +21,7 @@ export interface UseSocketOptions {
 interface UseSocketReturn {
   isConnected: boolean
   lastUpdate: PriceData | null
+  prices: Record<string, PriceData>
   error: string | null
   reconnectAttempts: number
   subscribeToAsset: (assetId: string) => void
@@ -38,12 +40,15 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
 
   const [isConnected, setIsConnected] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<PriceData | null>(null)
+  const [prices, setPrices] = useState<Record<string, PriceData>>({})
   const [error, setError] = useState<string | null>(null)
   const [reconnectAttempts, setReconnectAttempts] = useState(0)
   
   const wsRef = useRef<WebSocket | null>(null)
   const subscribedAssetsRef = useRef<Set<string>>(new Set(assetIds))
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const messageBufferRef = useRef<SocketMessage[]>([])
+  const batchScheduledRef = useRef<boolean>(false)
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -51,18 +56,18 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
     }
 
     try {
-      // Use ws protocol for development, wss for production
-      const protocol = process.env.NODE_ENV === 'production' ? 'wss:' : 'ws:'
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
       const wsUrl = `${protocol}//${window.location.host}/ws`
       
       wsRef.current = new WebSocket(wsUrl)
 
       wsRef.current.onopen = () => {
-        setIsConnected(true)
-        setError(null)
-        setReconnectAttempts(0)
+        unstable_batchedUpdates(() => {
+          setIsConnected(true)
+          setError(null)
+          setReconnectAttempts(0)
+        })
         
-        // Subscribe to initial asset IDs
         if (subscribedAssetsRef.current.size > 0) {
           wsRef.current?.send(JSON.stringify({
             type: 'subscribe',
@@ -76,11 +81,40 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
           const message: SocketMessage = JSON.parse(event.data)
           
           if (message.type === 'price_update' || message.type === 'delta_update') {
-            // Handle delta updates by merging with existing data
-            if (message.type === 'delta_update' && lastUpdate && message.assetId) {
-              setLastUpdate(prev => prev ? { ...prev, ...message.data as PriceData } : message.data as PriceData)
-            } else {
-              setLastUpdate(message.data as PriceData)
+            messageBufferRef.current.push(message)
+            
+            // Schedule a batch update if not already scheduled
+            if (!batchScheduledRef.current) {
+              batchScheduledRef.current = true
+              
+              // Use queueMicrotask for high-priority batching within the same event loop tick if possible,
+              // or setTimeout(0) to ensure we yield to the browser once between batches if flooded.
+              queueMicrotask(() => {
+                batchScheduledRef.current = false
+                const batch = [...messageBufferRef.current]
+                messageBufferRef.current = []
+                
+                if (batch.length === 0) return
+
+                unstable_batchedUpdates(() => {
+                  batch.forEach(msg => {
+                    const updateData = msg.data as PriceData
+                    const assetId = msg.assetId || updateData.assetPair || updateData.id
+                    
+                    // Update the single 'lastUpdate' state for backward compatibility
+                    setLastUpdate(updateData)
+                    
+                    // Update the grouped 'prices' map for multi-asset card performance
+                    setPrices(prev => {
+                      const existing = prev[assetId]
+                      const merged = (msg.type === 'delta_update' && existing)
+                        ? { ...existing, ...updateData }
+                        : updateData
+                      return { ...prev, [assetId]: merged }
+                    })
+                  })
+                })
+              })
             }
           }
         } catch (err) {
@@ -91,7 +125,6 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
       wsRef.current.onclose = (event) => {
         setIsConnected(false)
         
-        // Attempt reconnection if not manually closed and within max attempts
         if (!event.wasClean && reconnectAttempts < maxReconnectAttempts) {
           setReconnectAttempts(prev => prev + 1)
           reconnectTimeoutRef.current = setTimeout(() => {
@@ -109,7 +142,8 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
       setError('Failed to establish WebSocket connection')
       console.error('Connection error:', err)
     }
-  }, [lastUpdate, reconnectAttempts, maxReconnectAttempts, reconnectInterval])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reconnectAttempts, maxReconnectAttempts, reconnectInterval]) // Removed lastUpdate to prevent re-connection loops
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -166,18 +200,10 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
     }
   }, [connect, disconnect])
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current)
-      }
-    }
-  }, [])
-
   return {
     isConnected,
     lastUpdate,
+    prices,
     error,
     reconnectAttempts,
     subscribeToAsset,
