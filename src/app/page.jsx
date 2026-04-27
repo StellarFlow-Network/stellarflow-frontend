@@ -1,10 +1,32 @@
-import LivePrices from './components/client/LivePrices'
-import dynamic from 'next/dynamic'
+import React from "react";
+import dynamic from "next/dynamic";
+import { Loader2 } from "lucide-react";
+import Nav from "./components/nav";
+import FloatingSidebar from "./components/FloatingSidebar";
+import SystemStats from "./components/SystemStats";
+import ModularStatsCard from "./components/ModularStatsCard";
+import PriceFeedCard from "./components/PriceFeedCard";
+import RateSparklineCard from "./components/RateSparklineCard";
+import RelayerStatusTable from "./components/RelayerStatusTable";
 
-// Lazy load heavy client components
-const MapWidget = dynamic(() => import('./components/client/MapWidget'), {
+const LiveNetworkMap = dynamic(() => import("@/app/components/Map"), {
   ssr: false,
-})
+  loading: () => (
+    <div className="relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-[28px] border border-[#A7C957]/30 bg-[#0B1324] px-6 py-10 text-center shadow-[0_24px_80px_rgba(2,8,23,0.6)]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(203,243,77,0.12),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.03),transparent)]" />
+      <div className="relative flex items-center gap-2 text-sm font-medium uppercase tracking-[0.24em] text-[#D9F99D]/90">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        <span>Loading live network map</span>
+      </div>
+    </div>
+  ),
+});
+
+const mockRelayers = [
+  { id: "r1", name: "Abuja Relayer", status: "Online", latency: 34 },
+  { id: "r2", name: "Lagos Relayer", status: "Syncing", latency: 72 },
+  { id: "r3", name: "Cape Town Relayer", status: "Online", latency: 48 },
+];
 
 export default async function DashboardPage() {
   // Server-side fetch (fast, cached)
@@ -52,6 +74,13 @@ const page = () => {
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-white uppercase tracking-wider mb-4">Relayer Network Status</h2>
             <RelayerStatusTable relayers={mockRelayers} />
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold text-white uppercase tracking-wider mb-4">
+              Live Network Map
+            </h2>
+            <LiveNetworkMap />
           </section>
 
           {/* Chart loading state and source table shell */}
