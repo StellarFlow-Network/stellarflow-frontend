@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
@@ -8,6 +10,8 @@ import ModularStatsCard from "./components/ModularStatsCard";
 import PriceFeedCard from "./components/PriceFeedCard";
 import RateSparklineCard from "./components/RateSparklineCard";
 import RelayerStatusTable from "./components/RelayerStatusTable";
+import WebSocketTest from "./components/test/WebSocketTest";
+import { Shimmer } from "@/components/skeletons/Shimmer";
 
 const LiveNetworkMap = dynamic(() => import("@/app/components/Map"), {
   ssr: false,
@@ -28,17 +32,18 @@ const mockRelayers = [
   { id: "r3", name: "Cape Town Relayer", status: "Online", latency: 48 },
 ];
 
-export default async function DashboardPage() {
-  // Server-side fetch (fast, cached)
-  const initialPrices = await fetch('http://localhost:3000/api/prices', {
-    next: { revalidate: 30 }, // ISR caching
-  }).then(res => res.json())
+// Mock rate cards data
+const rateCards = [
+  { currency: "NGN", rate: 750.50, change: 2.3 },
+  { currency: "USD", rate: 0.12, change: -0.8 },
+  { currency: "EUR", rate: 0.13, change: 1.2 },
+];
 
 const LoadingChartState = () => {
   return <MapSkeleton />;
 };
 
-const page = () => {
+export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[#020817] text-white selection:bg-[#CBF34D]/30">
       <Nav />
@@ -68,6 +73,11 @@ const page = () => {
           {/* Dynamic Price Feed — NGN/XLM */}
           <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <PriceFeedCard refreshInterval={30000} />
+          </section>
+
+          {/* WebSocket Test Component */}
+          <section className="flex justify-center">
+            <WebSocketTest />
           </section>
           
           {/* Relayer Status Table */}
@@ -137,5 +147,3 @@ const page = () => {
     </div>
   );
 };
-
-export default page;
