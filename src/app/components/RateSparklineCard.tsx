@@ -154,18 +154,11 @@ const RateSparklineCard: React.FC<RateSparklineCardProps> = ({
     [isPositive, trend]
   );
 
-  const trendClasses = useMemo(
-    () =>
-      isPositive
-        ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
-        : "bg-rose-500/10 text-rose-300 border border-rose-500/20",
-    [isPositive]
-  );
+  const trendClasses = isPositive
+    ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
+    : "bg-rose-500/10 text-rose-300 border border-rose-500/20";
 
-  const sparklineClasses = useMemo(
-    () => (isPositive ? "text-emerald-400" : "text-rose-400"),
-    [isPositive]
-  );
+  const sparklineClasses = isPositive ? "text-emerald-400" : "text-rose-400";
 
   if (loading) {
     return (

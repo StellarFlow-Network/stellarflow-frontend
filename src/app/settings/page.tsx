@@ -24,6 +24,17 @@ interface Settings {
   sessionTimeout: string;
 }
 
+const TOGGLE_STYLES = {
+  enabled: {
+    track: 'bg-blue-600',
+    knob: 'right-1',
+  },
+  disabled: {
+    track: 'bg-gray-700',
+    knob: 'left-1',
+  },
+};
+
 export default function SettingsPage() {
   const [showKey, setShowKey] = useState(false);
   const [settings, setSettings] = useState<Settings>({
@@ -59,9 +70,11 @@ export default function SettingsPage() {
     setSettings(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const multiSigTrackClasses = settings.multiSigApproval ? TOGGLE_STYLES.enabled.track : TOGGLE_STYLES.disabled.track;
+  const multiSigKnobClasses = settings.multiSigApproval ? TOGGLE_STYLES.enabled.knob : TOGGLE_STYLES.disabled.knob;
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
-      {/* --- Header Section --- */}
       <div className="mb-8">
         <p className="text-sm text-gray-500 mb-1">Admin / Configuration</p>
         <h1 className="text-3xl font-bold tracking-tight">System Settings</h1>
@@ -69,7 +82,6 @@ export default function SettingsPage() {
 
       <div className="max-w-4xl space-y-8">
         
-        {/* --- Profile & Identity --- */}
         <section className="bg-[#161b22] border border-gray-800 rounded-xl p-6">
           <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
             <User size={20} className="text-blue-400" />
@@ -87,7 +99,6 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* --- API & Security Keys --- */}
         <section className="bg-[#161b22] border border-gray-800 rounded-xl p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -118,7 +129,6 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* --- Notification Routing --- */}
         <section className="bg-[#161b22] border border-gray-800 rounded-xl p-6">
           <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
             <Bell size={20} className="text-purple-400" />
@@ -149,7 +159,6 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* --- Global Security Preferences --- */}
         <section className="bg-[#161b22] border border-gray-800 rounded-xl p-6">
           <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
             <Shield size={20} className="text-green-400" />
@@ -163,9 +172,9 @@ export default function SettingsPage() {
               </div>
               <button
                 onClick={() => handleToggle('multiSigApproval')}
-                className={`w-12 h-6 rounded-full relative transition-colors cursor-pointer ${settings.multiSigApproval ? 'bg-blue-600' : 'bg-gray-700'}`}
+                className={`w-12 h-6 rounded-full relative transition-colors cursor-pointer ${multiSigTrackClasses}`}
               >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.multiSigApproval ? 'right-1' : 'left-1'}`} />
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${multiSigKnobClasses}`} />
               </button>
             </div>
             <div className="flex justify-between items-center">
@@ -186,7 +195,6 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* --- Form Actions --- */}
         <div className="flex justify-end gap-4 pt-4">
           <button className="px-6 py-2 border border-gray-700 rounded-lg text-sm hover:bg-gray-800 transition-all">
             Cancel
@@ -204,9 +212,10 @@ export default function SettingsPage() {
   );
 }
 
-// --- Sub-components ---
-
 function ToggleItem({ icon, title, description, enabled, onToggle }: { icon: React.ReactNode, title: string, description: string, enabled: boolean, onToggle: () => void }) {
+  const trackClasses = enabled ? TOGGLE_STYLES.enabled.track : TOGGLE_STYLES.disabled.track;
+  const knobClasses = enabled ? TOGGLE_STYLES.enabled.knob : TOGGLE_STYLES.disabled.knob;
+
   return (
     <div className="flex items-start justify-between p-3 rounded-lg hover:bg-[#1c2128] transition-colors">
       <div className="flex gap-4">
@@ -218,9 +227,9 @@ function ToggleItem({ icon, title, description, enabled, onToggle }: { icon: Rea
       </div>
       <button
         onClick={onToggle}
-        className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${enabled ? 'bg-blue-600' : 'bg-gray-700'}`}
+        className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${trackClasses}`}
       >
-        <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${enabled ? 'right-1' : 'left-1'}`} />
+        <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${knobClasses}`} />
       </button>
     </div>
   );
