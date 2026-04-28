@@ -2,27 +2,31 @@
 
 import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import { motion, AnimatePresence } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import Nav from "./components/nav";
 import FloatingSidebar from "./components/FloatingSidebar";
 import SystemStats from "./components/SystemStats";
 import ModularStatsCard from "./components/ModularStatsCard";
-import PriceFeedCard from "./components/PriceFeedCard";
-import RateSparklineCard from "./components/RateSparklineCard";
 import RelayerStatusTable from "./components/RelayerStatusTable";
 import WebSocketTest from "./components/test/WebSocketTest";
-import { Shimmer } from "@/components/skeletons/Shimmer";
-import { MapSkeleton } from "@/components/skeletons/MapSkeleton";
+import { Shimmer, MapSkeleton, RateSparklineSkeleton } from "@/components/skeletons";
 
 const LiveNetworkMap = dynamic(() => import("@/app/components/Map"), {
   ssr: false,
+  loading: () => <MapSkeleton />,
+});
+
+const RateSparklineCard = dynamic(() => import("./components/RateSparklineCard"), {
+  ssr: false,
+  loading: () => <RateSparklineSkeleton />,
+});
+
+const PriceFeedCard = dynamic(() => import("./components/PriceFeedCard"), {
+  ssr: false,
   loading: () => (
-    <div className="relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-[28px] border border-[#A7C957]/30 bg-[#0B1324] px-6 py-10 text-center shadow-[0_24px_80px_rgba(2,8,23,0.6)]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(203,243,77,0.12),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.03),transparent)]" />
-      <div className="relative flex items-center gap-2 text-sm font-medium uppercase tracking-[0.24em] text-[#D9F99D]/90">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        <span>Loading live network map</span>
-      </div>
+    <div className="h-full w-full rounded-[28px] border border-[#A7C957]/30 bg-[#0B1324] p-6 shadow-[0_24px_80px_rgba(2,8,23,0.6)]">
+      <Shimmer className="h-full w-full rounded-2xl" />
     </div>
   ),
 });
@@ -73,8 +77,19 @@ export default function DashboardPage() {
 
           {/* Local FX rates with memoized sparklines */}
           <section className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {rateCards.map((card) => (
-              <RateSparklineCard key={card.currency} {...card} loading={!cardsReady} />
+            {rateCards.map((card, index) => (
+              <motion.div
+                key={card.currency}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ 
+                  delay: index * 0.1,
+                  type: "spring",
+                  stiffness: 100 
+                }}
+              >
+                <RateSparklineCard {...card} loading={!cardsReady} />
+              </motion.div>
             ))}
           </section>
 
@@ -95,12 +110,25 @@ export default function DashboardPage() {
             <h2 className="text-xl font-semibold text-white uppercase tracking-wider mb-4">Relayer Network Status</h2>
             <RelayerStatusTable relayers={mockRelayers} />
           </section>
-
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-white uppercase tracking-wider mb-4">
               Live Network Map
             </h2>
-            <LiveNetworkMap />
+            <AnimatePresence mode="wait">
+              <motion.div
+                key="network-map"
+                initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98, y: 10 }}
+                transition={{ 
+                  type: "spring",
+                  stiffness: 260,
+                  damping: 20
+                }}
+              >
+                <LiveNetworkMap />
+              </motion.div>
+            </AnimatePresence>
           </section>
 
           {/* Chart loading state and source table shell */}

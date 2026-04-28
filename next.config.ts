@@ -2,9 +2,11 @@ import type { NextConfig } from "next";
 import withPWA from "next-pwa";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   reactCompiler: false,
   turbopack: {},
+  experimental: {
+    optimizePackageImports: ['lucide-react'],
+  },
 };
 
 const pwaConfig = withPWA({
@@ -13,6 +15,17 @@ const pwaConfig = withPWA({
   skipWaiting: true,
   disable: process.env.NODE_ENV === "development",
   runtimeCaching: [
+    {
+      urlPattern: /\/(relayers|logs|contracts)(\/.*)?$/,
+      handler: "StaleWhileRevalidate",
+      options: {
+        cacheName: "page-shells",
+        expiration: {
+          maxEntries: 50,
+          maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+        },
+      },
+    },
     {
       urlPattern: /^https?.*/,
       handler: "NetworkFirst",
