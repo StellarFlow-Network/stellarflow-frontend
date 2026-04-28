@@ -25,7 +25,7 @@ const ModularStatsCard: React.FC<ModularStatsCardProps> = ({
   const isPositive = trend !== undefined && trend >= 0;
 
   return (
-    <div className="bg-[#0A121E] border border-[#1B2A3B] rounded-xl p-6 shadow-lg hover:border-[#39FF14]/50 transition-all duration-300 group">
+    <div className="relative h-full bg-[#0A121E] border border-[#1B2A3B] rounded-xl p-6 shadow-lg hover:border-[#39FF14]/50 transition-all duration-300 group">
       <div className="flex flex-col gap-2">
         {/* Label */}
         <h3 className="text-gray-400 text-xs font-semibold uppercase tracking-wider group-hover:text-[#39FF14] transition-colors">
