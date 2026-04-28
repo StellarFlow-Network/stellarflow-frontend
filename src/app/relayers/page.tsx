@@ -152,16 +152,24 @@ function StatCard({ title, value, icon, subtitle }: { title: string, value: stri
   );
 }
 
-function StatusBadge({ status }: { status: 'active' | 'lagging' | 'offline' }) {
-  const styles = {
-    active: "bg-green-500/10 text-green-500 border-green-500/20",
-    lagging: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
-    offline: "bg-red-500/10 text-red-500 border-red-500/20",
-  };
+const StatusBadge = React.memo(
+  function StatusBadge({ status }: { status: 'active' | 'lagging' | 'offline' }) {
+    const styles = {
+      active: 'bg-green-500/10 text-green-500 border-green-500/20',
+      lagging: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
+      offline: 'bg-red-500/10 text-red-500 border-red-500/20',
+    };
 
-  return (
-    <span className={`px-2 py-1 rounded-full text-[10px] font-bold border uppercase tracking-tighter ${styles[status]}`}>
-      ● {status}
-    </span>
-  );
-}
+    return (
+      <span
+        style={{ contain: 'layout', willChange: 'opacity, transform' }}
+        className={`px-2 py-1 rounded-full text-[10px] font-bold border uppercase tracking-tighter ${styles[status]}`}
+      >
+        ● {status}
+      </span>
+    );
+  },
+  (prev, next) => prev.status === next.status,
+);
+
+StatusBadge.displayName = 'StatusBadge';

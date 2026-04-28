@@ -11,6 +11,37 @@ export interface RelayerStatusTableProps {
   relayers?: Relayer[];
 }
 
+const StatusBadge = React.memo(
+  function StatusBadge({ status }: { status: Relayer['status'] }) {
+    return (
+      <span
+        style={{ contain: 'layout', willChange: 'opacity, transform' }}
+        className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium ${
+          status === 'Online'
+            ? 'bg-[#39FF14]/10 text-[#39FF14]'
+            : status === 'Offline'
+            ? 'bg-red-500/10 text-red-400'
+            : 'bg-yellow-500/10 text-yellow-400'
+        }`}
+      >
+        <span
+          className={`h-1.5 w-1.5 rounded-full ${
+            status === 'Online'
+              ? 'bg-[#39FF14] shadow-[0_0_8px_rgba(57,255,20,0.6)]'
+              : status === 'Offline'
+              ? 'bg-red-400'
+              : 'bg-yellow-400'
+          }`}
+        />
+        {status}
+      </span>
+    );
+  },
+  (prev, next) => prev.status === next.status,
+);
+
+StatusBadge.displayName = 'StatusBadge';
+
 export default function RelayerStatusTable({ relayers = [] }: RelayerStatusTableProps) {
   return (
     <div className="w-full overflow-hidden rounded-xl border border-white/10 bg-black/40 backdrop-blur-md">
@@ -27,26 +58,7 @@ export default function RelayerStatusTable({ relayers = [] }: RelayerStatusTable
             <tr key={relayer.id} className="transition-colors hover:bg-white/[0.02]">
               <td className="p-4 font-medium text-white">{relayer.name}</td>
               <td className="p-4">
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium ${
-                    relayer.status === 'Online'
-                      ? 'bg-[#39FF14]/10 text-[#39FF14]'
-                      : relayer.status === 'Offline'
-                      ? 'bg-red-500/10 text-red-400'
-                      : 'bg-yellow-500/10 text-yellow-400'
-                  }`}
-                >
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${
-                      relayer.status === 'Online'
-                        ? 'bg-[#39FF14] shadow-[0_0_8px_rgba(57,255,20,0.6)]'
-                        : relayer.status === 'Offline'
-                        ? 'bg-red-400'
-                        : 'bg-yellow-400'
-                    }`}
-                  />
-                  {relayer.status}
-                </span>
+                <StatusBadge status={relayer.status} />
               </td>
               <td className="p-4 text-right font-mono text-white/70">
                 {relayer.latency} ms
