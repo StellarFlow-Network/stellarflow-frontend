@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import Nav from "./components/nav";
@@ -12,6 +12,7 @@ import RateSparklineCard from "./components/RateSparklineCard";
 import RelayerStatusTable from "./components/RelayerStatusTable";
 import WebSocketTest from "./components/test/WebSocketTest";
 import { Shimmer } from "@/components/skeletons/Shimmer";
+import { MapSkeleton } from "@/components/skeletons/MapSkeleton";
 
 const LiveNetworkMap = dynamic(() => import("@/app/components/Map"), {
   ssr: false,
@@ -34,9 +35,9 @@ const mockRelayers = [
 
 // Mock rate cards data
 const rateCards = [
-  { currency: "NGN", rate: 750.50, change: 2.3 },
-  { currency: "USD", rate: 0.12, change: -0.8 },
-  { currency: "EUR", rate: 0.13, change: 1.2 },
+  { currency: "NGN", rate: 750.5, trend: 2.3, sparklineData: [742, 744, 745, 748, 750, 749, 751] },
+  { currency: "USD", rate: 0.12, trend: -0.8, sparklineData: [0.13, 0.13, 0.125, 0.124, 0.123, 0.122, 0.12] },
+  { currency: "EUR", rate: 0.13, trend: 1.2, sparklineData: [0.124, 0.125, 0.126, 0.127, 0.128, 0.129, 0.13] },
 ];
 
 const LoadingChartState = () => {
@@ -44,6 +45,13 @@ const LoadingChartState = () => {
 };
 
 export default function DashboardPage() {
+  const [cardsReady, setCardsReady] = useState(false);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setCardsReady(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#020817] text-white selection:bg-[#CBF34D]/30">
       <Nav />
@@ -57,22 +65,24 @@ export default function DashboardPage() {
 
           {/* Modular Stats Cards Section */}
           <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <ModularStatsCard label="Network Throughput" value={1245670} trend={12.5} unit="TPS" />
-            <ModularStatsCard label="Total Value Locked" value={85432000} trend={-2.4} unit="USD" />
-            <ModularStatsCard label="Active Nodes" value={1240} trend={0.8} />
-            <ModularStatsCard label="Oracle Accuracy" value={99.98} trend={0.01} unit="%" />
+            <div className="aspect-[16/10]"><ModularStatsCard label="Network Throughput" value={1245670} trend={12.5} unit="TPS" /></div>
+            <div className="aspect-[16/10]"><ModularStatsCard label="Total Value Locked" value={85432000} trend={-2.4} unit="USD" /></div>
+            <div className="aspect-[16/10]"><ModularStatsCard label="Active Nodes" value={1240} trend={0.8} /></div>
+            <div className="aspect-[16/10]"><ModularStatsCard label="Oracle Accuracy" value={99.98} trend={0.01} unit="%" /></div>
           </section>
 
           {/* Local FX rates with memoized sparklines */}
           <section className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {rateCards.map((card) => (
-              <RateSparklineCard key={card.currency} {...card} />
+              <RateSparklineCard key={card.currency} {...card} loading={!cardsReady} />
             ))}
           </section>
 
           {/* Dynamic Price Feed — NGN/XLM */}
           <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <PriceFeedCard refreshInterval={30000} />
+            <div className="sm:col-span-2 lg:col-span-1 aspect-[4/3] min-h-[320px]">
+              <PriceFeedCard refreshInterval={30000} />
+            </div>
           </section>
 
           {/* WebSocket Test Component */}
