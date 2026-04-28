@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { RefreshCw } from "lucide-react";
 import { useProgressBar } from "./TopLoadingBar";
+import { Shimmer } from "@/components/skeletons";
 import { useDebounce } from "../hooks/useDebounce";
 import { useSocket } from "../hooks/useSocket";
 import { Shimmer } from "@/components/skeletons/Shimmer";

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import * as React from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import Nav from "./components/nav";
@@ -10,10 +10,9 @@ import ModularStatsCard from "./components/ModularStatsCard";
 import PriceFeedCard from "./components/PriceFeedCard";
 import RateSparklineCard from "./components/RateSparklineCard";
 import RelayerStatusTable from "./components/RelayerStatusTable";
-import WebSocketTest from "./components/test/WebSocketTest";
-import { Shimmer } from "@/components/skeletons/Shimmer";
+import { MapSkeleton, Shimmer } from "@/components/skeletons";
 
-const LiveNetworkMap = dynamic(() => import("@/app/components/Map"), {
+const LiveNetworkMap = dynamic(() => Promise.resolve().then(() => import("@/app/components/Map")), {
   ssr: false,
   loading: () => (
     <div className="relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-[28px] border border-[#A7C957]/30 bg-[#0B1324] px-6 py-10 text-center shadow-[0_24px_80px_rgba(2,8,23,0.6)]">
@@ -32,11 +31,10 @@ const mockRelayers = [
   { id: "r3", name: "Cape Town Relayer", status: "Online", latency: 48 },
 ];
 
-// Mock rate cards data
 const rateCards = [
-  { currency: "NGN", rate: 750.50, change: 2.3 },
-  { currency: "USD", rate: 0.12, change: -0.8 },
-  { currency: "EUR", rate: 0.13, change: 1.2 },
+  { currency: "NGN/XLM", rate: 145.23, trend: 2.4, sparklineData: [142, 140, 141, 143, 142, 144, 145, 145, 146, 145, 144, 145, 142, 143, 145, 147, 145, 143, 142, 141, 140, 142, 143, 145] },
+  { currency: "KES/XLM", rate: 0.68, trend: -0.3, sparklineData: [0.72, 0.71, 0.70, 0.69, 0.68, 0.69, 0.70, 0.70, 0.69, 0.68, 0.68, 0.69, 0.70, 0.70, 0.69, 0.68, 0.68, 0.69, 0.70, 0.71, 0.72, 0.71, 0.70, 0.68] },
+  { currency: "GHS/XLM", rate: 1.12, trend: 0.1, sparklineData: [1.08, 1.09, 1.10, 1.11, 1.12, 1.11, 1.10, 1.10, 1.11, 1.12, 1.13, 1.12, 1.11, 1.10, 1.09, 1.08, 1.09, 1.10, 1.11, 1.12, 1.13, 1.12, 1.11, 1.12] },
 ];
 
 const LoadingChartState = () => {
@@ -44,12 +42,17 @@ const LoadingChartState = () => {
 };
 
 export default function DashboardPage() {
+  // Server-side fetch (fast, cached)
+  await fetch("http://localhost:3000/api/prices", {
+    next: { revalidate: 30 }, // ISR caching
+  }).then((res) => res.json());
+
   return (
     <div className="min-h-screen bg-[#020817] text-white selection:bg-[#CBF34D]/30">
       <Nav />
       {/* Sidebar - Positioned for the dashboard layout */}
       <FloatingSidebar />
-      
+
       <main className="pl-24 pr-8 py-10 md:py-16">
         <div className="max-w-6xl mx-auto space-y-12">
           {/* System At-A-Glance Stats Section */}
@@ -75,11 +78,6 @@ export default function DashboardPage() {
             <PriceFeedCard refreshInterval={30000} />
           </section>
 
-          {/* WebSocket Test Component */}
-          <section className="flex justify-center">
-            <WebSocketTest />
-          </section>
-          
           {/* Relayer Status Table */}
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-white uppercase tracking-wider mb-4">Relayer Network Status</h2>
@@ -146,4 +144,4 @@ export default function DashboardPage() {
       </main>
     </div>
   );
-};
+}
