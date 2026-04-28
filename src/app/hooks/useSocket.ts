@@ -172,6 +172,10 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current)
       }
+      if (wsRef.current) {
+        wsRef.current.close(1000, 'Component unmount')
+        wsRef.current = null
+      }
     }
   }, [])
 
