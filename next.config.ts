@@ -14,6 +14,17 @@ const pwaConfig = withPWA({
   disable: process.env.NODE_ENV === "development",
   runtimeCaching: [
     {
+      urlPattern: /\/(relayers|logs|contracts)(\/.*)?$/,
+      handler: "StaleWhileRevalidate",
+      options: {
+        cacheName: "page-shells",
+        expiration: {
+          maxEntries: 50,
+          maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+        },
+      },
+    },
+    {
       urlPattern: /^https?.*/,
       handler: "NetworkFirst",
       options: {

@@ -10,9 +10,11 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.100.5",
+    "@tanstack/react-virtual": "^3.13.24",
     "@types/leaflet": "^1.9.21",
     "@types/ws": "^8.18.1",
     "framer-motion": "^12.38.0",
+    "fuse.js": "^7.3.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.6.0",
     "next": "16.1.6",
