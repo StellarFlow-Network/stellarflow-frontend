@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { 
   Activity, 
   Plus, 
@@ -30,8 +31,18 @@ const MOCK_RELAYERS: Relayer[] = [
   { id: '3', name: 'Coinbase Global', address: 'GDRT...1122', status: 'active', uptime: '99.99%', latency: 45, successRate: 100 },
 ];
 
+async function fetchRelayers(): Promise<Relayer[]> {
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  return MOCK_RELAYERS;
+}
+
 export default function RelayersPage() {
   const [searchTerm, setSearchTerm] = useState('');
+
+  const { data: relayers = [], isLoading } = useQuery({
+    queryKey: ['relayers'],
+    queryFn: fetchRelayers,
+  });
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
@@ -86,33 +97,47 @@ export default function RelayersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800">
-              {MOCK_RELAYERS.map((relayer) => (
-                <tr key={relayer.id} className="hover:bg-[#1c2128] transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-blue-400">{relayer.name}</div>
-                    <div className="text-xs text-gray-500 font-mono">{relayer.address}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <StatusBadge status={relayer.status} />
-                  </td>
-                  <td className="px-6 py-4 text-sm">{relayer.uptime}</td>
-                  <td className="px-6 py-4 text-sm font-mono">{relayer.latency}ms</td>
-                  <td className="px-6 py-4">
-                    <div className="w-24 bg-gray-700 h-1.5 rounded-full overflow-hidden">
-                      <div 
-                        className="bg-blue-500 h-full" 
-                        style={{ width: `${relayer.successRate}%` }} 
-                      />
-                    </div>
-                    <span className="text-[10px] text-gray-500 mt-1 block">{relayer.successRate}% confirmed</span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="p-1.5 hover:bg-gray-700 rounded-md text-gray-400">
-                      <MoreVertical size={18} />
-                    </button>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                    Loading relayers...
                   </td>
                 </tr>
-              ))}
+              ) : relayers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                    No relayers found.
+                  </td>
+                </tr>
+              ) : (
+                relayers.map((relayer) => (
+                  <tr key={relayer.id} className="hover:bg-[#1c2128] transition-colors group">
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-blue-400">{relayer.name}</div>
+                      <div className="text-xs text-gray-500 font-mono">{relayer.address}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <StatusBadge status={relayer.status} />
+                    </td>
+                    <td className="px-6 py-4 text-sm">{relayer.uptime}</td>
+                    <td className="px-6 py-4 text-sm font-mono">{relayer.latency}ms</td>
+                    <td className="px-6 py-4">
+                      <div className="w-24 bg-gray-700 h-1.5 rounded-full overflow-hidden">
+                        <div 
+                          className="bg-blue-500 h-full" 
+                          style={{ width: `${relayer.successRate}%` }} 
+                        />
+                      </div>
+                      <span className="text-[10px] text-gray-500 mt-1 block">{relayer.successRate}% confirmed</span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button className="p-1.5 hover:bg-gray-700 rounded-md text-gray-400">
+                        <MoreVertical size={18} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
