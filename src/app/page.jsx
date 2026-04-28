@@ -3,8 +3,6 @@
 import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
-import Nav from "./components/nav";
-import FloatingSidebar from "./components/FloatingSidebar";
 import SystemStats from "./components/SystemStats";
 import ModularStatsCard from "./components/ModularStatsCard";
 import PriceFeedCard from "./components/PriceFeedCard";
@@ -53,13 +51,8 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#020817] text-white selection:bg-[#CBF34D]/30">
-      <Nav />
-      {/* Sidebar - Positioned for the dashboard layout */}
-      <FloatingSidebar />
-      
-      <main className="pl-24 pr-8 py-10 md:py-16">
-        <div className="max-w-6xl mx-auto space-y-12">
+    <div className="min-h-full bg-[#020817] px-8 py-10 text-white selection:bg-[#CBF34D]/30 md:py-16">
+      <div className="mx-auto max-w-6xl space-y-12">
           {/* System At-A-Glance Stats Section */}
           <SystemStats />
 
@@ -152,8 +145,7 @@ export default function DashboardPage() {
               </div>
             </div>
           </section>
-        </div>
-      </main>
+      </div>
     </div>
   );
 };
