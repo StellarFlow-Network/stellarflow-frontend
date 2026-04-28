@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React from 'react';
-import { FaWallet, FaBell, FaCircleUser, FaRightFromBracket } from 'react-icons/fa6';
+import { Wallet, Bell, CircleUser, LogOut } from 'lucide-react';
 import { useProgressBar } from './TopLoadingBar';
 
 const Nav = () => {
@@ -52,7 +52,7 @@ const Nav = () => {
                        text-sm sm:text-base transition-all duration-300 
                        hover:shadow-xl active:scale-95 whitespace-nowrap"
           >
-            <FaWallet className="w-5 h-5 transition-transform group-hover:rotate-12" />
+            <Wallet className="w-5 h-5 transition-transform group-hover:rotate-12" />
             <span>Connect <span className='max-md:hidden'>Wallet</span></span>
           </button>
 
@@ -61,7 +61,7 @@ const Nav = () => {
             className="relative p-2 rounded-xl hover:bg-zinc-800 transition-colors"
             onClick={() => alert('View current system anomalies (implement dashboard logic)')}
           >
-            <FaBell className="w-6 h-6 text-slate-200" />
+            <Bell className="w-6 h-6 text-slate-200" />
             {hasAnomaly && (
               <span className="absolute -top-1 -right-1 inline-flex h-3 w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
@@ -77,7 +77,7 @@ const Nav = () => {
             aria-label="Admin settings"
             className="p-2 rounded-xl hover:bg-zinc-800 transition-colors"
           >
-            <FaCircleUser className="w-6 h-6 text-slate-200" />
+            <CircleUser className="w-6 h-6 text-slate-200" />
           </Link>
 
           <button
@@ -85,7 +85,7 @@ const Nav = () => {
             className="p-2 rounded-xl hover:bg-zinc-800 transition-colors"
             onClick={() => alert('Sign out (implement)')}
           >
-            <FaRightFromBracket className="w-6 h-6 text-slate-200" />
+            <LogOut className="w-6 h-6 text-slate-200" />
           </button>
         </div>
 
