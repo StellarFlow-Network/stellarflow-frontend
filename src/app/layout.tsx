@@ -4,6 +4,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { ProgressBarProvider } from "./components/TopLoadingBar";
+import Sidebar from "./components/server/Sidebar";
+import Header from "./components/server/Header";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,7 +38,7 @@ export default function RootLayout({
         <style>{`html { background-color: #0d1117; }`}</style>
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} h-screen overflow-hidden antialiased`}
       >
         <ThemeProvider
           attribute="class"
@@ -45,7 +47,15 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <ProgressBarProvider>
-            {children}
+            <div className="flex h-screen flex-row bg-[#020817] text-white">
+              <Sidebar />
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                <Header />
+                <main className="min-h-0 flex-1 overflow-y-auto">
+                  {children}
+                </main>
+              </div>
+            </div>
           </ProgressBarProvider>
         </ThemeProvider>
       </body>
