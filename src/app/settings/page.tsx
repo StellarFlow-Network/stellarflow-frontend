@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, 
   Key, 
@@ -14,9 +14,50 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
+import { useDebounce } from '../hooks/useDebounce';
+
+interface Settings {
+  emailReports: boolean;
+  pushNotifications: boolean;
+  publicStatusPage: boolean;
+  multiSigApproval: boolean;
+  sessionTimeout: string;
+}
 
 export default function SettingsPage() {
   const [showKey, setShowKey] = useState(false);
+  const [settings, setSettings] = useState<Settings>({
+    emailReports: true,
+    pushNotifications: true,
+    publicStatusPage: false,
+    multiSigApproval: false,
+    sessionTimeout: '15 Minutes',
+  });
+  const [savedSettings, setSavedSettings] = useState<Settings>({ ...settings });
+  const [isPending, setIsPending] = useState(false);
+  const [lastSaveTime, setLastSaveTime] = useState<number>(0);
+
+  const debouncedSettings = useDebounce(settings, 500);
+  const isSaving = Date.now() - lastSaveTime < 500;
+  const hasChanges = JSON.stringify(settings) !== JSON.stringify(savedSettings);
+
+  useEffect(() => {
+    if (hasChanges && !isPending) {
+      const timer = setTimeout(async () => {
+        setIsPending(true);
+        console.log('Saving settings:', settings);
+        await new Promise(r => setTimeout(r, 300));
+        setSavedSettings({ ...settings });
+        setLastSaveTime(Date.now());
+        setIsPending(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [debouncedSettings, hasChanges, isPending, settings]);
+
+  const handleToggle = (key: keyof Settings) => {
+    setSettings(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
@@ -88,19 +129,22 @@ export default function SettingsPage() {
               icon={<Mail size={18} />} 
               title="Email Reports" 
               description="Receive weekly institutional summaries and uptime reports."
-              enabled={true}
+              enabled={settings.emailReports}
+              onToggle={() => handleToggle('emailReports')}
             />
             <ToggleItem 
               icon={<Smartphone size={18} />} 
               title="Push Notifications" 
               description="Alerts for Oracle Kill Switch and high-volatility events."
-              enabled={true}
+              enabled={settings.pushNotifications}
+              onToggle={() => handleToggle('pushNotifications')}
             />
             <ToggleItem 
               icon={<Globe size={18} />} 
               title="Public Status Page" 
               description="Automatically update the status.stellarflow.io page."
-              enabled={false}
+              enabled={settings.publicStatusPage}
+              onToggle={() => handleToggle('publicStatusPage')}
             />
           </div>
         </section>
@@ -117,16 +161,23 @@ export default function SettingsPage() {
                 <p className="text-sm font-medium">Multi-Sig Approval</p>
                 <p className="text-xs text-gray-500">Require two admins to sign off on WASM upgrades.</p>
               </div>
-              <div className="w-12 h-6 bg-blue-600 rounded-full relative cursor-pointer">
-                <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full" />
-              </div>
+              <button
+                onClick={() => handleToggle('multiSigApproval')}
+                className={`w-12 h-6 rounded-full relative transition-colors cursor-pointer ${settings.multiSigApproval ? 'bg-blue-600' : 'bg-gray-700'}`}
+              >
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.multiSigApproval ? 'right-1' : 'left-1'}`} />
+              </button>
             </div>
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-sm font-medium">Session Timeout</p>
                 <p className="text-xs text-gray-500">Automatically logout after inactivity.</p>
               </div>
-              <select className="bg-[#0d1117] border border-gray-700 rounded py-1 px-2 text-xs">
+              <select 
+                className="bg-[#0d1117] border border-gray-700 rounded py-1 px-2 text-xs"
+                value={settings.sessionTimeout}
+                onChange={(e) => setSettings(prev => ({ ...prev, sessionTimeout: e.target.value }))}
+              >
                 <option>15 Minutes</option>
                 <option>1 Hour</option>
                 <option>Never</option>
@@ -140,9 +191,12 @@ export default function SettingsPage() {
           <button className="px-6 py-2 border border-gray-700 rounded-lg text-sm hover:bg-gray-800 transition-all">
             Cancel
           </button>
-          <button className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-bold flex items-center gap-2 transition-all">
+          <button 
+            disabled={!hasChanges || isPending}
+            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-bold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <Save size={18} />
-            Save Changes
+            {isPending ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
       </div>
@@ -152,7 +206,7 @@ export default function SettingsPage() {
 
 // --- Sub-components ---
 
-function ToggleItem({ icon, title, description, enabled }: { icon: React.ReactNode, title: string, description: string, enabled: boolean }) {
+function ToggleItem({ icon, title, description, enabled, onToggle }: { icon: React.ReactNode, title: string, description: string, enabled: boolean, onToggle: () => void }) {
   return (
     <div className="flex items-start justify-between p-3 rounded-lg hover:bg-[#1c2128] transition-colors">
       <div className="flex gap-4">
@@ -162,9 +216,12 @@ function ToggleItem({ icon, title, description, enabled }: { icon: React.ReactNo
           <p className="text-xs text-gray-500">{description}</p>
         </div>
       </div>
-      <div className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${enabled ? 'bg-blue-600' : 'bg-gray-700'}`}>
+      <button
+        onClick={onToggle}
+        className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${enabled ? 'bg-blue-600' : 'bg-gray-700'}`}
+      >
         <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${enabled ? 'right-1' : 'left-1'}`} />
-      </div>
+      </button>
     </div>
   );
 }
