@@ -187,7 +187,7 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
     <div
       className={`
         relative overflow-hidden
-        bg-[#0A121E] border border-[#1B2A3B] rounded-2xl p-6
+        h-full bg-[#0A121E] border border-[#1B2A3B] rounded-2xl p-6
         shadow-lg hover:border-[#39FF14]/40 transition-all duration-300 group
         ${!loading && !error ? trendGlow : ""}
       `}

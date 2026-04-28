@@ -6,7 +6,8 @@ interface RateSparklineCardProps {
   currency: string;
   rate: number;
   trend: number;
-  sparklineData: number[];
+  sparklineData?: number[];
+  loading?: boolean;
 }
 
 function largestTriangleThreeBuckets(data: number[], threshold: number) {
@@ -131,7 +132,8 @@ const RateSparklineCard: React.FC<RateSparklineCardProps> = ({
   currency,
   rate,
   trend,
-  sparklineData,
+  sparklineData = [],
+  loading = false,
 }) => {
   const isMobile = useMediaQuery("(max-width: 767px)");
   const isPositive = trend >= 0;
@@ -165,8 +167,29 @@ const RateSparklineCard: React.FC<RateSparklineCardProps> = ({
     [isPositive]
   );
 
+  if (loading) {
+    return (
+      <div className="aspect-[16/10] rounded-3xl border border-[#1B2A3B] bg-[#08111E] p-5 shadow-lg shadow-black/20">
+        <div className="flex h-full flex-col justify-between">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2">
+              <Shimmer className="h-3 w-14 rounded-md" />
+              <Shimmer className="h-8 w-32 rounded-md" />
+            </div>
+            <Shimmer className="h-6 w-16 rounded-full" />
+          </div>
+
+          <div className="space-y-3">
+            <Shimmer className="h-[1px] w-full" />
+            <Shimmer className="h-8 w-full rounded-md" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="rounded-3xl border border-[#1B2A3B] bg-[#08111E] p-5 shadow-lg shadow-black/20 transition duration-300 hover:border-[#39FF14]/40">
+    <div className="aspect-[16/10] rounded-3xl border border-[#1B2A3B] bg-[#08111E] p-5 shadow-lg shadow-black/20 transition duration-300 hover:border-[#39FF14]/40">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-gray-500">{currency}</p>

@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Database,
@@ -10,15 +12,17 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "#" },
-  { icon: Database, label: "Data", href: "#" },
-  { icon: LineChart, label: "Analytics", href: "#" },
-  { icon: Globe, label: "Governance", href: "#" },
-  { icon: Settings, label: "Settings", href: "#" },
+  { icon: LayoutDashboard, label: "Dashboard", href: "/" },
+  { icon: Database, label: "Contracts", href: "/contracts" },
+  { icon: LineChart, label: "Analytics", href: "/analytics" },
+  { icon: Globe, label: "Governance", href: "/governance" },
+  { icon: Settings, label: "Settings", href: "/settings" },
 ];
 
 export default function FloatingSidebar() {
-  const [active, setActive] = useState("Data");
+  const pathname = usePathname();
+  const router = useRouter();
+  const [active, setActive] = useState(pathname ?? "Dashboard");
   const [hovered, setHovered] = useState<string | null>(null);
 
   return (
@@ -34,7 +38,7 @@ export default function FloatingSidebar() {
       }}
     >
       {navItems.map(({ icon: Icon, label, href }) => {
-        const isActive = active === label;
+        const isActive = pathname === href || active === href;
         const isHovered = hovered === label;
 
         return (
@@ -52,13 +56,21 @@ export default function FloatingSidebar() {
               />
             )}
 
-            <a
+            <Link
               href={href}
-              onClick={(e) => {
-                e.preventDefault();
-                setActive(label);
+              prefetch={href === "/contracts" ? false : undefined}
+              onClick={() => setActive(href)}
+              onFocus={() => {
+                if (href === "/contracts") {
+                  router.prefetch("/contracts");
+                }
               }}
               onMouseEnter={() => setHovered(label)}
+              onMouseOver={() => {
+                if (href === "/contracts") {
+                  router.prefetch("/contracts");
+                }
+              }}
               onMouseLeave={() => setHovered(null)}
               className="relative flex items-center justify-center rounded-xl transition-all duration-200"
               style={{
@@ -79,7 +91,7 @@ export default function FloatingSidebar() {
               aria-label={label}
             >
               <Icon size={20} strokeWidth={isActive ? 2.2 : 1.8} />
-            </a>
+            </Link>
 
             {/* Tooltip */}
             {isHovered && (
