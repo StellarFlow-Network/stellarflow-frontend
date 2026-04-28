@@ -1,12 +1,90 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 interface RateSparklineCardProps {
   currency: string;
   rate: number;
   trend: number;
   sparklineData: number[];
+}
+
+function largestTriangleThreeBuckets(data: number[], threshold: number) {
+  if (threshold >= data.length || threshold === 0) {
+    return data.slice();
+  }
+
+  const sampled: number[] = [];
+  const every = (data.length - 2) / (threshold - 2);
+  let a = 0;
+  sampled.push(data[a]);
+
+  for (let i = 0; i < threshold - 2; i += 1) {
+    const avgRangeStart = Math.floor((i + 1) * every) + 1;
+    const avgRangeEnd = Math.min(Math.floor((i + 2) * every) + 1, data.length);
+
+    let avgX = 0;
+    let avgY = 0;
+    const avgRangeLength = avgRangeEnd - avgRangeStart;
+
+    for (let j = avgRangeStart; j < avgRangeEnd; j += 1) {
+      avgX += j;
+      avgY += data[j];
+    }
+
+    if (avgRangeLength > 0) {
+      avgX /= avgRangeLength;
+      avgY /= avgRangeLength;
+    } else {
+      avgX = avgRangeStart;
+      avgY = data[avgRangeStart];
+    }
+
+    const rangeOffs = Math.floor(i * every) + 1;
+    const rangeTo = Math.min(Math.floor((i + 1) * every) + 1, data.length - 1);
+
+    let maxArea = -1;
+    let maxAreaIndex = rangeOffs;
+    const pointAx = a;
+    const pointAy = data[a];
+
+    for (let j = rangeOffs; j < rangeTo; j += 1) {
+      const area = Math.abs(
+        (pointAx - avgX) * (data[j] - pointAy) -
+          (pointAx - j) * (avgY - pointAy)
+      ) * 0.5;
+
+      if (area > maxArea) {
+        maxArea = area;
+        maxAreaIndex = j;
+      }
+    }
+
+    sampled.push(data[maxAreaIndex]);
+    a = maxAreaIndex;
+  }
+
+  sampled.push(data[data.length - 1]);
+  return sampled;
+}
+
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia(query).matches : false
+  );
+
+  useEffect(() => {
+    const mediaQueryList = window.matchMedia(query);
+    const listener = (event: MediaQueryListEvent) => setMatches(event.matches);
+
+    mediaQueryList.addEventListener("change", listener);
+
+    return () => {
+      mediaQueryList.removeEventListener("change", listener);
+    };
+  }, [query]);
+
+  return matches;
 }
 
 const MiniSparkline = React.memo(function MiniSparkline({
@@ -55,7 +133,14 @@ const RateSparklineCard: React.FC<RateSparklineCardProps> = ({
   trend,
   sparklineData,
 }) => {
+  const isMobile = useMediaQuery("(max-width: 767px)");
   const isPositive = trend >= 0;
+
+  const displayData = useMemo(
+    () =>
+      isMobile ? largestTriangleThreeBuckets(sparklineData, 20) : sparklineData,
+    [isMobile, sparklineData]
+  );
 
   const formattedRate = useMemo(
     () => `${currency} ${rate.toFixed(2)}`,
@@ -93,7 +178,7 @@ const RateSparklineCard: React.FC<RateSparklineCardProps> = ({
       </div>
 
       <div className={`mt-4 ${sparklineClasses}`}>
-        <MiniSparkline data={sparklineData} />
+        <MiniSparkline data={displayData} />
       </div>
     </div>
   );
