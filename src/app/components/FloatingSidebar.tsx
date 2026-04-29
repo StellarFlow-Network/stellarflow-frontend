@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo, useState, useCallback, useMemo } from "react";
+import React, { memo, useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -11,13 +11,13 @@ import {
   Settings,
 } from "lucide-react";
 
-const navItems = useMemo(() => [
+const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/" },
   { icon: Database, label: "Contracts", href: "/contracts" },
   { icon: LineChart, label: "Analytics", href: "/analytics" },
   { icon: Globe, label: "Governance", href: "/governance" },
   { icon: Settings, label: "Settings", href: "/settings" },
-], []);
+];
 
 const FloatingSidebar = memo(() => {
   const pathname = usePathname();

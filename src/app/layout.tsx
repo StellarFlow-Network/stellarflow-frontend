@@ -35,6 +35,13 @@ export default function RootLayout({
       <head>
         {/* Prevent background flash before next-themes hydrates */}
         <style>{`html { background-color: #0d1117; }`}</style>
+        {/* Preload the critical above-the-fold logo asset */}
+        <link
+          rel="preload"
+          href="/sf.webp"
+          as="image"
+          type="image/webp"
+        />
         <Script
           id="polyfill-loader"
           strategy="beforeInteractive"
