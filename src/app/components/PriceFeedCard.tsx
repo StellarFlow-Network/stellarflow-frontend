@@ -10,12 +10,12 @@ import { Shimmer } from "@/components/skeletons/Shimmer";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface PriceFeedData {
-  price: number;          // current NGN/XLM price
-  change_24h: number;     // 24-hour percentage change (positive = up, negative = down)
-  high_24h: number;       // 24h high
-  low_24h: number;        // 24h low
-  volume_24h: number;     // 24h volume in XLM
-  last_updated: string;   // ISO timestamp
+  price: number; // current NGN/XLM price
+  change_24h: number; // 24-hour percentage change (positive = up, negative = down)
+  high_24h: number; // 24h high
+  low_24h: number; // 24h low
+  volume_24h: number; // 24h volume in XLM
+  last_updated: string; // ISO timestamp
 }
 
 interface PriceFeedCardProps {
@@ -24,9 +24,9 @@ interface PriceFeedCardProps {
   /** Asset ID for WebSocket delta updates. Defaults to 'NGN-XLM'. */
   assetId?: string;
   /** Enable WebSocket delta updates. Defaults to true. */
-  enableWebSocket?: boolean;
+ isVisible?: boolean; enableWebSocket?: boolean;
+  
 }
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /**
@@ -39,7 +39,9 @@ async function fetchNgnXlmFeed(): Promise<PriceFeedData> {
   });
 
   if (!res.ok) {
-    throw new Error(`Price feed request failed: ${res.status} ${res.statusText}`);
+    throw new Error(
+      `Price feed request failed: ${res.status} ${res.statusText}`,
+    );
   }
 
   const json = await res.json();
@@ -48,7 +50,12 @@ async function fetchNgnXlmFeed(): Promise<PriceFeedData> {
   // The guardrail requires the Up/Down arrow to be driven by `24h_change`.
   return {
     price: Number(json.price ?? json.current_price ?? 0),
-    change_24h: Number(json["24h_change"] ?? json.change_24h ?? json.price_change_percentage_24h ?? 0),
+    change_24h: Number(
+      json["24h_change"] ??
+        json.change_24h ??
+        json.price_change_percentage_24h ??
+        0,
+    ),
     high_24h: Number(json["24h_high"] ?? json.high_24h ?? 0),
     low_24h: Number(json["24h_low"] ?? json.low_24h ?? 0),
     volume_24h: Number(json["24h_volume"] ?? json.volume_24h ?? 0),
@@ -90,6 +97,7 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   refreshInterval = 30_000,
   assetId = "NGN-XLM",
   enableWebSocket = true,
+  isVisible = true,
 }) => {
   const [data, setData] = useState<PriceFeedData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -112,25 +120,30 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
     enableDeltaUpdates: true,
   });
 
-  const load = useCallback(async (manual = false) => {
-    if (manual) {
-      setIsRefreshing(true);
-      start();
-    }
-    setError(null);
+  const load = useCallback(
+    async (manual = false) => {
+      if (manual) {
+        setIsRefreshing(true);
+        start();
+      }
+      setError(null);
 
-    try {
-      const feed = await fetchNgnXlmFeed();
-      setData(feed);
-      setLastRefresh(new Date());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load price feed.");
-    } finally {
-      setLoading(false);
-      setIsRefreshing(false);
-      if (manual) done();
-    }
-  }, [start, done]);
+      try {
+        const feed = await fetchNgnXlmFeed();
+        setData(feed);
+        setLastRefresh(new Date());
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to load price feed.",
+        );
+      } finally {
+        setLoading(false);
+        setIsRefreshing(false);
+        if (manual) done();
+      }
+    },
+    [start, done],
+  );
 
   // Handle WebSocket delta updates
   useEffect(() => {
@@ -138,13 +151,19 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
       // Convert WebSocket update to PriceFeedData format
       const updatedData: PriceFeedData = {
         price: wsUpdate.price || data?.price || 0,
-        change_24h: wsUpdate.price ? 0 : (data?.change_24h || 0), // Reset 24h change on new price
-        high_24h: wsUpdate.price ? Math.max(wsUpdate.price, data?.high_24h || 0) : (data?.high_24h || 0),
-        low_24h: wsUpdate.price ? Math.min(wsUpdate.price, data?.low_24h || Infinity) : (data?.low_24h || 0),
+        change_24h: wsUpdate.price ? 0 : data?.change_24h || 0, // Reset 24h change on new price
+        high_24h: wsUpdate.price
+          ? Math.max(wsUpdate.price, data?.high_24h || 0)
+          : data?.high_24h || 0,
+        low_24h: wsUpdate.price
+          ? Math.min(wsUpdate.price, data?.low_24h || Infinity)
+          : data?.low_24h || 0,
         volume_24h: data?.volume_24h || 0, // Preserve volume from API
-        last_updated: wsUpdate.timestamp ? new Date(wsUpdate.timestamp).toISOString() : (data?.last_updated || new Date().toISOString()),
+        last_updated: wsUpdate.timestamp
+          ? new Date(wsUpdate.timestamp).toISOString()
+          : data?.last_updated || new Date().toISOString(),
       };
-      
+
       setData(updatedData);
       setLastRefresh(new Date());
       setLoading(false);
@@ -161,12 +180,14 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
 
   // Initial fetch + fallback polling (only when WebSocket is disabled or disconnected)
   useEffect(() => {
+    if (!isVisible) return;
+
     if (!enableWebSocket || !isConnected) {
       load();
       const id = setInterval(() => load(), refreshInterval);
       return () => clearInterval(id);
     }
-  }, [load, refreshInterval, enableWebSocket, isConnected]);
+  }, [load, refreshInterval, enableWebSocket, isConnected, isVisible]);
 
   // ── Guardrail: Up/Down arrow is STRICTLY driven by the 24h_change field ──
   const isUp = data !== null && data.change_24h >= 0;
@@ -209,20 +230,28 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
 
         {/* Live badge + refresh button */}
         <div className="flex items-center gap-2">
-          <span className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
-            enableWebSocket && isConnected
-              ? "border-[#39FF14]/20 bg-[#39FF14]/10 text-[#39FF14]"
-              : "border-yellow-500/20 bg-yellow-500/10 text-yellow-500"
-          }`}>
+          <span
+            className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
+              enableWebSocket && isConnected
+                ? "border-[#39FF14]/20 bg-[#39FF14]/10 text-[#39FF14]"
+                : "border-yellow-500/20 bg-yellow-500/10 text-yellow-500"
+            }`}
+          >
             <span className="relative flex h-1.5 w-1.5">
-              <span className={`absolute inline-flex h-full w-full rounded-full ${
-                enableWebSocket && isConnected
-                  ? "animate-ping bg-[#39FF14] opacity-60"
-                  : "bg-yellow-500 opacity-60"
-              }`} />
-              <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${
-                enableWebSocket && isConnected ? "bg-[#39FF14]" : "bg-yellow-500"
-              }`} />
+              <span
+                className={`absolute inline-flex h-full w-full rounded-full ${
+                  enableWebSocket && isConnected
+                    ? "animate-ping bg-[#39FF14] opacity-60"
+                    : "bg-yellow-500 opacity-60"
+                }`}
+              />
+              <span
+                className={`relative inline-flex h-1.5 w-1.5 rounded-full ${
+                  enableWebSocket && isConnected
+                    ? "bg-[#39FF14]"
+                    : "bg-yellow-500"
+                }`}
+              />
             </span>
             {enableWebSocket ? (isConnected ? "WS LIVE" : "WS OFF") : "POLLING"}
           </span>
@@ -249,13 +278,19 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
         </div>
       ) : error ? (
         <div className="mb-5 rounded-lg border border-rose-500/20 bg-rose-500/10 px-4 py-3">
-          <p className="text-xs font-semibold text-rose-400">Feed unavailable</p>
-          <p className="mt-0.5 text-[11px] text-rose-400/70 break-all">{error}</p>
+          <p className="text-xs font-semibold text-rose-400">
+            Feed unavailable
+          </p>
+          <p className="mt-0.5 text-[11px] text-rose-400/70 break-all">
+            {error}
+          </p>
         </div>
       ) : (
         <div className="relative mb-5">
           {/* Current price */}
-          <div className={`text-4xl font-black leading-none tracking-tight ${priceColor}`}>
+          <div
+            className={`text-4xl font-black leading-none tracking-tight ${priceColor}`}
+          >
             {formatPrice(data!.price)}
           </div>
 
@@ -332,11 +367,13 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
       {/* ── Footer: last updated ── */}
       <div className="relative mt-4 flex items-center justify-between">
         <span className="text-[9px] text-gray-700 font-mono">
-          {lastRefresh
-            ? `Updated ${formatTime(lastRefresh.toISOString())}`
-            : loading
-            ? <Shimmer className="h-3 w-16 inline-block" />
-            : "—"}
+          {lastRefresh ? (
+            `Updated ${formatTime(lastRefresh.toISOString())}`
+          ) : loading ? (
+            <Shimmer className="h-3 w-16 inline-block" />
+          ) : (
+            "—"
+          )}
         </span>
         <span className="text-[9px] text-gray-700 font-mono tracking-widest">
           STELLARFLOW ORACLE
