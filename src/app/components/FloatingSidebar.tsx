@@ -1,8 +1,9 @@
 "use client";
 
-import React, { memo, useState, useCallback } from "react";
+import React, { memo, useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { throttle } from "lodash-es";
 import {
   LayoutDashboard,
   Database,
@@ -38,6 +39,20 @@ const FloatingSidebar = memo(() => {
       router.prefetch("/contracts");
     }
   }, [router]);
+
+  useEffect(() => {
+    const handleScroll = throttle(() => {
+      // Logic for scroll handler
+      // e.g. checking scroll position
+      console.log("Scrolled", window.scrollY);
+    }, 100);
+
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      handleScroll.cancel();
+    };
+  }, []);
 
   return (
     <nav
