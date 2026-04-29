@@ -1,23 +1,22 @@
 'use client';
 
+import React, { memo, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import React from 'react';
-import { Wallet, Bell, CircleUser, LogOut } from 'lucide-react';
+import { FaWallet, FaBell, FaCircleUser, FaRightFromBracket } from 'react-icons/fa6';
 import { useProgressBar } from './TopLoadingBar';
 
-const Nav = () => {
-  const hasAnomaly = true; // replace with real signal condition (e.g., Coinbase GHS Offline)
+const Nav = memo(() => {
+  const hasAnomaly = true;
   const router = useRouter();
 
-  const handleConnectWallet = async () => {
+  const handleConnectWallet = useCallback(async () => {
     start();
-    // Simulate async wallet connection; replace with real Web3 logic
     await new Promise((resolve) => setTimeout(resolve, 1200));
     done();
     alert('Connect Wallet clicked! (Add your Web3 logic here)');
-  };
+  }, []);
 
   return (
     <main className="sticky top-0 z-50 bg-zinc-950 border-b border-zinc-800">
@@ -91,7 +90,6 @@ const Nav = () => {
 
       </div>
     </main>
-  );
-};
+);
 
-export default Nav;
+export default memo(Nav);

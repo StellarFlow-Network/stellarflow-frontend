@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { memo, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -11,19 +11,33 @@ import {
   Settings,
 } from "lucide-react";
 
-const navItems = [
+const navItems = useMemo(() => [
   { icon: LayoutDashboard, label: "Dashboard", href: "/" },
   { icon: Database, label: "Contracts", href: "/contracts" },
   { icon: LineChart, label: "Analytics", href: "/analytics" },
   { icon: Globe, label: "Governance", href: "/governance" },
   { icon: Settings, label: "Settings", href: "/settings" },
-];
+], []);
 
-export default function FloatingSidebar() {
+const FloatingSidebar = memo(() => {
   const pathname = usePathname();
   const router = useRouter();
   const [active, setActive] = useState(pathname ?? "Dashboard");
   const [hovered, setHovered] = useState<string | null>(null);
+
+  const handleSetActive = useCallback((href: string) => {
+    setActive(href);
+  }, []);
+
+  const handleSetHovered = useCallback((label: string | null) => {
+    setHovered(label);
+  }, []);
+
+  const handlePrefetch = useCallback((href: string) => {
+    if (href === "/contracts") {
+      router.prefetch("/contracts");
+    }
+  }, [router]);
 
   return (
     <nav
@@ -59,19 +73,11 @@ export default function FloatingSidebar() {
             <Link
               href={href}
               prefetch={href === "/contracts" ? false : undefined}
-              onClick={() => setActive(href)}
-              onFocus={() => {
-                if (href === "/contracts") {
-                  router.prefetch("/contracts");
-                }
-              }}
-              onMouseEnter={() => setHovered(label)}
-              onMouseOver={() => {
-                if (href === "/contracts") {
-                  router.prefetch("/contracts");
-                }
-              }}
-              onMouseLeave={() => setHovered(null)}
+              onClick={() => handleSetActive(href)}
+              onFocus={() => handlePrefetch(href)}
+              onMouseEnter={() => handleSetHovered(label)}
+              onMouseOver={() => handlePrefetch(href)}
+              onMouseLeave={() => handleSetHovered(null)}
               className="relative flex items-center justify-center rounded-xl transition-all duration-200"
               style={{
                 width: "44px",
@@ -113,4 +119,6 @@ export default function FloatingSidebar() {
       })}
     </nav>
   );
-}
+});
+
+export default memo(FloatingSidebar);
