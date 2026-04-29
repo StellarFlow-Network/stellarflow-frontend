@@ -4,19 +4,20 @@ import React, { memo, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FaWallet, FaBell, FaCircleUser, FaRightFromBracket } from 'react-icons/fa6';
+import { Wallet, Bell, CircleUser, LogOut } from 'lucide-react';
 import { useProgressBar } from './TopLoadingBar';
 
 const Nav = memo(() => {
   const hasAnomaly = true;
   const router = useRouter();
+  const { start, done } = useProgressBar();
 
   const handleConnectWallet = useCallback(async () => {
     start();
     await new Promise((resolve) => setTimeout(resolve, 1200));
     done();
     alert('Connect Wallet clicked! (Add your Web3 logic here)');
-  }, []);
+  }, [start, done]);
 
   return (
     <main className="sticky top-0 z-50 bg-zinc-950 border-b border-zinc-800">
@@ -24,15 +25,17 @@ const Nav = memo(() => {
         
         {/* Left Side: Logo + Title */}
         <div className="flex items-center gap-3">
-          {/* StellarFlow Logo*/}
+          {/* StellarFlow Logo — optimized WebP with next/image (Issue #46) */}
           <div className="shrink-0">
             <Image
-              src="/sf.png"
+              src="/sf.webp"
               alt="StellarFlow Logo"
               width={48}
               height={48}
               className="rounded-full object-contain"
               priority
+              quality={90}
+              sizes="48px"
             />
           </div>
 
@@ -90,6 +93,9 @@ const Nav = memo(() => {
 
       </div>
     </main>
-);
+  );
+});
 
-export default memo(Nav);
+Nav.displayName = 'Nav';
+
+export default Nav;

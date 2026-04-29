@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { Shimmer } from "@/components/skeletons";
 
 interface RateSparklineCardProps {
   currency: string;

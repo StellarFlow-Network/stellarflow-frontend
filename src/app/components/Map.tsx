@@ -110,7 +110,12 @@ export default function Map() {
   }
 
   return (
-    <div className="relative min-h-[320px] overflow-hidden rounded-[28px] border border-[#A7C957]/30 bg-[#0A1020] p-5 shadow-[0_24px_80px_rgba(2,8,23,0.42)]">
+    <div
+      className="relative min-h-[320px] overflow-hidden rounded-[28px] border border-[#A7C957]/30 bg-[#0A1020] p-5 shadow-[0_24px_80px_rgba(2,8,23,0.42)]"
+      // @ts-expect-error — fetchpriority is a valid HTML attribute but not yet in React types
+      fetchpriority="high"
+      data-lcp-element="network-map"
+    >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,rgba(217,249,157,0.12),transparent_35%),radial-gradient(circle_at_85%_80%,rgba(96,165,250,0.12),transparent_40%)]" />
       <div className="relative h-full min-h-[280px] rounded-[24px] border border-white/10 overflow-hidden">
         <div className="w-full h-full">
