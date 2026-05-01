@@ -20,6 +20,32 @@
   --color-neon-green: #39FF14;
   --color-oracle-navy: #0A0F1E;
   --color-oracle-border: #1B2A3B;
+
+  /* GPU-Accelerated pulse/ping to prevent layout recalculations */
+  --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-ping: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1) translateZ(0);
+    }
+    50% {
+      opacity: 0.5;
+      transform: scale(0.9) translateZ(0);
+    }
+  }
+
+  @keyframes ping {
+    0% {
+      transform: scale(1) translateZ(0);
+      opacity: 1;
+    }
+    75%, 100% {
+      transform: scale(2) translateZ(0);
+      opacity: 0;
+    }
+  }
 }
 
 body {
