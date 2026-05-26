@@ -13,6 +13,7 @@ import {
   CheckCircle2, 
   AlertTriangle 
 } from 'lucide-react';
+import { CONTRACT_HEALTH_ICON_VARIANTS } from '@/lib/classNameVariants';
 
 export default function ContractsPage() {
   const [isHalted, setIsHalted] = useState(false);
@@ -151,20 +152,22 @@ export default function ContractsPage() {
 
 // --- Sub-components ---
 
-function HealthItem({ label, value, status }: { label: string, value: string, status: 'safe' | 'warning' | 'error' }) {
-  const icons = {
-    safe: <CheckCircle2 size={14} className="text-green-500" />,
-    warning: <AlertTriangle size={14} className="text-yellow-500" />,
-    error: <AlertTriangle size={14} className="text-red-500" />,
-  };
+const HealthItem = React.memo(function HealthItem({ label, value, status }: { label: string, value: string, status: 'safe' | 'warning' | 'error' }) {
+  const iconComponent = status === 'safe' 
+    ? <CheckCircle2 size={14} className={CONTRACT_HEALTH_ICON_VARIANTS[status]} />
+    : <AlertTriangle size={14} className={CONTRACT_HEALTH_ICON_VARIANTS[status]} />;
 
   return (
     <div className="flex justify-between items-center">
       <div className="text-xs text-gray-300">{label}</div>
       <div className="flex items-center gap-2">
         <span className="text-xs font-mono text-gray-500">{value}</span>
-        {icons[status]}
+        {iconComponent}
       </div>
     </div>
   );
-}
+}, (prev, next) => 
+  prev.label === next.label && 
+  prev.value === next.value && 
+  prev.status === next.status
+);

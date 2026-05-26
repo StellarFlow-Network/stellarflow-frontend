@@ -15,6 +15,13 @@ import {
   EyeOff, 
   Copy 
 } from 'lucide-react';
+import { 
+  CONSUMER_TIER_VARIANTS, 
+  CONSUMER_TIER_BADGE_CLASS,
+  CONSUMER_STATUS_TEXT_VARIANTS,
+  CONSUMER_STATUS_DOT_VARIANTS,
+  getBalanceColorClass,
+} from '@/lib/classNameVariants';
 
 // --- Types ---
 interface Consumer {
@@ -145,23 +152,13 @@ export default function ConsumersPage() {
                     <div className="text-xs text-gray-500 font-mono">{consumer.contractAddress}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                      consumer.tier === 'Enterprise' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
-                      consumer.tier === 'Developer' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
-                      'bg-gray-500/10 text-gray-400 border border-gray-500/20'
-                    }`}>
+                    <span className={`${CONSUMER_TIER_BADGE_CLASS} ${CONSUMER_TIER_VARIANTS[consumer.tier]}`}>
                       {consumer.tier}
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`flex items-center gap-1.5 text-xs font-medium ${
-                      consumer.status === 'active' ? 'text-green-400' :
-                      consumer.status === 'paused' ? 'text-yellow-500' : 'text-red-400'
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${
-                        consumer.status === 'active' ? 'bg-green-400' :
-                        consumer.status === 'paused' ? 'bg-yellow-500' : 'bg-red-400'
-                      }`} />
+                    <span className={`flex items-center gap-1.5 text-xs font-medium ${CONSUMER_STATUS_TEXT_VARIANTS[consumer.status]}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${CONSUMER_STATUS_DOT_VARIANTS[consumer.status]}`} />
                       <span className="capitalize">{consumer.status}</span>
                     </span>
                   </td>
@@ -169,7 +166,7 @@ export default function ConsumersPage() {
                     {consumer.monthlyRequests}
                   </td>
                   <td className="px-6 py-4">
-                    <div className={`text-sm font-mono ${consumer.balanceXLM < 200 ? 'text-yellow-500 font-bold' : 'text-gray-300'}`}>
+                    <div className={`text-sm font-mono ${getBalanceColorClass(consumer.balanceXLM)}`}>
                       {consumer.balanceXLM.toFixed(2)} XLM
                     </div>
                     {consumer.balanceXLM < 200 && (

@@ -1,4 +1,8 @@
 import React from 'react';
+import {
+  RELAYER_STATUS_BADGE_VARIANTS,
+  RELAYER_STATUS_DOT_VARIANTS,
+} from '@/lib/classNameVariants';
 
 export interface Relayer {
   id: string;
@@ -20,22 +24,10 @@ const StatusBadge = React.memo(
     return (
       <span
         style={{ contain: 'layout', willChange: 'opacity, transform' }}
-        className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium ${
-          status === 'Online'
-            ? 'bg-[#39FF14]/10 text-[#39FF14]'
-            : status === 'Offline'
-            ? 'bg-red-500/10 text-red-400'
-            : 'bg-yellow-500/10 text-yellow-400'
-        }`}
+        className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium ${RELAYER_STATUS_BADGE_VARIANTS[status]}`}
       >
         <span
-          className={`h-1.5 w-1.5 rounded-full ${
-            status === 'Online'
-              ? 'bg-[#39FF14] shadow-[0_0_8px_rgba(57,255,20,0.6)]'
-              : status === 'Offline'
-              ? 'bg-red-400'
-              : 'bg-yellow-400'
-          }`}
+          className={`h-1.5 w-1.5 rounded-full ${RELAYER_STATUS_DOT_VARIANTS[status]}`}
         />
         {status}
       </span>
