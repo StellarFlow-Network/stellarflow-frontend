@@ -34,8 +34,13 @@ interface PriceFeedCardProps {
  * Adjust the endpoint URL to match your actual backend.
  */
 async function fetchNgnXlmFeed(): Promise<PriceFeedData> {
+  return fetchNgnXlmFeedWithSignal();
+}
+
+async function fetchNgnXlmFeedWithSignal(signal?: AbortSignal): Promise<PriceFeedData> {
   const res = await fetch("/api/price-feed/ngn-xlm", {
     cache: "no-store",
+    signal,
   });
 
   if (!res.ok) {
@@ -104,18 +109,21 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   const { isConnected, error: wsError } = useSocketConnection();
   const { lastUpdate: wsUpdate } = useSocketData();
 
-  const load = useCallback(async (manual = false) => {
+  const load = useCallback(async (manual = false, signal?: AbortSignal) => {
     if (manual) {
       setIsRefreshing(true);
       start();
     }
     setError(null);
-
     try {
-      const feed = await fetchNgnXlmFeed();
+      const feed = await fetchNgnXlmFeedWithSignal(signal);
       setData(feed);
       setLastRefresh(new Date());
     } catch (err) {
+      if ((err as any).name === 'AbortError') {
+        // aborted due to unmount or refresh — no need to set error state
+        return;
+      }
       setError(err instanceof Error ? err.message : "Failed to load price feed.");
     } finally {
       setLoading(false);
@@ -163,10 +171,22 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   // Initial fetch + fallback polling (only when WebSocket is disabled or disconnected)
   useEffect(() => {
     if (!enableWebSocket || !isConnected) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      load();
-      const id = setInterval(() => load(), refreshInterval);
-      return () => clearInterval(id);
+      let controller: AbortController | null = new AbortController();
+
+      // Initial load using the controller's signal
+      load(false, controller.signal);
+
+      const id = setInterval(() => {
+        // Abort any in-flight request before starting the next one
+        controller?.abort();
+        controller = new AbortController();
+        load(false, controller.signal);
+      }, refreshInterval);
+
+      return () => {
+        clearInterval(id);
+        controller?.abort();
+      };
     }
   }, [load, refreshInterval, enableWebSocket, isConnected]);
 
