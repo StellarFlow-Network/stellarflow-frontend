@@ -21,16 +21,23 @@ export default function Map() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
+    const { signal } = controller;
+
     const loadMapData = async () => {
       try {
         // Load the simplified Africa network data
-        const response = await fetch("/africa-network-simplified.geojson");
+        const response = await fetch("/africa-network-simplified.geojson", { signal });
         if (!response.ok) {
           throw new Error(`Failed to load map data: ${response.status}`);
         }
         const data = await response.json();
         setGeoData(data);
       } catch (err) {
+        if ((err as any).name === 'AbortError') {
+          // Fetch was aborted because the component unmounted — ignore silently
+          return;
+        }
         setError(err instanceof Error ? err.message : "Unknown error");
       } finally {
         setLoading(false);
@@ -38,6 +45,10 @@ export default function Map() {
     };
 
     loadMapData();
+
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   // Custom style for network regions
