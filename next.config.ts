@@ -1,9 +1,12 @@
 import type { NextConfig } from "next";
 import withPWA from "next-pwa";
+import path from "node:path";
 
 const nextConfig: NextConfig = {
   reactCompiler: false,
-  turbopack: {},
+  turbopack: {
+    root: path.resolve(__dirname),
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],

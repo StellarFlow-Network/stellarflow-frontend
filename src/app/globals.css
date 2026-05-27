@@ -14,8 +14,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: Arial, Helvetica, sans-serif;
+  --font-mono: "Courier New", Consolas, monospace;
   --color-neon-green: #39FF14;
   --color-oracle-navy: #0A0F1E;
   --color-oracle-border: #1B2A3B;

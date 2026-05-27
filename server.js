@@ -3,7 +3,7 @@ const { parse } = require('url');
 const next = require('next');
 const { WebSocketServer } = require('ws');
 
-const dev = process.env.NODE_ENV !== 'production';
+const dev = process.env.NODE_ENV !== 'production' && process.env.npm_lifecycle_event !== 'start';
 const hostname = 'localhost';
 const port = process.env.PORT || 3000;
 

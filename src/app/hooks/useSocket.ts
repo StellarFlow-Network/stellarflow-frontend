@@ -44,8 +44,53 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
   const wsRef = useRef<WebSocket | null>(null)
   const subscribedAssetsRef = useRef<Set<string>>(new Set(assetIds))
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const reconnectAttemptsRef = useRef(0)
+  const maxReconnectAttemptsRef = useRef(maxReconnectAttempts)
+  const reconnectIntervalRef = useRef(reconnectInterval)
+
+  useEffect(() => {
+    subscribedAssetsRef.current = new Set(assetIds)
+  }, [assetIds])
+
+  useEffect(() => {
+    maxReconnectAttemptsRef.current = maxReconnectAttempts
+  }, [maxReconnectAttempts])
+
+  useEffect(() => {
+    reconnectIntervalRef.current = reconnectInterval
+  }, [reconnectInterval])
+
+  const normalizePriceData = useCallback((message: SocketMessage): PriceData | null => {
+    if (!message.data || typeof message.data !== 'object') {
+      return null
+    }
+
+    const current = message.data as Partial<PriceData>
+    const assetPair = current.assetPair ?? message.assetId
+    const price = Number(current.price)
+    const timestamp = Number(current.timestamp ?? message.timestamp)
+
+    if (!assetPair || !Number.isFinite(price) || !Number.isFinite(timestamp)) {
+      return null
+    }
+
+    return {
+      id: current.id ?? assetPair,
+      assetPair,
+      price,
+      decimals: current.decimals ?? 2,
+      source: current.source ?? 'stellarflow-oracle',
+      timestamp,
+      confidenceScore: current.confidenceScore ?? 0,
+      metadata: current.metadata,
+    }
+  }, [])
 
   const connect = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       return
     }
@@ -60,6 +105,7 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
       wsRef.current.onopen = () => {
         setIsConnected(true)
         setError(null)
+        reconnectAttemptsRef.current = 0
         setReconnectAttempts(0)
         
         // Subscribe to initial asset IDs
@@ -76,12 +122,18 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
           const message: SocketMessage = JSON.parse(event.data)
           
           if (message.type === 'price_update' || message.type === 'delta_update') {
-            // Handle delta updates by merging with existing data
-            if (message.type === 'delta_update' && lastUpdate && message.assetId) {
-              setLastUpdate(prev => prev ? { ...prev, ...message.data as PriceData } : message.data as PriceData)
-            } else {
-              setLastUpdate(message.data as PriceData)
+            const nextUpdate = normalizePriceData(message)
+
+            if (!nextUpdate) {
+              console.warn('Ignoring malformed WebSocket price update:', message)
+              return
             }
+
+            setLastUpdate(prev =>
+              message.type === 'delta_update' && prev?.assetPair === nextUpdate.assetPair
+                ? { ...prev, ...nextUpdate }
+                : nextUpdate
+            )
           }
         } catch (err) {
           console.error('Failed to parse WebSocket message:', err)
@@ -92,11 +144,12 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
         setIsConnected(false)
         
         // Attempt reconnection if not manually closed and within max attempts
-        if (!event.wasClean && reconnectAttempts < maxReconnectAttempts) {
-          setReconnectAttempts(prev => prev + 1)
+        if (!event.wasClean && reconnectAttemptsRef.current < maxReconnectAttemptsRef.current) {
+          reconnectAttemptsRef.current += 1
+          setReconnectAttempts(reconnectAttemptsRef.current)
           reconnectTimeoutRef.current = setTimeout(() => {
             connect()
-          }, reconnectInterval)
+          }, reconnectIntervalRef.current)
         }
       }
 
@@ -109,7 +162,7 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
       setError('Failed to establish WebSocket connection')
       console.error('Connection error:', err)
     }
-  }, [lastUpdate, reconnectAttempts, maxReconnectAttempts, reconnectInterval])
+  }, [normalizePriceData])
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -127,6 +180,7 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
 
   const reconnect = useCallback(() => {
     disconnect()
+    reconnectAttemptsRef.current = 0
     setReconnectAttempts(0)
     setTimeout(connect, 100)
   }, [disconnect, connect])

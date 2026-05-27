@@ -16,6 +16,12 @@ export default function WebSocketTest() {
     enableDeltaUpdates: true,
   })
 
+  const hasValidUpdate =
+    lastUpdate &&
+    typeof lastUpdate.assetPair === 'string' &&
+    Number.isFinite(lastUpdate.price) &&
+    Number.isFinite(lastUpdate.timestamp)
+
   return (
     <div className="p-4 bg-gray-900 text-white rounded-lg max-w-md mx-auto mt-8">
       <h2 className="text-xl font-bold mb-4">WebSocket Delta Test</h2>
@@ -37,7 +43,7 @@ export default function WebSocketTest() {
           </div>
         )}
         
-        {lastUpdate && (
+        {hasValidUpdate && (
           <div className="px-3 py-1 bg-blue-900 rounded">
             <div className="font-semibold">Last Update:</div>
             <div className="text-xs">
