@@ -20,8 +20,8 @@ function Map() {
   const [geoData, setGeoData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { error, setError } = useErrorTimeout({ timeoutMs: 5000 });
-
-export default memo(Map);
+  useEffect(() => {
+    const loadMapData = async () => {
       try {
         // Load the simplified Africa network data
         const response = await fetch("/africa-network-simplified.geojson");
@@ -147,3 +147,5 @@ export default memo(Map);
     </div>
   );
 }
+
+export default memo(Map);

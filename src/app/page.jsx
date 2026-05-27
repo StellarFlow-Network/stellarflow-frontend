@@ -91,33 +91,25 @@ export default function DashboardPage() {
 
           {/* Modular Stats Cards Section */}
           <section className="min-w-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="aspect-[16/10]">
-              <ModularStatsCard
-                label="Network Throughput"
-                value={1245670}
-                trend={12.5}
-                unit="TPS"
-              />
-            </div>
-            <div className="aspect-[16/10]">
-              <ModularStatsCard
-                label="Total Value Locked"
-                value={85432000}
-                trend={-2.4}
-                unit="USD"
-              />
-            </div>
-            <div className="aspect-[16/10]">
-              <ModularStatsCard label="Active Nodes" value={1240} trend={0.8} />
-            </div>
-            <div className="aspect-[16/10]">
-              <ModularStatsCard
-                label="Oracle Accuracy"
-                value={99.98}
-                trend={0.01}
-                unit="%"
-              />
-            </div>
+            <ModularStatsCard
+              label="Network Throughput"
+              value={1245670}
+              trend={12.5}
+              unit="TPS"
+            />
+            <ModularStatsCard
+              label="Total Value Locked"
+              value={85432000}
+              trend={-2.4}
+              unit="USD"
+            />
+            <ModularStatsCard label="Active Nodes" value={1240} trend={0.8} />
+            <ModularStatsCard
+              label="Oracle Accuracy"
+              value={99.98}
+              trend={0.01}
+              unit="%"
+            />
           </section>
 
           {/* Local FX rates with memoized sparklines */}
