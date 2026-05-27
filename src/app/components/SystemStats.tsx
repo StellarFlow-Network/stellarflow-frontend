@@ -1,11 +1,15 @@
 import React from "react";
-import Breadcrumb from "./Breadcrumb";
+import { Shimmer } from "@/components/skeletons/Shimmer";
 import GlobalHealthIndicator from "./GlobalHealthIndicator";
 
 interface StatsCardProps {
   label: string;
   value: string | number;
   showDot?: boolean;
+}
+
+interface SystemStatsProps {
+  loading?: boolean;
 }
 
 const StatsCard = ({ label, value, showDot = false }: StatsCardProps) => {
@@ -29,7 +33,47 @@ const StatsCard = ({ label, value, showDot = false }: StatsCardProps) => {
   );
 };
 
-const SystemStats = () => {
+const SystemStats = ({ loading = false }: SystemStatsProps) => {
+  if (loading) {
+    return (
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6">
+        <h2 className="text-white text-xl font-bold mb-4 tracking-tight">
+          Oracle Status
+        </h2>
+
+        <div className="bg-[#0A0F1E] border border-[#1B2A3B] border-t-2 border-t-[#39FF14] rounded-lg overflow-hidden shadow-2xl">
+          <div className="px-6 py-4">
+            <div className="rounded-3xl border border-[#1B2A3B] bg-[#071018] p-5">
+              <div className="flex flex-col gap-4">
+                <Shimmer className="h-4 w-36 rounded-full" />
+                <div className="flex flex-wrap items-center gap-3">
+                  <Shimmer className="h-6 w-24 rounded-full" />
+                  <Shimmer className="h-6 w-20 rounded-full" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="h-px bg-gradient-to-r from-[#39FF14]/60 via-[#39FF14]/20 to-transparent mx-6" />
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-4 px-6 py-8">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div
+                key={index}
+                className="flex flex-col gap-4 rounded-3xl border border-[#1B2A3B] bg-[#071018] p-5"
+              >
+                <Shimmer className="h-3 w-28 rounded-full" />
+                <Shimmer className="h-12 w-32 rounded-md" />
+              </div>
+            ))}
+          </div>
+
+          <div className="h-px bg-[#1B2A3B] mx-6 mb-6" />
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="w-full max-w-7xl mx-auto px-4 sm:px-6">
       {/* Section label */}

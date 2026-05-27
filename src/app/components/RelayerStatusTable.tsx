@@ -1,4 +1,5 @@
 import React from 'react';
+import { Shimmer } from '@/components/skeletons/Shimmer';
 
 export interface Relayer {
   id: string;
@@ -9,6 +10,7 @@ export interface Relayer {
 
 export interface RelayerStatusTableProps {
   relayers?: Relayer[];
+  loading?: boolean;
 }
 
 const StatusBadge = React.memo(
@@ -42,7 +44,9 @@ const StatusBadge = React.memo(
 
 StatusBadge.displayName = 'StatusBadge';
 
-export default function RelayerStatusTable({ relayers = [] }: RelayerStatusTableProps) {
+export default function RelayerStatusTable({ relayers = [], loading = false }: RelayerStatusTableProps) {
+  const placeholderRows = Array.from({ length: 3 }, (_, index) => index);
+
   return (
     <div className="w-full overflow-hidden rounded-xl border border-white/10 bg-black/40 backdrop-blur-md">
       <table className="w-full table-fixed text-left text-sm text-white/80">
@@ -54,18 +58,35 @@ export default function RelayerStatusTable({ relayers = [] }: RelayerStatusTable
           </tr>
         </thead>
         <tbody className="divide-y divide-white/5">
-          {relayers.map((relayer) => (
-            <tr key={relayer.id} className="transition-colors hover:bg-white/[0.02]">
-              <td className="p-4 font-medium text-white">{relayer.name}</td>
-              <td className="p-4">
-                <StatusBadge status={relayer.status} />
-              </td>
-              <td className="p-4 text-right font-mono text-white/70">
-                {relayer.latency} ms
-              </td>
-            </tr>
-          ))}
-          {relayers.length === 0 && (
+          {loading &&
+            placeholderRows.map((index) => (
+              <tr key={`placeholder-${index}`} className="transition-colors hover:bg-white/[0.02]">
+                <td className="p-4">
+                  <Shimmer className="h-4 w-40 rounded-md" />
+                </td>
+                <td className="p-4">
+                  <div className="inline-flex items-center gap-2">
+                    <Shimmer className="h-5 w-20 rounded-full" />
+                  </div>
+                </td>
+                <td className="p-4 text-right font-mono text-white/70">
+                  <Shimmer className="h-4 w-16 rounded-md mx-auto" />
+                </td>
+              </tr>
+            ))}
+          {!loading &&
+            relayers.map((relayer) => (
+              <tr key={relayer.id} className="transition-colors hover:bg-white/[0.02]">
+                <td className="p-4 font-medium text-white">{relayer.name}</td>
+                <td className="p-4">
+                  <StatusBadge status={relayer.status} />
+                </td>
+                <td className="p-4 text-right font-mono text-white/70">
+                  {relayer.latency} ms
+                </td>
+              </tr>
+            ))}
+          {!loading && relayers.length === 0 && (
             <tr>
               <td colSpan={3} className="p-8 text-center text-white/40">
                 No relayers found.

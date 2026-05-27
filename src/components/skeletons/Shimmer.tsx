@@ -1,23 +1,24 @@
 "use client";
 
-import { motion } from 'framer-motion';
 import React from 'react';
 
 /**
  * Base shimmer animation used by all skeleton components.
- * Renders a light-to-dark-to-light sweep using framer-motion.
+ * Renders a lightweight CSS-based shimmer for inline loading placeholders.
  */
 export function Shimmer({ className = "" }: { className?: string }) {
   return (
-    <div className={`relative overflow-hidden rounded ${className}`}
-         style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
-      <motion.div
+    <div
+      className={`relative overflow-hidden rounded ${className}`}
+      style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
+    >
+      <div
         className="absolute inset-0"
         style={{
           background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%)',
+          animation: 'shimmer 1.4s linear infinite',
+          willChange: 'transform',
         }}
-        animate={{ x: ['-100%', '100%'] }}
-        transition={{ duration: 1.4, repeat: Infinity, ease: 'linear' }}
       />
     </div>
   );

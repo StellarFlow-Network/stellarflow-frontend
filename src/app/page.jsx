@@ -10,7 +10,7 @@ import SystemStats from "./components/SystemStats";
 import ModularStatsCard from "./components/ModularStatsCard";
 import RelayerStatusTable from "./components/RelayerStatusTable";
 import WebSocketTest from "./components/test/WebSocketTest";
-import { Shimmer, MapSkeleton, RateSparklineSkeleton } from "@/components/skeletons";
+import { MetricCardSkeleton, Shimmer, MapSkeleton, RateSparklineSkeleton } from "@/components/skeletons";
 
 const LiveNetworkMap = dynamic(() => import("@/app/components/Map"), {
   ssr: false,
@@ -56,6 +56,8 @@ export default function DashboardPage() {
     return () => cancelAnimationFrame(id);
   }, []);
 
+  const pageLoading = !cardsReady;
+
   return (
     <div className="min-h-screen bg-[#020817] text-white selection:bg-[#CBF34D]/30">
       <Nav />
@@ -65,14 +67,20 @@ export default function DashboardPage() {
       <main className="pl-24 pr-8 py-10 md:py-16">
         <div className="max-w-6xl mx-auto space-y-12">
           {/* System At-A-Glance Stats Section */}
-          <SystemStats />
+          <SystemStats loading={pageLoading} />
 
           {/* Modular Stats Cards Section */}
           <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="aspect-[16/10]"><ModularStatsCard label="Network Throughput" value={1245670} trend={12.5} unit="TPS" /></div>
-            <div className="aspect-[16/10]"><ModularStatsCard label="Total Value Locked" value={85432000} trend={-2.4} unit="USD" /></div>
-            <div className="aspect-[16/10]"><ModularStatsCard label="Active Nodes" value={1240} trend={0.8} /></div>
-            <div className="aspect-[16/10]"><ModularStatsCard label="Oracle Accuracy" value={99.98} trend={0.01} unit="%" /></div>
+            {pageLoading ? (
+              <MetricCardSkeleton count={4} />
+            ) : (
+              <>
+                <div className="aspect-[16/10]"><ModularStatsCard label="Network Throughput" value={1245670} trend={12.5} unit="TPS" /></div>
+                <div className="aspect-[16/10]"><ModularStatsCard label="Total Value Locked" value={85432000} trend={-2.4} unit="USD" /></div>
+                <div className="aspect-[16/10]"><ModularStatsCard label="Active Nodes" value={1240} trend={0.8} /></div>
+                <div className="aspect-[16/10]"><ModularStatsCard label="Oracle Accuracy" value={99.98} trend={0.01} unit="%" /></div>
+              </>
+            )}
           </section>
 
           {/* Local FX rates with memoized sparklines */}
@@ -108,7 +116,7 @@ export default function DashboardPage() {
           {/* Relayer Status Table */}
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-white uppercase tracking-wider mb-4">Relayer Network Status</h2>
-            <RelayerStatusTable relayers={mockRelayers} />
+            <RelayerStatusTable relayers={mockRelayers} loading={pageLoading} />
           </section>
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-white uppercase tracking-wider mb-4">
