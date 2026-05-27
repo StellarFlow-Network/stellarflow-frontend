@@ -20,7 +20,7 @@ Here is the link to all available pages for the frontend issues. [Design link](h
 
 ### Installation
 ```bash
-git clone [https://github.com/StellarFlow-Network/stellarflow-frontend.git](https://github.com/StellarFlow-Network/stellarflow-frontend.git)
+git clone https://github.com/StellarFlow-Network/stellarflow-frontend.git
 cd stellarflow-frontend
 npm install
 npm run dev
@@ -51,12 +51,14 @@ This repository serves as the central data engine for StellarFlow. It orchestrat
 - **💾 Database**: Scalable PostgreSQL with Prisma ORM[cite: 194].
 
 ## 📂 Project Structure
-```text
+```
+text
 ├── prisma/        # Database schema and migrations [cite: 194]
 ├── src/
 │   ├── routes/    # API Endpoints [cite: 174]
 │   ├── services/  # Business logic (Oracle, Soroban) [cite: 175]
 │   └── utils/     # Helper functions [cite: 176]
+```
 
 Running the Server
 
