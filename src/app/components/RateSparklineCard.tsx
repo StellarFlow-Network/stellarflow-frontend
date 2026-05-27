@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { Shimmer } from "@/components/skeletons";
 
 interface RateSparklineCardProps {
@@ -9,84 +9,6 @@ interface RateSparklineCardProps {
   trend: number;
   sparklineData?: number[];
   loading?: boolean;
-}
-
-function largestTriangleThreeBuckets(data: number[], threshold: number) {
-  if (threshold >= data.length || threshold === 0) {
-    return data.slice();
-  }
-
-  const sampled: number[] = [];
-  const every = (data.length - 2) / (threshold - 2);
-  let a = 0;
-  sampled.push(data[a]);
-
-  for (let i = 0; i < threshold - 2; i += 1) {
-    const avgRangeStart = Math.floor((i + 1) * every) + 1;
-    const avgRangeEnd = Math.min(Math.floor((i + 2) * every) + 1, data.length);
-
-    let avgX = 0;
-    let avgY = 0;
-    const avgRangeLength = avgRangeEnd - avgRangeStart;
-
-    for (let j = avgRangeStart; j < avgRangeEnd; j += 1) {
-      avgX += j;
-      avgY += data[j];
-    }
-
-    if (avgRangeLength > 0) {
-      avgX /= avgRangeLength;
-      avgY /= avgRangeLength;
-    } else {
-      avgX = avgRangeStart;
-      avgY = data[avgRangeStart];
-    }
-
-    const rangeOffs = Math.floor(i * every) + 1;
-    const rangeTo = Math.min(Math.floor((i + 1) * every) + 1, data.length - 1);
-
-    let maxArea = -1;
-    let maxAreaIndex = rangeOffs;
-    const pointAx = a;
-    const pointAy = data[a];
-
-    for (let j = rangeOffs; j < rangeTo; j += 1) {
-      const area = Math.abs(
-        (pointAx - avgX) * (data[j] - pointAy) -
-          (pointAx - j) * (avgY - pointAy)
-      ) * 0.5;
-
-      if (area > maxArea) {
-        maxArea = area;
-        maxAreaIndex = j;
-      }
-    }
-
-    sampled.push(data[maxAreaIndex]);
-    a = maxAreaIndex;
-  }
-
-  sampled.push(data[data.length - 1]);
-  return sampled;
-}
-
-function useMediaQuery(query: string) {
-  const [matches, setMatches] = useState(() =>
-    typeof window !== "undefined" ? window.matchMedia(query).matches : false
-  );
-
-  useEffect(() => {
-    const mediaQueryList = window.matchMedia(query);
-    const listener = (event: MediaQueryListEvent) => setMatches(event.matches);
-
-    mediaQueryList.addEventListener("change", listener);
-
-    return () => {
-      mediaQueryList.removeEventListener("change", listener);
-    };
-  }, [query]);
-
-  return matches;
 }
 
 const MiniSparkline = React.memo(function MiniSparkline({
@@ -116,7 +38,12 @@ const MiniSparkline = React.memo(function MiniSparkline({
   }, [data]);
 
   return (
-    <svg viewBox="0 0 120 32" className="h-8 w-full overflow-visible" role="img" aria-label="Sparkline chart">
+    <svg
+      viewBox="0 0 120 32"
+      className="h-8 w-full overflow-visible"
+      role="img"
+      aria-label="Sparkline chart"
+    >
       <polyline
         fill="none"
         stroke="currentColor"
@@ -136,23 +63,17 @@ const RateSparklineCard: React.FC<RateSparklineCardProps> = ({
   sparklineData = [],
   loading = false,
 }) => {
-  const isMobile = useMediaQuery("(max-width: 767px)");
   const isPositive = trend >= 0;
-
-  const displayData = useMemo(
-    () =>
-      isMobile ? largestTriangleThreeBuckets(sparklineData, 20) : sparklineData,
-    [isMobile, sparklineData]
-  );
+  const displayData = sparklineData;
 
   const formattedRate = useMemo(
     () => `${currency} ${rate.toFixed(2)}`,
-    [currency, rate]
+    [currency, rate],
   );
 
   const trendLabel = useMemo(
     () => `${isPositive ? "▲" : "▼"} ${Math.abs(trend).toFixed(2)}%`,
-    [isPositive, trend]
+    [isPositive, trend],
   );
 
   const trendClasses = isPositive
@@ -186,10 +107,16 @@ const RateSparklineCard: React.FC<RateSparklineCardProps> = ({
     <div className="aspect-[16/10] rounded-3xl border border-[#1B2A3B] bg-[#08111E] p-5 shadow-lg shadow-black/20 transition duration-300 hover:border-[#39FF14]/40">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-gray-500">{currency}</p>
-          <p className="mt-2 text-2xl font-black text-white tracking-tight">{formattedRate}</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
+            {currency}
+          </p>
+          <p className="mt-2 text-2xl font-black text-white tracking-tight">
+            {formattedRate}
+          </p>
         </div>
-        <span className={`inline-flex items-center rounded-full px-3 py-1 text-[10px] font-semibold ${trendClasses}`}>
+        <span
+          className={`inline-flex items-center rounded-full px-3 py-1 text-[10px] font-semibold ${trendClasses}`}
+        >
           {trendLabel}
         </span>
       </div>

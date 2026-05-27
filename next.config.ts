@@ -1,20 +1,12 @@
 import type { NextConfig } from "next";
-import withPWA from "next-pwa";
 
-const nextConfig: NextConfig = {
-  reactCompiler: false,
-  turbopack: {},
-  images: {
-    formats: ['image/avif', 'image/webp'],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256],
-  },
-  experimental: {
-    optimizePackageImports: ['lucide-react'],
-  },
-};
+// 1. Initialize the Bundle Analyzer plugin
+const withBundleAnalyzer = require("@next/bundle-analyzer")({
+  enabled: process.env.ANALYZE === "true",
+});
 
-const pwaConfig = withPWA({
+// 2. Initialize the PWA plugin with its production-ready caching rules
+const withPWA = require("next-pwa")({
   dest: "public",
   register: true,
   skipWaiting: true,
@@ -46,4 +38,19 @@ const pwaConfig = withPWA({
   ],
 });
 
-export default pwaConfig(nextConfig);
+// 3. Your optimized Next.js base configurations
+const nextConfig: NextConfig = {
+  reactCompiler: false,
+  turbopack: {},
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256],
+  },
+  experimental: {
+    optimizePackageImports: ['lucide-react'],
+  },
+};
+
+// 4. Chain both plugins together sequentially to export the final configuration
+export default withPWA(withBundleAnalyzer(nextConfig));

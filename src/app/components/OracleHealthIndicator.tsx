@@ -79,4 +79,4 @@ const OracleHealthIndicator = ({ status = "Online" }: OracleHealthIndicatorProps
   );
 };
 
-export default OracleHealthIndicator;
+export default React.memo(OracleHealthIndicator);

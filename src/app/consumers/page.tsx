@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Users, 
   Key, 
@@ -15,6 +15,7 @@ import {
   EyeOff, 
   Copy 
 } from 'lucide-react';
+import { useTransformedCustomAddressField } from '@/app/hooks/useTransformedData';
 
 // --- Types ---
 interface Consumer {
@@ -29,15 +30,21 @@ interface Consumer {
 
 // --- Mock Data ---
 const MOCK_CONSUMERS: Consumer[] = [
-  { id: 'C-01', projectName: 'Zazu Lending Pool', contractAddress: 'CC7V...88NN', tier: 'Enterprise', status: 'active', monthlyRequests: '4.2M', balanceXLM: 2500.00 },
-  { id: 'C-02', projectName: 'NairaStable DEX', contractAddress: 'GAB3...K992', tier: 'Enterprise', status: 'active', monthlyRequests: '12.8M', balanceXLM: 540.50 },
-  { id: 'C-03', projectName: 'AfriSwap Mobile', contractAddress: 'GDT4...77AA', tier: 'Developer', status: 'active', monthlyRequests: '450K', balanceXLM: 120.00 },
-  { id: 'C-04', projectName: 'Test Sandbox', contractAddress: 'GDD2...3311', tier: 'Staging', status: 'paused', monthlyRequests: '12K', balanceXLM: 0.00 },
+  { id: 'C-01', projectName: 'Zazu Lending Pool', contractAddress: 'CC7VHQGGURUNXSVWFR7RCGZV5BVMODXX75YMMV5AGJGKGHBNEA88NN', tier: 'Enterprise', status: 'active', monthlyRequests: '4.2M', balanceXLM: 2500.00 },
+  { id: 'C-02', projectName: 'NairaStable DEX', contractAddress: 'GAB3FNZOMCXKKUZCWZZG5J6MFMBXVFBXKTMZK992QYJR7VBCDEF7G9JK', tier: 'Enterprise', status: 'active', monthlyRequests: '12.8M', balanceXLM: 540.50 },
+  { id: 'C-03', projectName: 'AfriSwap Mobile', contractAddress: 'GDT4VHZLKMNPQRSXYZABCDEFGHIJKLM77AA', tier: 'Developer', status: 'active', monthlyRequests: '450K', balanceXLM: 120.00 },
+  { id: 'C-04', projectName: 'Test Sandbox', contractAddress: 'GDD2VHZLKMNPQRSXYZABCDEFGHIJKLM3311', tier: 'Staging', status: 'paused', monthlyRequests: '12K', balanceXLM: 0.00 },
 ];
 
 export default function ConsumersPage() {
   const [showSecret, setShowSecret] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
+  const transformedConsumers = useMemo(
+    () => useTransformedCustomAddressField(MOCK_CONSUMERS, 'contractAddress'),
+    []
+  );
 
   const handleCopy = () => {
     setCopied(true);
@@ -138,30 +145,21 @@ export default function ConsumersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800">
-              {MOCK_CONSUMERS.map((consumer) => (
+              {transformedConsumers.map((consumer) => (
                 <tr key={consumer.id} className="hover:bg-[#1c2128] transition-colors group">
                   <td className="px-6 py-4">
                     <div className="font-medium text-gray-200">{consumer.projectName}</div>
-                    <div className="text-xs text-gray-500 font-mono">{consumer.contractAddress}</div>
+                    {/* PERFORMANCE OPTIMIZATION: Use pre-computed shortened address instead of runtime string slicing */}
+                    <div className="text-xs text-gray-500 font-mono">{consumer.shortenedAddress}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                      consumer.tier === 'Enterprise' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
-                      consumer.tier === 'Developer' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
-                      'bg-gray-500/10 text-gray-400 border border-gray-500/20'
-                    }`}>
+                    <span className={`${CONSUMER_TIER_BADGE_CLASS} ${CONSUMER_TIER_VARIANTS[consumer.tier]}`}>
                       {consumer.tier}
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`flex items-center gap-1.5 text-xs font-medium ${
-                      consumer.status === 'active' ? 'text-green-400' :
-                      consumer.status === 'paused' ? 'text-yellow-500' : 'text-red-400'
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${
-                        consumer.status === 'active' ? 'bg-green-400' :
-                        consumer.status === 'paused' ? 'bg-yellow-500' : 'bg-red-400'
-                      }`} />
+                    <span className={`flex items-center gap-1.5 text-xs font-medium ${CONSUMER_STATUS_TEXT_VARIANTS[consumer.status]}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${CONSUMER_STATUS_DOT_VARIANTS[consumer.status]}`} />
                       <span className="capitalize">{consumer.status}</span>
                     </span>
                   </td>
@@ -169,7 +167,7 @@ export default function ConsumersPage() {
                     {consumer.monthlyRequests}
                   </td>
                   <td className="px-6 py-4">
-                    <div className={`text-sm font-mono ${consumer.balanceXLM < 200 ? 'text-yellow-500 font-bold' : 'text-gray-300'}`}>
+                    <div className={`text-sm font-mono ${getBalanceColorClass(consumer.balanceXLM)}`}>
                       {consumer.balanceXLM.toFixed(2)} XLM
                     </div>
                     {consumer.balanceXLM < 200 && (

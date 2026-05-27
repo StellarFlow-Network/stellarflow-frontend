@@ -62,4 +62,4 @@ const SystemStats = () => {
   );
 };
 
-export default SystemStats;
+export default React.memo(SystemStats);

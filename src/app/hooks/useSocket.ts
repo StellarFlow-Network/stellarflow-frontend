@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { PriceData } from '@/types'
+import { useErrorTimeout } from './useErrorTimeout'
 
 interface SocketMessage {
   type: 'price_update' | 'delta_update'
@@ -15,6 +16,12 @@ export interface UseSocketOptions {
   enableDeltaUpdates?: boolean
   reconnectInterval?: number
   maxReconnectAttempts?: number
+  /**
+   * Timeout in milliseconds before automatically clearing WebSocket errors.
+   * Set to 0 to disable auto-clear. Defaults to 5000ms.
+   * @default 5000
+   */
+  errorTimeoutMs?: number
 }
 
 interface UseSocketReturn {
@@ -33,11 +40,12 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
     assetIds = [],
     reconnectInterval = 3000,
     maxReconnectAttempts = 5,
+    errorTimeoutMs = 5000,
   } = options
 
   const [isConnected, setIsConnected] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<PriceData | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const { error, setError } = useErrorTimeout({ timeoutMs: errorTimeoutMs })
   const [reconnectAttempts, setReconnectAttempts] = useState(0)
 
   const wsRef = useRef<WebSocket | null>(null)

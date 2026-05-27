@@ -1,6 +1,6 @@
-'use client'
+"use client"
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState, memo } from 'react'
 import { useSocket } from '../../hooks/useSocket'
 
 interface PriceData {
@@ -9,7 +9,7 @@ interface PriceData {
   timestamp: number
 }
 
-export default function LivePrices({ initialData }: any) {
+function LivePrices({ initialData }: any) {
   const [data, setData] = useState<PriceData[]>(initialData || [])
   
   // Subscribe to multiple asset updates
@@ -58,3 +58,5 @@ export default function LivePrices({ initialData }: any) {
     </div>
   )
 }
+
+export default memo(LivePrices);

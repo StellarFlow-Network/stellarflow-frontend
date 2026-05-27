@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useDebounce } from '../hooks/useDebounce';
 import { 
   ShieldCheck, 
   Coins, 
@@ -13,6 +14,11 @@ import {
   TrendingUp, 
   ArrowUpRight 
 } from 'lucide-react';
+import {
+  getHealthBarColor,
+  STAKER_SLASHING_NO_EVENTS,
+  STAKER_SLASHING_WITH_EVENTS,
+} from '@/lib/classNameVariants';
 
 // --- Types ---
 interface StakerNode {
@@ -27,14 +33,27 @@ interface StakerNode {
 
 // --- Mock Data ---
 const MOCK_STAKERS: StakerNode[] = [
-  { id: 'N-401', nodeName: 'VTPass Lagos Edge', operatorAddress: 'GA5T...BC9A', stakedAmountXLM: 50000.00, accruedRewardsXLM: 1420.50, totalSlashingEvents: 0, healthFactor: 100 },
-  { id: 'N-402', nodeName: 'Binance Pan-Africa Node', operatorAddress: 'GBC2...LOPA', stakedAmountXLM: 75000.00, accruedRewardsXLM: 2105.00, totalSlashingEvents: 1, healthFactor: 84 },
-  { id: 'N-403', nodeName: 'Coinbase Global Relay', operatorAddress: 'GDRT...1122', stakedAmountXLM: 120000.00, accruedRewardsXLM: 4890.75, totalSlashingEvents: 0, healthFactor: 99 },
-  { id: 'N-404', nodeName: 'Accra Frontier Oracle', operatorAddress: 'GCXX...7766', stakedAmountXLM: 25000.00, accruedRewardsXLM: 310.20, totalSlashingEvents: 3, healthFactor: 62 },
+  { id: 'N-401', nodeName: 'VTPass Lagos Edge', operatorAddress: 'GA5THZLKMNPQRSXYZABCDEFGHIJKLMNBC9A', stakedAmountXLM: 50000.00, accruedRewardsXLM: 1420.50, totalSlashingEvents: 0, healthFactor: 100 },
+  { id: 'N-402', nodeName: 'Binance Pan-Africa Node', operatorAddress: 'GBC2VHZLKMNPQRSXYZABCDEFGHIJKLMLOPA', stakedAmountXLM: 75000.00, accruedRewardsXLM: 2105.00, totalSlashingEvents: 1, healthFactor: 84 },
+  { id: 'N-403', nodeName: 'Coinbase Global Relay', operatorAddress: 'GDRTVHZLKMNPQRSXYZABCDEFGHIJKLM1122', stakedAmountXLM: 120000.00, accruedRewardsXLM: 4890.75, totalSlashingEvents: 0, healthFactor: 99 },
+  { id: 'N-404', nodeName: 'Accra Frontier Oracle', operatorAddress: 'GCXXVHZLKMNPQRSXYZABCDEFGHIJKLM7766', stakedAmountXLM: 25000.00, accruedRewardsXLM: 310.20, totalSlashingEvents: 3, healthFactor: 62 },
 ];
 
 export default function StakingPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 250);
+
+  const displayedStakers = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    if (!q) return MOCK_STAKERS;
+    return MOCK_STAKERS.filter(s => s.nodeName.toLowerCase().includes(q) || s.operatorAddress.toLowerCase().includes(q));
+  }, [debouncedSearch]);
+
+  // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
+  const transformedStakers = useMemo(
+    () => useTransformedCustomAddressField(MOCK_STAKERS, 'operatorAddress'),
+    []
+  );
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
@@ -95,11 +114,12 @@ export default function StakingPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800">
-              {MOCK_STAKERS.map((node) => (
+              {displayedStakers.map((node) => (
                 <tr key={node.id} className="hover:bg-[#1c2128] transition-colors group">
                   <td className="px-6 py-4">
                     <div className="font-medium text-gray-200">{node.nodeName}</div>
-                    <div className="text-xs text-gray-500 font-mono">{node.operatorAddress}</div>
+                    {/* PERFORMANCE OPTIMIZATION: Use pre-computed shortened address instead of runtime string slicing */}
+                    <div className="text-xs text-gray-500 font-mono">{node.shortenedAddress}</div>
                   </td>
                   <td className="px-6 py-4 text-sm font-mono text-gray-300">
                     {node.stakedAmountXLM.toLocaleString()} XLM
@@ -111,7 +131,7 @@ export default function StakingPage() {
                     <div className="flex items-center gap-2">
                       <div className="w-16 bg-gray-700 h-1.5 rounded-full overflow-hidden">
                         <div 
-                          className={`h-full ${node.healthFactor > 85 ? 'bg-emerald-500' : node.healthFactor > 70 ? 'bg-yellow-500' : 'bg-red-500'}`} 
+                          className={`h-full ${getHealthBarColor(node.healthFactor)}`} 
                           style={{ width: `${node.healthFactor}%` }} 
                         />
                       </div>
@@ -120,7 +140,9 @@ export default function StakingPage() {
                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-0.5 rounded text-xs font-mono font-bold ${
-                      node.totalSlashingEvents === 0 ? 'bg-gray-800 text-gray-400' : 'bg-red-500/10 text-red-400 border border-red-500/10'
+                      node.totalSlashingEvents === 0 
+                        ? STAKER_SLASHING_NO_EVENTS 
+                        : STAKER_SLASHING_WITH_EVENTS
                     }`}>
                       {node.totalSlashingEvents} slash events
                     </span>

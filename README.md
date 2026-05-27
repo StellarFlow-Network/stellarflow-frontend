@@ -98,3 +98,18 @@ cargo test
 Acknowledgments
 Built with ❤️ for the Stellar Africa community.
 ```
+
+## 📦 Bundle Analysis & Optimization
+
+Description
+Unchecked framework optimization configurations risk leaving non-essential code paths active in the deployment bundle. Use the bundle analysis tooling below to inspect and eliminate redundant code before deploying to test or production networks.
+
+Quick checks
+- **Install dev deps**: Run `npm install --save-dev @next/bundle-analyzer cross-env webpack-bundle-analyzer`.
+- **Run analysis**: `npm run analyze` — this sets `ANALYZE=true` and runs `next build`. The analyzer will produce an interactive report (usually available in `.next/analyze` or printed links in stdout).
+
+Technical requirements
+- **Run explicit build analysis** before testnet deployment to identify large or duplicated modules.
+- **Audit vendor bundles** and remove unused imports or dynamic-import where feasible.
+
+If you find this useful, please star the project and leave a review! 😁

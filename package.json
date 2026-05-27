@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "analyze": "cross-env ANALYZE=true npm run build"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.100.5",
@@ -36,5 +37,9 @@
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
     "typescript": "^5"
+  ,
+    "@next/bundle-analyzer": "^2.0.0",
+    "cross-env": "^7.0.3",
+    "webpack-bundle-analyzer": "^4.9.0"
   }
 }
