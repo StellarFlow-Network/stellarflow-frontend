@@ -14,6 +14,7 @@ import {
   Wallet 
 } from 'lucide-react';
 import { useTransformedCustomAddressField } from '@/app/hooks/useTransformedData';
+import { useFreighterLock } from '@/app/hooks/useFreighterLock';
 
 // --- Types ---
 interface Proposal {
@@ -37,12 +38,25 @@ const MOCK_PROPOSALS: Proposal[] = [
 
 export default function GovernancePage() {
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'archived'>('all');
+  const { isPending, withLock } = useFreighterLock();
 
   // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
   const transformedProposals = useMemo(
     () => useTransformedCustomAddressField(MOCK_PROPOSALS, 'proposer'),
     []
   );
+
+  const handleConnectWallet = () =>
+    withLock(async () => {
+      // TODO: replace with real Freighter getPublicKey() call
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+  const handleSubmitProposal = () =>
+    withLock(async () => {
+      // TODO: replace with real Freighter signTransaction() call
+      await new Promise((r) => setTimeout(r, 0));
+    });
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
@@ -54,11 +68,19 @@ export default function GovernancePage() {
           <h1 className="text-3xl font-bold tracking-tight">Governance & Proposals</h1>
         </div>
         <div className="flex gap-3">
-          <button className="flex items-center gap-2 bg-[#161b22] border border-gray-800 hover:bg-gray-800 text-gray-300 px-4 py-2 rounded-lg transition-all text-sm font-medium">
+          <button
+            onClick={handleConnectWallet}
+            disabled={isPending}
+            className="flex items-center gap-2 bg-[#161b22] border border-gray-800 hover:bg-gray-800 text-gray-300 px-4 py-2 rounded-lg transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <Wallet size={16} className="text-purple-400" />
-            Connect Freighter Wallet
+            {isPending ? 'Awaiting Signature…' : 'Connect Freighter Wallet'}
           </button>
-          <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all text-sm font-medium">
+          <button
+            onClick={handleSubmitProposal}
+            disabled={isPending}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <FilePlus size={16} />
             Submit New Proposal
           </button>
