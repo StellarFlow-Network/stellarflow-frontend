@@ -155,3 +155,9 @@ body {
     transform: translateX(100%);
   }
 }
+
+.shimmer-gradient {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
+  animation: shimmer 1.4s linear infinite;
+  will-change: transform;
+}

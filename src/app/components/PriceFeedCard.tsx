@@ -277,7 +277,16 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
       )}
 
       {/* ── 24h stats row ── */}
-      {!loading && !error && data && (
+      {loading ? (
+        <div className="relative grid grid-cols-3 gap-3 border-t border-[#1B2A3B] pt-4">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="flex flex-col gap-0.5">
+              <Shimmer className="h-3 w-14 rounded-md" />
+              <Shimmer className="h-4 w-16 rounded-md" />
+            </div>
+          ))}
+        </div>
+      ) : !error && data && (
         <div className="relative grid grid-cols-3 gap-3 border-t border-[#1B2A3B] pt-4">
           {/* High */}
           <div className="flex flex-col gap-0.5">

@@ -8,6 +8,6 @@ describe('MapSkeleton Component', () => {
     const skeletonDiv = container.firstChild as HTMLElement;
     expect(skeletonDiv).toBeInTheDocument();
     expect(skeletonDiv).toHaveClass('min-h-[320px]');
-    expect(skeletonDiv).toHaveClass('w-full');
+    expect(skeletonDiv.querySelector('.min-h-\\[280px\\]')).toBeInTheDocument();
   });
 });

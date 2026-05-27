@@ -12,14 +12,7 @@ export function Shimmer({ className = "" }: { className?: string }) {
       className={`relative overflow-hidden rounded ${className}`}
       style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
     >
-      <div
-        className="absolute inset-0"
-        style={{
-          background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%)',
-          animation: 'shimmer 1.4s linear infinite',
-          willChange: 'transform',
-        }}
-      />
+      <div className="absolute inset-0 shimmer-gradient" />
     </div>
   );
 }
