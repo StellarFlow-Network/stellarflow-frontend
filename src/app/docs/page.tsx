@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import CodeBlock from '@/components/CodeBlock';
 import { 
   BookOpen, 
   Terminal, 
@@ -176,9 +177,10 @@ async function fetchLiveRate(providerRpcUrl) {
 
             {/* Code Mirror Container */}
             <div className="p-6 bg-[#0d1117] font-mono text-sm overflow-x-auto text-gray-300 leading-relaxed min-h-[380px]">
-              <pre className="whitespace-pre">
-                {codeSnippets[activeTab]}
-              </pre>
+              <CodeBlock
+                code={codeSnippets[activeTab]}
+                language={activeTab === 'rust' ? 'rust' : 'javascript'}
+              />
             </div>
 
           </div>
