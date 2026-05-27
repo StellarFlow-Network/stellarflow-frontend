@@ -53,7 +53,7 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
     try {
       // Use ws protocol for development, wss for production
       const protocol = process.env.NODE_ENV === 'production' ? 'wss:' : 'ws:'
-      const wsUrl = `${protocol}//${window.location.host}/ws`
+      const wsUrl = `${protocol}//${window.location.host}/api/ws`
       
       wsRef.current = new WebSocket(wsUrl)
 
