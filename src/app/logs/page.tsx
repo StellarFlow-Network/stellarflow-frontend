@@ -63,7 +63,7 @@ export default function LogsPage() {
           payload: { query: searchQuery, logs: MOCK_LOGS } 
         });
       }
-    }, 150); // Faster response for premium feel
+    }, 250); // Debounce search to 250ms to reduce per-keystroke processing
 
     return () => clearTimeout(timer);
   }, [searchQuery]);

@@ -53,4 +53,4 @@ const GlobalHealthIndicator = ({ status = "ACTIVE" }: GlobalHealthIndicatorProps
   );
 };
 
-export default GlobalHealthIndicator;
+export default React.memo(GlobalHealthIndicator);

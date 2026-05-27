@@ -1,7 +1,7 @@
 "use client";
 
 import "leaflet/dist/leaflet.css";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, memo } from "react";
 import dynamic from "next/dynamic";
 import { useErrorTimeout } from "../hooks/useErrorTimeout";
 
@@ -16,13 +16,12 @@ interface NetworkNode {
   nodes: number;
 }
 
-export default function Map() {
+function Map() {
   const [geoData, setGeoData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { error, setError } = useErrorTimeout({ timeoutMs: 5000 });
 
-  useEffect(() => {
-    const loadMapData = async () => {
+export default memo(Map);
       try {
         // Load the simplified Africa network data
         const response = await fetch("/africa-network-simplified.geojson");

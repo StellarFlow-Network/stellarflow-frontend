@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
+import { useDebounce } from '../hooks/useDebounce';
 import { 
   ShieldCheck, 
   Coins, 
@@ -36,6 +37,13 @@ const MOCK_STAKERS: StakerNode[] = [
 
 export default function StakingPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 250);
+
+  const displayedStakers = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    if (!q) return MOCK_STAKERS;
+    return MOCK_STAKERS.filter(s => s.nodeName.toLowerCase().includes(q) || s.operatorAddress.toLowerCase().includes(q));
+  }, [debouncedSearch]);
 
   // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
   const transformedStakers = useMemo(
@@ -102,7 +110,7 @@ export default function StakingPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800">
-              {transformedStakers.map((node) => (
+              {displayedStakers.map((node) => (
                 <tr key={node.id} className="hover:bg-[#1c2128] transition-colors group">
                   <td className="px-6 py-4">
                     <div className="font-medium text-gray-200">{node.nodeName}</div>

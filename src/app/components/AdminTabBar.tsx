@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, memo } from "react";
 import {
   Radio,
   FileCheck2,
@@ -28,14 +28,13 @@ interface AdminTabBarProps {
   onTabChange?: (tabId: string) => void;
 }
 
-export default function AdminTabBar({
+const AdminTabBar = ({
   activeTab: controlledActiveTab,
   onTabChange,
 }: AdminTabBarProps) {
   const [internalActiveTab, setInternalActiveTab] = useState("live-oracle");
 
-  const activeTab = controlledActiveTab ?? internalActiveTab;
-
+export default memo(AdminTabBar);
   const handleTabClick = (tabId: string) => {
     if (onTabChange) {
       onTabChange(tabId);

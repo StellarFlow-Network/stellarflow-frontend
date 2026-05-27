@@ -7,7 +7,7 @@ import React from 'react';
  * Base shimmer animation used by all skeleton components.
  * Renders a light-to-dark-to-light sweep using framer-motion.
  */
-export function Shimmer({ className = "" }: { className?: string }) {
+export const Shimmer = React.memo(function Shimmer({ className = "" }: { className?: string }) {
   return (
     <div className={`relative overflow-hidden rounded ${className}`}
          style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
@@ -21,4 +21,4 @@ export function Shimmer({ className = "" }: { className?: string }) {
       />
     </div>
   );
-}
+});
