@@ -5,6 +5,7 @@
 export interface Relayer {
   readonly id: string;
   readonly address: string;
+  readonly shortenedAddress?: string; // Pre-computed via data transformation
   name: string;
   status: 'active' | 'inactive' | 'pending';
   lastHeartbeat: string; // ISO 8601 string
@@ -14,6 +15,7 @@ export interface Relayer {
 export interface Contract {
   readonly id: string;
   readonly address: string;
+  readonly shortenedAddress?: string; // Pre-computed via data transformation
   label: string;
   type: 'oracle' | 'anchor' | 'market';
   version: string;

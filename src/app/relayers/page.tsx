@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Activity, 
   Plus, 
@@ -11,6 +11,7 @@ import {
   Clock, 
   Signal 
 } from 'lucide-react';
+import { useTransformedCustomAddressField } from '@/app/hooks/useTransformedData';
 
 // --- Types ---
 interface Relayer {
@@ -25,13 +26,19 @@ interface Relayer {
 
 // --- Mock Data ---
 const MOCK_RELAYERS: Relayer[] = [
-  { id: '1', name: 'VTPass Lagos', address: 'GA5T...BC9A', status: 'active', uptime: '99.98%', latency: 32, successRate: 99.4 },
-  { id: '2', name: 'Binance Pan-Africa', address: 'GBC2...LOPA', status: 'lagging', uptime: '98.50%', latency: 540, successRate: 92.1 },
-  { id: '3', name: 'Coinbase Global', address: 'GDRT...1122', status: 'active', uptime: '99.99%', latency: 45, successRate: 100 },
+  { id: '1', name: 'VTPass Lagos', address: 'GA5THZLKMNPQRSXYZABCDEFGHIJKLMNBC9A', status: 'active', uptime: '99.98%', latency: 32, successRate: 99.4 },
+  { id: '2', name: 'Binance Pan-Africa', address: 'GBC2VHZLKMNPQRSXYZABCDEFGHIJKLMLOPA', status: 'lagging', uptime: '98.50%', latency: 540, successRate: 92.1 },
+  { id: '3', name: 'Coinbase Global', address: 'GDRTVHZLKMNPQRSXYZABCDEFGHIJKLM1122', status: 'active', uptime: '99.99%', latency: 45, successRate: 100 },
 ];
 
 export default function RelayersPage() {
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
+  const transformedRelayers = useMemo(
+    () => useTransformedCustomAddressField(MOCK_RELAYERS, 'address'),
+    []
+  );
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
@@ -86,11 +93,12 @@ export default function RelayersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800">
-              {MOCK_RELAYERS.map((relayer) => (
+              {transformedRelayers.map((relayer) => (
                 <tr key={relayer.id} className="hover:bg-[#1c2128] transition-colors group">
                   <td className="px-6 py-4">
                     <div className="font-medium text-blue-400">{relayer.name}</div>
-                    <div className="text-xs text-gray-500 font-mono">{relayer.address}</div>
+                    {/* PERFORMANCE OPTIMIZATION: Use pre-computed shortened address instead of runtime string slicing */}
+                    <div className="text-xs text-gray-500 font-mono">{relayer.shortenedAddress}</div>
                   </td>
                   <td className="px-6 py-4">
                     <StatusBadge status={relayer.status} />
