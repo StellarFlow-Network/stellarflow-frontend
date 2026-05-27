@@ -51,8 +51,7 @@ This repository serves as the central data engine for StellarFlow. It orchestrat
 - **💾 Database**: Scalable PostgreSQL with Prisma ORM[cite: 194].
 
 ## 📂 Project Structure
-```
-text
+```text
 ├── prisma/        # Database schema and migrations [cite: 194]
 ├── src/
 │   ├── routes/    # API Endpoints [cite: 174]
@@ -65,13 +64,12 @@ Running the Server
 Configure .env: Copy .env.example and add your SOROBAN_ADMIN_SECRET.
 Install: npm install 
 Run: npm run dev
+```
 
 ---
 
 ### 3. Smart Contracts README (`stellarflow-contracts`)
 **Location:** `stellarflow-contracts/README.md`
-```
-
 ```markdown
 # 📜 StellarFlow Smart Contracts
 
