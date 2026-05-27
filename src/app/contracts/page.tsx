@@ -17,6 +17,64 @@ import { CONTRACT_HEALTH_ICON_VARIANTS } from '@/lib/classNameVariants';
 
 export default function ContractsPage() {
   const [isHalted, setIsHalted] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0); // percent
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
+
+  async function uploadFileInChunks(
+    file: File,
+    onProgress: (percent: number) => void,
+    signal?: AbortSignal,
+  ) {
+    const CHUNK_SIZE = 256 * 1024; // 256 KB
+    const total = file.size;
+    const totalChunks = Math.ceil(total / CHUNK_SIZE);
+    const uploadId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+    let uploaded = 0;
+
+    for (let index = 0; index < totalChunks; index++) {
+      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+
+      const start = index * CHUNK_SIZE;
+      const end = Math.min(start + CHUNK_SIZE, total);
+      const chunk = file.slice(start, end);
+
+      const headers: Record<string, string> = {
+        'X-Upload-Id': uploadId,
+        'X-Chunk-Index': String(index),
+        'X-Total-Chunks': String(totalChunks),
+      };
+
+      const res = await fetch('/api/contracts/upload-wasm', {
+        method: 'POST',
+        headers,
+        body: chunk,
+        signal,
+      });
+
+      if (!res.ok) {
+        throw new Error(`Chunk ${index} failed: ${res.status}`);
+      }
+
+      uploaded += end - start;
+      const percent = Math.round((uploaded / total) * 100);
+      onProgress(percent);
+    }
+
+    // Finalize upload
+    const finalize = await fetch('/api/contracts/upload-complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uploadId, fileName: file.name }),
+      signal,
+    });
+
+    if (!finalize.ok) {
+      throw new Error('Failed to finalize upload');
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
@@ -45,12 +103,74 @@ export default function ContractsPage() {
               <Upload size={20} className="text-blue-400" />
               Upgrade Contract WASM
             </h2>
-            <div className="border-2 border-dashed border-gray-800 rounded-lg p-10 flex flex-col items-center justify-center text-center hover:border-blue-500/50 transition-colors cursor-pointer group">
-              <div className="p-4 bg-blue-500/10 rounded-full mb-4 group-hover:scale-110 transition-transform">
-                <Code2 size={32} className="text-blue-500" />
+            <div className="border-2 border-dashed border-gray-800 rounded-lg p-6 transition-colors group">
+              <div className="flex items-center gap-6 p-6">
+                <div className="p-4 bg-blue-500/10 rounded-full group-hover:scale-110 transition-transform">
+                  <Code2 size={32} className="text-blue-500" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium mb-1">Upload new .wasm binary</p>
+                  <p className="text-xs text-gray-500">Max file size: 10MB. Ensure code is pre-compiled for Soroban.</p>
+
+                  <div className="mt-4 flex items-center gap-3">
+                    <input
+                      type="file"
+                      accept=".wasm"
+                      disabled={uploading}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        // kick off chunked upload
+                        setUploadMessage(null);
+                        setUploadProgress(0);
+                        const controller = new AbortController();
+                        setAbortController(controller);
+                        try {
+                          setUploading(true);
+                          await uploadFileInChunks(file, (percent) => setUploadProgress(percent), controller.signal);
+                          setUploadMessage('Upload complete');
+                        } catch (err) {
+                          if ((err as any)?.name === 'AbortError') {
+                            setUploadMessage('Upload cancelled');
+                          } else {
+                            setUploadMessage('Upload failed');
+                            // eslint-disable-next-line no-console
+                            console.error('Chunked upload error', err);
+                          }
+                        } finally {
+                          setUploading(false);
+                          setAbortController(null);
+                          // clear the file input
+                          (e.target as HTMLInputElement).value = '';
+                        }
+                      }}
+                      className="text-sm"
+                    />
+
+                    {uploading ? (
+                      <button
+                        onClick={() => abortController?.abort()}
+                        className="text-xs bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded border border-gray-700 transition-all"
+                      >
+                        Cancel
+                      </button>
+                    ) : null}
+                  </div>
+
+                  {uploading || uploadProgress > 0 ? (
+                    <div className="mt-4">
+                      <div className="w-full bg-gray-800 rounded-full h-3 overflow-hidden">
+                        <div
+                          style={{ width: `${uploadProgress}%` }}
+                          className="h-3 bg-blue-500 transition-[width]"
+                        />
+                      </div>
+                      <div className="text-xs text-gray-400 mt-1">{uploadProgress}%</div>
+                      {uploadMessage && <div className="text-xs text-gray-300 mt-1">{uploadMessage}</div>}
+                    </div>
+                  ) : null}
+                </div>
               </div>
-              <p className="text-sm font-medium mb-1">Upload new .wasm binary</p>
-              <p className="text-xs text-gray-500">Max file size: 2MB. Ensure code is pre-compiled for Soroban.</p>
             </div>
             <div className="mt-4 p-4 bg-[#0d1117] rounded-lg border border-gray-800 flex justify-between items-center">
               <div>
