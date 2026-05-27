@@ -44,9 +44,11 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
   const wsRef = useRef<WebSocket | null>(null)
   const subscribedAssetsRef = useRef<Set<string>>(new Set(assetIds))
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const connectRef = useRef<() => void>(() => undefined)
   const reconnectAttemptsRef = useRef(0)
   const maxReconnectAttemptsRef = useRef(maxReconnectAttempts)
   const reconnectIntervalRef = useRef(reconnectInterval)
+  const enableDeltaUpdatesRef = useRef(enableDeltaUpdates)
 
   useEffect(() => {
     subscribedAssetsRef.current = new Set(assetIds)
@@ -59,6 +61,10 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
   useEffect(() => {
     reconnectIntervalRef.current = reconnectInterval
   }, [reconnectInterval])
+
+  useEffect(() => {
+    enableDeltaUpdatesRef.current = enableDeltaUpdates
+  }, [enableDeltaUpdates])
 
   const normalizePriceData = useCallback((message: SocketMessage): PriceData | null => {
     if (!message.data || typeof message.data !== 'object') {
@@ -121,7 +127,10 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
         try {
           const message: SocketMessage = JSON.parse(event.data)
           
-          if (message.type === 'price_update' || message.type === 'delta_update') {
+          if (
+            message.type === 'price_update' ||
+            (message.type === 'delta_update' && enableDeltaUpdatesRef.current)
+          ) {
             const nextUpdate = normalizePriceData(message)
 
             if (!nextUpdate) {
@@ -148,7 +157,7 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
           reconnectAttemptsRef.current += 1
           setReconnectAttempts(reconnectAttemptsRef.current)
           reconnectTimeoutRef.current = setTimeout(() => {
-            connect()
+            connectRef.current()
           }, reconnectIntervalRef.current)
         }
       }
@@ -163,6 +172,10 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
       console.error('Connection error:', err)
     }
   }, [normalizePriceData])
+
+  useEffect(() => {
+    connectRef.current = connect
+  }, [connect])
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -213,9 +226,10 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
 
   // Initialize connection
   useEffect(() => {
-    connect()
+    const connectTimeout = setTimeout(connect, 0)
     
     return () => {
+      clearTimeout(connectTimeout)
       disconnect()
     }
   }, [connect, disconnect])
