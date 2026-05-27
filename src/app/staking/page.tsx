@@ -19,6 +19,7 @@ import {
   STAKER_SLASHING_NO_EVENTS,
   STAKER_SLASHING_WITH_EVENTS,
 } from '@/lib/classNameVariants';
+import { useTransformedCustomAddressField } from '@/app/hooks/useTransformedData';
 
 // --- Types ---
 interface StakerNode {
@@ -43,17 +44,17 @@ export default function StakingPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 250);
 
-  const displayedStakers = useMemo(() => {
-    const q = debouncedSearch.trim().toLowerCase();
-    if (!q) return MOCK_STAKERS;
-    return MOCK_STAKERS.filter(s => s.nodeName.toLowerCase().includes(q) || s.operatorAddress.toLowerCase().includes(q));
-  }, [debouncedSearch]);
-
   // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
   const transformedStakers = useMemo(
     () => useTransformedCustomAddressField(MOCK_STAKERS, 'operatorAddress'),
     []
   );
+
+  const displayedStakers = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    if (!q) return transformedStakers;
+    return transformedStakers.filter(s => s.nodeName.toLowerCase().includes(q) || s.operatorAddress.toLowerCase().includes(q));
+  }, [debouncedSearch, transformedStakers]);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">

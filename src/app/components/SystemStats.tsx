@@ -37,26 +37,21 @@ const SystemStats = () => {
         Oracle Status
       </h2>
 
-      {/* Main card */}
-      <div className="bg-[#0A0F1E] border border-[#1B2A3B] border-t-2 border-t-[#39FF14] rounded-lg overflow-hidden shadow-2xl">
+      {/* Main card - flattened using CSS grid directly on the container */}
+      <div className="bg-[#0A0F1E] border border-[#1B2A3B] border-t-2 border-t-[#39FF14] rounded-lg shadow-2xl grid grid-cols-1 md:grid-cols-3 p-6 md:p-8 gap-y-6 md:gap-y-8 gap-x-4">
 
         {/* Global Health row */}
-        <div className="px-6 py-4">
+        <div className="col-span-full">
           <GlobalHealthIndicator status="ACTIVE" />
         </div>
 
         {/* Green separator */}
-        <div className="h-px bg-gradient-to-r from-[#39FF14]/60 via-[#39FF14]/20 to-transparent mx-6" />
+        <div className="col-span-full h-px bg-gradient-to-r from-[#39FF14]/60 via-[#39FF14]/20 to-transparent" />
 
-        {/* Stats grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-4 px-6 py-8">
-          <StatsCard label="Global Health:" value="0" showDot={true} />
-          <StatsCard label="Active Contracts" value="4" />
-          <StatsCard label="Whitelisted Relayers:" value="3" />
-        </div>
-
-        {/* Bottom separator */}
-        <div className="h-px bg-[#1B2A3B] mx-6 mb-6" />
+        {/* Stats grid items rendered directly in the parent grid */}
+        <StatsCard label="Global Health:" value="0" showDot={true} />
+        <StatsCard label="Active Contracts" value="4" />
+        <StatsCard label="Whitelisted Relayers:" value="3" />
       </div>
     </section>
   );

@@ -13,6 +13,7 @@ import {
   Signal 
 } from 'lucide-react';
 import { RELAYERS_PAGE_STATUS_VARIANTS } from '@/lib/classNameVariants';
+import { useTransformedCustomAddressField } from '@/app/hooks/useTransformedData';
 
 // --- Types ---
 interface Relayer {
@@ -36,17 +37,17 @@ export default function RelayersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 250);
 
-  const displayedRelayers = useMemo(() => {
-    const q = debouncedSearch.trim().toLowerCase();
-    if (!q) return MOCK_RELAYERS;
-    return MOCK_RELAYERS.filter(r => r.name.toLowerCase().includes(q) || r.address.toLowerCase().includes(q));
-  }, [debouncedSearch]);
-
   // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
   const transformedRelayers = useMemo(
     () => useTransformedCustomAddressField(MOCK_RELAYERS, 'address'),
     []
   );
+
+  const displayedRelayers = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    if (!q) return transformedRelayers;
+    return transformedRelayers.filter(r => r.name.toLowerCase().includes(q) || r.address.toLowerCase().includes(q));
+  }, [debouncedSearch, transformedRelayers]);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">

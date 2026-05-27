@@ -31,10 +31,10 @@ interface AdminTabBarProps {
 const AdminTabBar = ({
   activeTab: controlledActiveTab,
   onTabChange,
-}: AdminTabBarProps) {
+}: AdminTabBarProps) => {
   const [internalActiveTab, setInternalActiveTab] = useState("live-oracle");
 
-export default memo(AdminTabBar);
+  const activeTab = controlledActiveTab ?? internalActiveTab;
   const handleTabClick = (tabId: string) => {
     if (onTabChange) {
       onTabChange(tabId);
@@ -74,4 +74,6 @@ export default memo(AdminTabBar);
       </nav>
     </div>
   );
-}
+};
+
+export default memo(AdminTabBar);
