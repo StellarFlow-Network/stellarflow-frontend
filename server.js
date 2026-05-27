@@ -8,7 +8,7 @@ const hostname = 'localhost';
 const port = process.env.PORT || 3000;
 
 // When using a custom server, you need to pass the Next.js app instance
-const app = next({ dev, hostname, port });
+const app = next({ dev, hostname, port, ...(dev ? { webpack: true } : {}) });
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
