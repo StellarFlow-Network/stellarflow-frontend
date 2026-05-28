@@ -150,3 +150,74 @@ body {
   background: rgba(255, 255, 255, 0.15);
   box-shadow: none;
 }
+
+
+/* ─── Issue #165: Dynamic Style Updates via Classes ──────────────────────── */
+
+/* Trend indicator states */
+.trend-indicator--up {
+  @apply bg-emerald-500/10 border-emerald-500/20 text-emerald-400;
+}
+
+.trend-indicator--down {
+  @apply bg-rose-500/10 border-rose-500/20 text-rose-400;
+}
+
+.trend-glow--up {
+  box-shadow: 0 0 18px rgba(52, 211, 153, 0.18);
+}
+
+.trend-glow--down {
+  box-shadow: 0 0 18px rgba(244, 63, 94, 0.18);
+}
+
+/* Connection status indicators */
+.connection-status--connected {
+  @apply text-emerald-400;
+}
+
+.connection-status--connected .status-dot {
+  @apply bg-emerald-500 animate-pulse;
+}
+
+.connection-status--disconnected {
+  @apply text-rose-400;
+}
+
+.connection-status--disconnected .status-dot {
+  @apply bg-rose-500;
+}
+
+.connection-status--reconnecting {
+  @apply text-yellow-400;
+}
+
+.connection-status--reconnecting .status-dot {
+  @apply bg-yellow-500 animate-pulse;
+}
+
+/* Loading states */
+.loading-state--loading {
+  @apply opacity-50 pointer-events-none;
+}
+
+.loading-state--ready {
+  @apply opacity-100 pointer-events-auto;
+}
+
+/* Price card states */
+[data-trend-direction="up"] {
+  @apply text-emerald-400;
+}
+
+[data-trend-direction="down"] {
+  @apply text-rose-400;
+}
+
+[data-connection-status="live"] {
+  @apply border-[#39FF14]/20 bg-[#39FF14]/10 text-[#39FF14];
+}
+
+[data-connection-status="offline"] {
+  @apply border-yellow-500/20 bg-yellow-500/10 text-yellow-500;
+}
