@@ -1,12 +1,19 @@
+import "@/config/env";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "./components/ThemeProvider";
+import { ProgressBarProvider } from "./components/TopLoadingBar";
+import { UserProvider } from "./components/providers/UserProvider";
+import Script from "next/script";
+import {SocketProvider} from "./components/providers/SocketProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
   display: "swap",
   // Variable font - no need to specify weights
+  weight: ["400", "700"]
 });
 
 const geistMono = Geist_Mono({
@@ -14,6 +21,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
   display: "swap",
   // Variable font - no need to specify weights
+  weight: ["400", "700"]
 });
 
 export const metadata: Metadata = {
@@ -27,11 +35,50 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Prevent background flash before next-themes hydrates */}
+        <style>{`html { background-color: #0d1117; }`}</style>
+        {/* Preload the critical above-the-fold logo asset */}
+        <link
+          rel="preload"
+          href="/sf.webp"
+          as="image"
+          type="image/webp"
+        />
+        <Script
+          id="polyfill-loader"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (!('IntersectionObserver' in window) || 
+                  !('ResizeObserver' in window) || 
+                  !('fetch' in window) || 
+                  !('Promise' in window)) {
+                console.info('StellarFlow: Modern features missing. Loading on-demand polyfills...');
+                var js = document.createElement('script');
+                js.src = 'https://polyfill-library.fastly.dev/v3/polyfill.min.js?features=default,IntersectionObserver,ResizeObserver,fetch,Promise';
+                document.head.appendChild(js);
+              }
+            `
+          }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem={false}
+          disableTransitionOnChange
+        >
+          <UserProvider>
+            <ProgressBarProvider>
+              {children}
+            </ProgressBarProvider>
+          </UserProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
