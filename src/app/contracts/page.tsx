@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import { 
   Cpu, 
   Upload, 
@@ -16,28 +16,34 @@ import {
 
 export default function ContractsPage() {
   const [isHalted, setIsHalted] = useState(false);
+  const contractStatus = isHalted ? "halted" : "active";
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
+    <div
+      data-contract-status={contractStatus}
+      className="contracts-page min-h-screen bg-[#0a0a0a] text-gray-100 p-8"
+    >
       {/* --- Header Section --- */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <p className="text-sm text-gray-500 mb-1">Admin / Infrastructure</p>
-          <h1 className="text-3xl font-bold tracking-tight">Smart Contract Logic</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Smart Contract Logic
+          </h1>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 bg-[#161b22] px-3 py-1.5 rounded-full border border-gray-800">
-             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-             <span className="text-xs font-mono uppercase text-gray-400">Mainnet: Active</span>
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-xs font-mono uppercase text-gray-400">
+              Mainnet: Active
+            </span>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
         {/* --- Left Column: Contract Deployment --- */}
         <div className="lg:col-span-2 space-y-6">
-          
           {/* WASM Upgrade Section */}
           <div className="bg-[#161b22] border border-gray-800 rounded-xl p-6">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -48,13 +54,21 @@ export default function ContractsPage() {
               <div className="p-4 bg-blue-500/10 rounded-full mb-4 group-hover:scale-110 transition-transform">
                 <Code2 size={32} className="text-blue-500" />
               </div>
-              <p className="text-sm font-medium mb-1">Upload new .wasm binary</p>
-              <p className="text-xs text-gray-500">Max file size: 2MB. Ensure code is pre-compiled for Soroban.</p>
+              <p className="text-sm font-medium mb-1">
+                Upload new .wasm binary
+              </p>
+              <p className="text-xs text-gray-500">
+                Max file size: 2MB. Ensure code is pre-compiled for Soroban.
+              </p>
             </div>
             <div className="mt-4 p-4 bg-[#0d1117] rounded-lg border border-gray-800 flex justify-between items-center">
               <div>
-                <p className="text-xs text-gray-500 uppercase font-bold">Current WASM Hash</p>
-                <p className="text-sm font-mono text-gray-300">8f2a...7e1b9c4d</p>
+                <p className="text-xs text-gray-500 uppercase font-bold">
+                  Current WASM Hash
+                </p>
+                <p className="text-sm font-mono text-gray-300">
+                  8f2a...7e1b9c4d
+                </p>
               </div>
               <button className="text-xs bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded border border-gray-700 transition-all">
                 Verify on Ledger
@@ -70,17 +84,33 @@ export default function ContractsPage() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-xs text-gray-500 uppercase font-bold">Update Frequency (Heartbeat)</label>
+                <label className="text-xs text-gray-500 uppercase font-bold">
+                  Update Frequency (Heartbeat)
+                </label>
                 <div className="flex gap-2">
-                  <input type="number" defaultValue={60} className="bg-[#0d1117] border border-gray-700 rounded-md py-2 px-3 text-sm w-full focus:outline-none focus:border-blue-500" />
-                  <span className="flex items-center text-sm text-gray-500">Sec</span>
+                  <input
+                    type="number"
+                    defaultValue={60}
+                    className="bg-[#0d1117] border border-gray-700 rounded-md py-2 px-3 text-sm w-full focus:outline-none focus:border-blue-500"
+                  />
+                  <span className="flex items-center text-sm text-gray-500">
+                    Sec
+                  </span>
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-xs text-gray-500 uppercase font-bold">Deviation Threshold</label>
+                <label className="text-xs text-gray-500 uppercase font-bold">
+                  Deviation Threshold
+                </label>
                 <div className="flex gap-2">
-                  <input type="number" defaultValue={2.5} className="bg-[#0d1117] border border-gray-700 rounded-md py-2 px-3 text-sm w-full focus:outline-none focus:border-blue-500" />
-                  <span className="flex items-center text-sm text-gray-500">%</span>
+                  <input
+                    type="number"
+                    defaultValue={2.5}
+                    className="bg-[#0d1117] border border-gray-700 rounded-md py-2 px-3 text-sm w-full focus:outline-none focus:border-blue-500"
+                  />
+                  <span className="flex items-center text-sm text-gray-500">
+                    %
+                  </span>
                 </div>
               </div>
             </div>
@@ -92,36 +122,46 @@ export default function ContractsPage() {
 
         {/* --- Right Column: Safety & Security --- */}
         <div className="space-y-6">
-          
           {/* Emergency Halt Section */}
-          <div className={`border p-6 rounded-xl transition-all ${isHalted ? 'bg-red-900/10 border-red-500' : 'bg-[#161b22] border-gray-800'}`}>
+          <div className="contract-status-card border p-6 rounded-xl transition-all">
             <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
-              <ShieldAlert size={20} className={isHalted ? 'text-red-500' : 'text-gray-400'} />
+              <ShieldAlert size={20} className="contract-status-icon" />
               Emergency Halt
             </h2>
             <p className="text-xs text-gray-500 mb-6">
-              Instantly pauses all price updates across the network. Use only in case of data compromise or critical failure.
+              Instantly pauses all price updates across the network. Use only in
+              case of data compromise or critical failure.
             </p>
-            <button 
-              onClick={() => setIsHalted(!isHalted)}
-              className={`w-full py-3 rounded-lg flex items-center justify-center gap-2 font-bold transition-all ${
-                isHalted 
-                ? 'bg-green-600 hover:bg-green-700 text-white' 
-                : 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/20'
-              }`}
+            <button
+              onClick={() => setIsHalted((current) => !current)}
+              className="contract-status-action w-full py-3 rounded-lg flex items-center justify-center gap-2 font-bold transition-all text-white"
             >
               {isHalted ? <Unlock size={18} /> : <Lock size={18} />}
-              {isHalted ? 'RESUME ORACLE' : 'HALT ALL OPERATIONS'}
+              {isHalted ? "RESUME ORACLE" : "HALT ALL OPERATIONS"}
             </button>
           </div>
 
           {/* Verification Status */}
           <div className="bg-[#161b22] border border-gray-800 rounded-xl p-6">
-            <h3 className="text-sm font-semibold mb-4 text-gray-400 uppercase tracking-wider">Storage Health</h3>
+            <h3 className="text-sm font-semibold mb-4 text-gray-400 uppercase tracking-wider">
+              Storage Health
+            </h3>
             <div className="space-y-4">
-              <HealthItem label="State Expiration (TTL)" value="340,201 Ledgers" status="safe" />
-              <HealthItem label="Instance Storage" value="1.2 KB / 64 KB" status="safe" />
-              <HealthItem label="Contract Balance" value="450.25 XLM" status="warning" />
+              <HealthItem
+                label="State Expiration (TTL)"
+                value="340,201 Ledgers"
+                status="safe"
+              />
+              <HealthItem
+                label="Instance Storage"
+                value="1.2 KB / 64 KB"
+                status="safe"
+              />
+              <HealthItem
+                label="Contract Balance"
+                value="450.25 XLM"
+                status="warning"
+              />
             </div>
           </div>
 
@@ -142,7 +182,6 @@ export default function ContractsPage() {
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>
