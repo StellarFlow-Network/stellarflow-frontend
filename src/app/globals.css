@@ -57,7 +57,43 @@ body {
     padding-right: 2rem;
   }
 }
+/* ─── Contracts status theme ──────────────────────────────────────── */
 
+.contracts-page {
+  --contract-status-card-bg: #161b22;
+  --contract-status-card-border: rgb(31 41 55);
+  --contract-status-icon-color: rgb(156 163 175);
+  --contract-status-action-bg: rgb(220 38 38);
+  --contract-status-action-hover-bg: rgb(185 28 28);
+  --contract-status-action-shadow: 0 10px 15px -3px rgb(127 29 29 / 0.2);
+}
+
+.contracts-page[data-contract-status="halted"] {
+  --contract-status-card-bg: rgb(127 29 29 / 0.1);
+  --contract-status-card-border: rgb(239 68 68);
+  --contract-status-icon-color: rgb(239 68 68);
+  --contract-status-action-bg: rgb(22 163 74);
+  --contract-status-action-hover-bg: rgb(21 128 61);
+  --contract-status-action-shadow: none;
+}
+
+.contract-status-card {
+  background: var(--contract-status-card-bg);
+  border-color: var(--contract-status-card-border);
+}
+
+.contract-status-icon {
+  color: var(--contract-status-icon-color);
+}
+
+.contract-status-action {
+  background: var(--contract-status-action-bg);
+  box-shadow: var(--contract-status-action-shadow);
+}
+
+.contract-status-action:hover {
+  background: var(--contract-status-action-hover-bg);
+}
 .admin-tabbar {
   display: flex;
   align-items: center;

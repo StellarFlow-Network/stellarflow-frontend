@@ -57,7 +57,9 @@ export default function RelayersPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <p className="text-sm text-gray-500 mb-1">Admin / Network</p>
-          <h1 className="text-3xl font-bold tracking-tight">Relayer Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Relayer Management
+          </h1>
         </div>
         <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all font-medium">
           <Plus size={18} />
@@ -67,19 +69,41 @@ export default function RelayersPage() {
 
       {/* --- Stats Row --- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <StatCard title="Total Relayers" value="12" icon={<Activity className="text-blue-400" />} subtitle="3 Regions Active" />
-        <StatCard title="Avg Network Latency" value="45ms" icon={<Signal className="text-green-400" />} subtitle="+2ms from last hour" />
-        <StatCard title="Network Uptime" value="99.98%" icon={<ShieldCheck className="text-purple-400" />} subtitle="Last 24 hours" />
+        <StatCard
+          title="Total Relayers"
+          value="12"
+          icon={<Activity className="text-blue-400" />}
+          subtitle="3 Regions Active"
+        />
+        <StatCard
+          title="Avg Network Latency"
+          value="45ms"
+          icon={<Signal className="text-green-400" />}
+          subtitle="+2ms from last hour"
+        />
+        <StatCard
+          title="Network Uptime"
+          value="99.98%"
+          icon={<ShieldCheck className="text-purple-400" />}
+          subtitle="Last 24 hours"
+        />
       </div>
 
       {/* --- Table Section --- */}
-      <div className="bg-[#161b22] border border-gray-800 rounded-xl overflow-hidden">
+      <div
+        data-tooltip={subtitle}
+        tabIndex={0}
+        className="bg-[#161b22] border border-gray-800 p-6 rounded-xl"
+      >
         <div className="p-4 border-b border-gray-800 flex flex-col md:flex-row justify-between gap-4">
           <div className="relative w-full md:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-            <input 
-              type="text" 
-              placeholder="Search by name or address..." 
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+              size={18}
+            />
+            <input
+              type="text"
+              placeholder="Search by name or address..."
               className="w-full bg-[#0d1117] border border-gray-700 rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-blue-500 transition-colors"
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -105,25 +129,36 @@ export default function RelayersPage() {
             </thead>
             <tbody className="divide-y divide-gray-800">
               {displayedRelayers.map((relayer) => (
-                <tr key={relayer.id} className="hover:bg-[#1c2128] transition-colors group">
+                <tr
+                  key={relayer.id}
+                  className="hover:bg-[#1c2128] transition-colors group"
+                >
                   <td className="px-6 py-4">
-                    <div className="font-medium text-blue-400">{relayer.name}</div>
+                    <div className="font-medium text-blue-400">
+                      {relayer.name}
+                    </div>
                     {/* PERFORMANCE OPTIMIZATION: O(1) map lookup instead of O(n) array scan */}
-                    <div className="text-xs text-gray-500 font-mono">{shortenedAddressMap[relayer.id]}</div>
+                    <div className="text-xs text-gray-500 font-mono">
+                      {shortenedAddressMap[relayer.id]}
+                    </div>
                   </td>
                   <td className="px-6 py-4">
                     <StatusBadge status={relayer.status} />
                   </td>
                   <td className="px-6 py-4 text-sm">{relayer.uptime}</td>
-                  <td className="px-6 py-4 text-sm font-mono">{relayer.latency}ms</td>
+                  <td className="px-6 py-4 text-sm font-mono">
+                    {relayer.latency}ms
+                  </td>
                   <td className="px-6 py-4">
                     <div className="w-24 bg-gray-700 h-1.5 rounded-full overflow-hidden">
-                      <div 
-                        className="bg-blue-500 h-full" 
-                        style={{ width: `${relayer.successRate}%` }} 
+                      <div
+                        className="bg-blue-500 h-full"
+                        style={{ width: `${relayer.successRate}%` }}
                       />
                     </div>
-                    <span className="text-[10px] text-gray-500 mt-1 block">{relayer.successRate}% confirmed</span>
+                    <span className="text-[10px] text-gray-500 mt-1 block">
+                      {relayer.successRate}% confirmed
+                    </span>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button className="p-1.5 hover:bg-gray-700 rounded-md text-gray-400">
@@ -145,10 +180,19 @@ export default function RelayersPage() {
             Live Feed Activity
           </h3>
           <div className="space-y-3 font-mono text-xs overflow-y-auto max-h-48">
-             <p className="text-green-500/80">[12:30:05] VTPass Lagos: Successfully pushed NGN/XLM</p>
-             <p className="text-gray-400">[12:29:45] Coinbase Global: Ping acknowledgment received (45ms)</p>
-             <p className="text-yellow-500/80">[12:28:10] Binance Pan-Africa: High latency detected (540ms)</p>
-             <p className="text-gray-400">[12:25:30] Relayer Manager: Auto-healing protocol initiated for Region: West-1</p>
+            <p className="text-green-500/80">
+              [12:30:05] VTPass Lagos: Successfully pushed NGN/XLM
+            </p>
+            <p className="text-gray-400">
+              [12:29:45] Coinbase Global: Ping acknowledgment received (45ms)
+            </p>
+            <p className="text-yellow-500/80">
+              [12:28:10] Binance Pan-Africa: High latency detected (540ms)
+            </p>
+            <p className="text-gray-400">
+              [12:25:30] Relayer Manager: Auto-healing protocol initiated for
+              Region: West-1
+            </p>
           </div>
         </div>
       </div>
