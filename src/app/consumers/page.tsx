@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { 
   Users, 
   Key, 
@@ -16,6 +16,7 @@ import {
   Copy 
 } from 'lucide-react';
 import { useTransformedCustomAddressField } from '@/app/hooks/useTransformedData';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { 
   CONSUMER_TIER_BADGE_CLASS, 
   CONSUMER_TIER_VARIANTS, 
@@ -41,11 +42,36 @@ const MOCK_CONSUMERS: Consumer[] = [
   { id: 'C-02', projectName: 'NairaStable DEX', contractAddress: 'GAB3FNZOMCXKKUZCWZZG5J6MFMBXVFBXKTMZK992QYJR7VBCDEF7G9JK', tier: 'Enterprise', status: 'active', monthlyRequests: '12.8M', balanceXLM: 540.50 },
   { id: 'C-03', projectName: 'AfriSwap Mobile', contractAddress: 'GDT4VHZLKMNPQRSXYZABCDEFGHIJKLM77AA', tier: 'Developer', status: 'active', monthlyRequests: '450K', balanceXLM: 120.00 },
   { id: 'C-04', projectName: 'Test Sandbox', contractAddress: 'GDD2VHZLKMNPQRSXYZABCDEFGHIJKLM3311', tier: 'Staging', status: 'paused', monthlyRequests: '12K', balanceXLM: 0.00 },
+  // Generate 120 additional consumers to simulate high volume scaling and demonstrate virtualization effectiveness
+  ...Array.from({ length: 120 }, (_, i) => {
+    const id = `C-${(i + 5).toString().padStart(2, '0')}`;
+    const projects = ['Delta Yield', 'Nexus Vault', 'Orion Swap', 'Stellar Pay', 'Vertex Ledger', 'Aurora Pool', 'Aero Exchange', 'Galactic Pool'];
+    const projectName = `${projects[i % projects.length]} #${i + 1}`;
+    
+    // Create random-like but reproducible Stellar contract addresses (valid length 56, starting with G or C)
+    const baseAddr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let addr = i % 2 === 0 ? 'G' : 'C';
+    for (let j = 0; j < 55; j++) {
+      addr += baseAddr[(i * 7 + j * 13) % baseAddr.length];
+    }
+    
+    const tiers: ('Enterprise' | 'Developer' | 'Staging')[] = ['Enterprise', 'Developer', 'Staging'];
+    const tier = tiers[(i * 3 + 1) % tiers.length];
+    const statuses: ('active' | 'expired' | 'paused')[] = ['active', 'expired', 'paused'];
+    const status = statuses[(i * 7 + 2) % statuses.length];
+    
+    const reqs = ((i * 123 + 456) % 1000);
+    const monthlyRequests = reqs > 500 ? `${(reqs / 100).toFixed(1)}M` : `${reqs}K`;
+    const balanceXLM = ((i * 345.67 + 89.12) % 4500);
+    
+    return { id, projectName, contractAddress: addr, tier, status, monthlyRequests, balanceXLM };
+  })
 ];
 
 export default function ConsumersPage() {
   const [showSecret, setShowSecret] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
   const transformedConsumers = useMemo(
@@ -53,10 +79,28 @@ export default function ConsumersPage() {
     []
   );
 
+  const filteredConsumers = useMemo(() => {
+    if (!searchQuery) return transformedConsumers;
+    const query = searchQuery.toLowerCase();
+    return transformedConsumers.filter(consumer => 
+      consumer.projectName.toLowerCase().includes(query) ||
+      consumer.contractAddress.toLowerCase().includes(query)
+    );
+  }, [transformedConsumers, searchQuery]);
+
   const handleCopy = () => {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // Virtualization setup
+  const parentRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: filteredConsumers.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 72, // Average height of consumer row
+    overscan: 3, // Enforces strict viewport pooling to garbage-collect off-screen client row instances dynamically
+  });
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
@@ -130,67 +174,109 @@ export default function ConsumersPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
             <input 
               type="text" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Filter consumers by contract or title..." 
               className="w-full bg-[#0d1117] border border-gray-700 rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-blue-500 transition-colors"
             />
           </div>
-          <button className="p-2 bg-[#0d1117] hover:bg-gray-800 rounded-md border border-gray-700 text-gray-400 self-end md:self-auto">
+          <button 
+            onClick={() => setSearchQuery('')}
+            className="p-2 bg-[#0d1117] hover:bg-gray-800 rounded-md border border-gray-700 text-gray-400 self-end md:self-auto"
+            title="Reset Filters"
+          >
             <RefreshCcw size={16} />
           </button>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-gray-500 text-xs uppercase tracking-wider border-b border-gray-800">
-                <th className="px-6 py-4 font-medium">Project Integration</th>
-                <th className="px-6 py-4 font-medium">Plan Tier</th>
-                <th className="px-6 py-4 font-medium">Status</th>
-                <th className="px-6 py-4 font-medium">Requests (MTD)</th>
-                <th className="px-6 py-4 font-medium">Gas Tank Balance</th>
-                <th className="px-6 py-4 font-medium text-right">Verification</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-800">
-              {transformedConsumers.map((consumer) => (
-                <tr key={consumer.id} className="hover:bg-[#1c2128] transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-gray-200">{consumer.projectName}</div>
-                    {/* PERFORMANCE OPTIMIZATION: Use pre-computed shortened address instead of runtime string slicing */}
-                    <div className="text-xs text-gray-500 font-mono">{consumer.shortenedAddress}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`${CONSUMER_TIER_BADGE_CLASS} ${CONSUMER_TIER_VARIANTS[consumer.tier]}`}>
-                      {consumer.tier}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`flex items-center gap-1.5 text-xs font-medium ${CONSUMER_STATUS_TEXT_VARIANTS[consumer.status]}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${CONSUMER_STATUS_DOT_VARIANTS[consumer.status]}`} />
-                      <span className="capitalize">{consumer.status}</span>
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm font-mono text-gray-300">
-                    {consumer.monthlyRequests}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className={`text-sm font-mono ${getBalanceColorClass(consumer.balanceXLM)}`}>
-                      {consumer.balanceXLM.toFixed(2)} XLM
-                    </div>
-                    {consumer.balanceXLM < 200 && (
-                      <span className="text-[10px] text-yellow-600 block leading-none mt-0.5">Low Refill Alert</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="text-blue-400 hover:text-blue-300 inline-flex items-center gap-1 text-xs">
-                      <span>View Contract</span>
-                      <ExternalLink size={12} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="min-w-[900px]">
+            {/* Table Header */}
+            <div className="grid grid-cols-[2fr_1.2fr_1fr_1.2fr_1.5fr_1.2fr] text-gray-500 text-xs uppercase tracking-wider border-b border-gray-800 bg-[#0d1117]/80 backdrop-blur-md px-6 py-4 font-semibold">
+              <div>Project Integration</div>
+              <div>Plan Tier</div>
+              <div>Status</div>
+              <div>Requests (MTD)</div>
+              <div>Gas Tank Balance</div>
+              <div className="text-right">Verification</div>
+            </div>
+
+            {/* Scroll Container */}
+            <div 
+              ref={parentRef}
+              className="overflow-auto max-h-[500px] scrollbar-thin scrollbar-thumb-gray-700"
+            >
+              {filteredConsumers.length === 0 ? (
+                <div className="py-20 text-center text-gray-500 flex flex-col items-center justify-center gap-2 w-full">
+                  <Search size={32} className="opacity-20" />
+                  <p>No consumers matching "{searchQuery}"</p>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    height: `${rowVirtualizer.getTotalSize()}px`,
+                    width: '100%',
+                    position: 'relative',
+                  }}
+                >
+                  {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                    const consumer = filteredConsumers[virtualRow.index];
+                    if (!consumer) return null;
+
+                    return (
+                      <div
+                        key={virtualRow.key}
+                        data-index={virtualRow.index}
+                        ref={rowVirtualizer.measureElement}
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          transform: `translateY(${virtualRow.start}px)`,
+                        }}
+                        className="grid grid-cols-[2fr_1.2fr_1fr_1.2fr_1.5fr_1.2fr] items-center border-b border-gray-800/50 hover:bg-[#1c2128] transition-colors group px-6 py-4"
+                      >
+                        <div className="pr-4">
+                          <div className="font-medium text-gray-200 truncate">{consumer.projectName}</div>
+                          {/* PERFORMANCE OPTIMIZATION: Use pre-computed shortened address instead of runtime string slicing */}
+                          <div className="text-xs text-gray-500 font-mono truncate">{consumer.shortenedAddress}</div>
+                        </div>
+                        <div>
+                          <span className={`${CONSUMER_TIER_BADGE_CLASS} ${CONSUMER_TIER_VARIANTS[consumer.tier]}`}>
+                            {consumer.tier}
+                          </span>
+                        </div>
+                        <div>
+                          <span className={`flex items-center gap-1.5 text-xs font-medium ${CONSUMER_STATUS_TEXT_VARIANTS[consumer.status]}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${CONSUMER_STATUS_DOT_VARIANTS[consumer.status]}`} />
+                            <span className="capitalize">{consumer.status}</span>
+                          </span>
+                        </div>
+                        <div className="text-sm font-mono text-gray-300">
+                          {consumer.monthlyRequests}
+                        </div>
+                        <div>
+                          <div className={`text-sm font-mono ${getBalanceColorClass(consumer.balanceXLM)}`}>
+                            {consumer.balanceXLM.toFixed(2)} XLM
+                          </div>
+                          {consumer.balanceXLM < 200 && (
+                            <span className="text-[10px] text-yellow-600 block leading-none mt-0.5">Low Refill Alert</span>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <button className="text-blue-400 hover:text-blue-300 inline-flex items-center gap-1 text-xs">
+                            <span>View Contract</span>
+                            <ExternalLink size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
