@@ -71,11 +71,13 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
+          <SocketProvider>
           <UserProvider>
             <ProgressBarProvider>
               {children}
             </ProgressBarProvider>
           </UserProvider>
+          </SocketProvider>
         </ThemeProvider>
       </body>
     </html>

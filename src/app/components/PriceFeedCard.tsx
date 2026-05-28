@@ -65,13 +65,22 @@ async function fetchNgnXlmFeed(): Promise<PriceFeedData> {
   };
 }
 
+const PRICE_FORMATTER = new Intl.NumberFormat("en-NG", {
+  style: "currency",
+  currency: "NGN",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 4,
+});
+
+const TIME_FORMATTER = new Intl.DateTimeFormat("en-NG", {
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+});
+
 function formatPrice(value: number): string {
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 4,
-  }).format(value);
+  return PRICE_FORMATTER.format(value);
 }
 
 function formatVolume(value: number): string {
@@ -82,12 +91,7 @@ function formatVolume(value: number): string {
 
 function formatTime(iso: string): string {
   try {
-    return new Intl.DateTimeFormat("en-NG", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    }).format(new Date(iso));
+    return TIME_FORMATTER.format(new Date(iso));
   } catch {
     return "--:--:--";
   }
