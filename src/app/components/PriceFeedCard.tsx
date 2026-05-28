@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, memo } from "react";
+import { useRAFInterval } from "@/app/hooks/useRAFInterval";
 import { RefreshCw } from "lucide-react";
 import { useProgressBar } from "./TopLoadingBar";
 import { useDebounce } from "../hooks/useDebounce";
-import { useSocket } from "../hooks/useSocket";
+import { useErrorTimeout } from "../hooks/useErrorTimeout";
+import { useSocketConnection, useSocketData } from "./providers/SocketProvider";
 import { Shimmer } from "@/components/skeletons/Shimmer";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -24,9 +26,9 @@ interface PriceFeedCardProps {
   /** Asset ID for WebSocket delta updates. Defaults to 'NGN-XLM'. */
   assetId?: string;
   /** Enable WebSocket delta updates. Defaults to true. */
- isVisible?: boolean; enableWebSocket?: boolean;
-  
+  enableWebSocket?: boolean;
 }
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /**
@@ -95,30 +97,21 @@ function formatTime(iso: string): string {
 
 const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   refreshInterval = 30_000,
-  assetId = "NGN-XLM",
   enableWebSocket = true,
-  isVisible = true,
 }) => {
   const [data, setData] = useState<PriceFeedData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { error, setError } = useErrorTimeout({ timeoutMs: 5000 });
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [filterInput, setFilterInput] = useState("");
-  const debouncedFilter = useDebounce(filterInput, 300);
+  const debouncedFilter = useDebounce(filterInput, 250);
   const { start, done } = useProgressBar();
 
-  // WebSocket hook for delta updates
-  const {
-    isConnected,
-    lastUpdate: wsUpdate,
-    error: wsError,
-    subscribeToAsset,
-    unsubscribeFromAsset,
-  } = useSocket({
-    assetIds: enableWebSocket ? [assetId] : [],
-    enableDeltaUpdates: true,
-  });
+  // Granular context subscriptions — each hook only re-renders this component
+  // when its specific slice changes, not on every unrelated socket event.
+  const { isConnected, error: wsError } = useSocketConnection();
+  const { lastUpdate: wsUpdate } = useSocketData();
 
   const load = useCallback(
     async (manual = false) => {
@@ -145,49 +138,49 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
     [start, done],
   );
 
-  // Handle WebSocket delta updates
+  // Merge WebSocket delta updates into local state.
+  // Using a functional setData updater means we read `prev` (current state)
+  // instead of closing over `data` — so `data` is NOT a dependency and the
+  // effect does not re-run after every state write, breaking the render cycle.
   useEffect(() => {
-    if (wsUpdate && enableWebSocket) {
-      // Convert WebSocket update to PriceFeedData format
-      const updatedData: PriceFeedData = {
-        price: wsUpdate.price || data?.price || 0,
-        change_24h: wsUpdate.price ? 0 : data?.change_24h || 0, // Reset 24h change on new price
-        high_24h: wsUpdate.price
-          ? Math.max(wsUpdate.price, data?.high_24h || 0)
-          : data?.high_24h || 0,
-        low_24h: wsUpdate.price
-          ? Math.min(wsUpdate.price, data?.low_24h || Infinity)
-          : data?.low_24h || 0,
-        volume_24h: data?.volume_24h || 0, // Preserve volume from API
-        last_updated: wsUpdate.timestamp
-          ? new Date(wsUpdate.timestamp).toISOString()
-          : data?.last_updated || new Date().toISOString(),
-      };
+    if (!wsUpdate || !enableWebSocket) return;
 
-      setData(updatedData);
-      setLastRefresh(new Date());
-      setLoading(false);
-      setError(null);
-    }
-  }, [wsUpdate, data, enableWebSocket]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setData((prev: PriceFeedData | null) => ({
+      price: wsUpdate.price || prev?.price || 0,
+      // Reset 24 h change indicator when a fresh price arrives.
+      change_24h: wsUpdate.price ? 0 : prev?.change_24h || 0,
+      high_24h: wsUpdate.price
+        ? Math.max(wsUpdate.price, prev?.high_24h || 0)
+        : prev?.high_24h || 0,
+      low_24h: wsUpdate.price
+        ? Math.min(wsUpdate.price, prev?.low_24h || Infinity)
+        : prev?.low_24h || 0,
+      volume_24h: prev?.volume_24h || 0, // volume comes from REST, not WS
+      last_updated: wsUpdate.timestamp
+        ? new Date(wsUpdate.timestamp).toISOString()
+        : prev?.last_updated || new Date().toISOString(),
+    }));
+    setLastRefresh(new Date());
+    setLoading(false);
+    setError(null);
+  }, [wsUpdate, enableWebSocket]); // `data` intentionally omitted — accessed via functional updater
 
   // Handle WebSocket errors
   useEffect(() => {
     if (wsError && enableWebSocket) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError(`WebSocket error: ${wsError}`);
     }
   }, [wsError, enableWebSocket]);
 
   // Initial fetch + fallback polling (only when WebSocket is disabled or disconnected)
+  const pollingActive = !enableWebSocket || !isConnected;
   useEffect(() => {
-    if (!isVisible) return;
+    if (pollingActive) load();
+  }, [pollingActive, load]);
 
-    if (!enableWebSocket || !isConnected) {
-      load();
-      const id = setInterval(() => load(), refreshInterval);
-      return () => clearInterval(id);
-    }
-  }, [load, refreshInterval, enableWebSocket, isConnected, isVisible]);
+  useRAFInterval(load, refreshInterval, pollingActive);
 
   // ── Guardrail: Up/Down arrow is STRICTLY driven by the 24h_change field ──
   const isUp = data !== null && data.change_24h >= 0;
@@ -207,7 +200,7 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   return (
     <div
       className={`
-        relative overflow-hidden
+        relative overflow-hidden max-w-full
         h-full bg-[#0A121E] border border-[#1B2A3B] rounded-2xl p-6
         shadow-lg hover:border-[#39FF14]/40 transition-all duration-300 group
         ${!loading && !error ? trendGlow : ""}
@@ -291,7 +284,7 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
           <div
             className={`text-4xl font-black leading-none tracking-tight ${priceColor}`}
           >
-            {formatPrice(data!.price)}
+            {data && formatPrice(data.price)}
           </div>
 
           {/* 24h change badge — arrow direction is STRICTLY from 24h_change field */}
@@ -313,9 +306,9 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
 
       {/* ── 24h stats row ── */}
       {!loading && !error && data && (
-        <div className="relative grid grid-cols-3 gap-3 border-t border-[#1B2A3B] pt-4">
+        <div className="relative grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-[#1B2A3B] pt-4">
           {/* High */}
-          <div className="flex flex-col gap-0.5">
+          <div className="min-w-0 flex flex-col gap-0.5">
             <span className="text-[9px] font-semibold uppercase tracking-widest text-gray-600">
               24h High
             </span>
@@ -383,4 +376,4 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   );
 };
 
-export default PriceFeedCard;
+export default memo(PriceFeedCard);

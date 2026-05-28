@@ -1,5 +1,9 @@
 'use client'
 
-export default function MapWidget() {
+import React, { memo } from 'react'
+
+function MapWidget() {
   return <div>🌍 Interactive Map</div>
 }
+
+export default memo(MapWidget);

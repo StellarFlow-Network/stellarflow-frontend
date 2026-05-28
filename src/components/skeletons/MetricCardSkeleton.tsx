@@ -5,7 +5,7 @@ interface MetricCardSkeletonProps {
   count?: number;
 }
 
-export function MetricCardSkeleton({ count = 4 }: MetricCardSkeletonProps) {
+export const MetricCardSkeleton = React.memo(function MetricCardSkeleton({ count = 4 }: MetricCardSkeletonProps) {
   return (
     <>
       {Array.from({ length: count }).map((_, i) => (
@@ -30,4 +30,4 @@ export function MetricCardSkeleton({ count = 4 }: MetricCardSkeletonProps) {
       ))}
     </>
   );
-}
+});

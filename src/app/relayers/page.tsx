@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useDebounce } from '../hooks/useDebounce';
+import { useTransformedCustomAddressField } from '@/app/hooks/useTransformedData';
 import { 
   Activity, 
   Plus, 
@@ -11,6 +13,7 @@ import {
   Clock, 
   Signal 
 } from 'lucide-react';
+import { RELAYERS_PAGE_STATUS_VARIANTS } from '@/lib/classNameVariants';
 
 // --- Types ---
 interface Relayer {
@@ -25,13 +28,28 @@ interface Relayer {
 
 // --- Mock Data ---
 const MOCK_RELAYERS: Relayer[] = [
-  { id: '1', name: 'VTPass Lagos', address: 'GA5T...BC9A', status: 'active', uptime: '99.98%', latency: 32, successRate: 99.4 },
-  { id: '2', name: 'Binance Pan-Africa', address: 'GBC2...LOPA', status: 'lagging', uptime: '98.50%', latency: 540, successRate: 92.1 },
-  { id: '3', name: 'Coinbase Global', address: 'GDRT...1122', status: 'active', uptime: '99.99%', latency: 45, successRate: 100 },
+  { id: '1', name: 'VTPass Lagos', address: 'GA5THZLKMNPQRSXYZABCDEFGHIJKLMNBC9A', status: 'active', uptime: '99.98%', latency: 32, successRate: 99.4 },
+  { id: '2', name: 'Binance Pan-Africa', address: 'GBC2VHZLKMNPQRSXYZABCDEFGHIJKLMLOPA', status: 'lagging', uptime: '98.50%', latency: 540, successRate: 92.1 },
+  { id: '3', name: 'Coinbase Global', address: 'GDRTVHZLKMNPQRSXYZABCDEFGHIJKLM1122', status: 'active', uptime: '99.99%', latency: 45, successRate: 100 },
 ];
 
 export default function RelayersPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 250);
+
+  const displayedRelayers = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    if (!q) return MOCK_RELAYERS;
+    return MOCK_RELAYERS.filter(r => r.name.toLowerCase().includes(q) || r.address.toLowerCase().includes(q));
+  }, [debouncedSearch]);
+
+  // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
+  const shortenedAddressMap = useMemo<Record<string, string>>(
+    () => Object.fromEntries(
+      useTransformedCustomAddressField(MOCK_RELAYERS, 'address').map(r => [r.id, r.shortenedAddress])
+    ),
+    []
+  );
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
@@ -86,11 +104,12 @@ export default function RelayersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800">
-              {MOCK_RELAYERS.map((relayer) => (
+              {displayedRelayers.map((relayer) => (
                 <tr key={relayer.id} className="hover:bg-[#1c2128] transition-colors group">
                   <td className="px-6 py-4">
                     <div className="font-medium text-blue-400">{relayer.name}</div>
-                    <div className="text-xs text-gray-500 font-mono">{relayer.address}</div>
+                    {/* PERFORMANCE OPTIMIZATION: O(1) map lookup instead of O(n) array scan */}
+                    <div className="text-xs text-gray-500 font-mono">{shortenedAddressMap[relayer.id]}</div>
                   </td>
                   <td className="px-6 py-4">
                     <StatusBadge status={relayer.status} />
@@ -154,16 +173,10 @@ function StatCard({ title, value, icon, subtitle }: { title: string, value: stri
 
 const StatusBadge = React.memo(
   function StatusBadge({ status }: { status: 'active' | 'lagging' | 'offline' }) {
-    const styles = {
-      active: 'bg-green-500/10 text-green-500 border-green-500/20',
-      lagging: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
-      offline: 'bg-red-500/10 text-red-500 border-red-500/20',
-    };
-
     return (
       <span
         style={{ contain: 'layout', willChange: 'opacity, transform' }}
-        className={`px-2 py-1 rounded-full text-[10px] font-bold border uppercase tracking-tighter ${styles[status]}`}
+        className={`px-2 py-1 rounded-full text-[10px] font-bold border uppercase tracking-tighter ${RELAYERS_PAGE_STATUS_VARIANTS[status]}`}
       >
         ● {status}
       </span>

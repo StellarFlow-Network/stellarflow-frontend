@@ -4,7 +4,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { ProgressBarProvider } from "./components/TopLoadingBar";
+import { UserProvider } from "./components/providers/UserProvider";
 import Script from "next/script";
+import {SocketProvider} from "./components/providers/SocketProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,6 +37,13 @@ export default function RootLayout({
       <head>
         {/* Prevent background flash before next-themes hydrates */}
         <style>{`html { background-color: #0d1117; }`}</style>
+        {/* Preload the critical above-the-fold logo asset */}
+        <link
+          rel="preload"
+          href="/sf.webp"
+          as="image"
+          type="image/webp"
+        />
         <Script
           id="polyfill-loader"
           strategy="beforeInteractive"
@@ -62,9 +71,11 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <ProgressBarProvider>
-            {children}
-          </ProgressBarProvider>
+          <UserProvider>
+            <ProgressBarProvider>
+              {children}
+            </ProgressBarProvider>
+          </UserProvider>
         </ThemeProvider>
       </body>
     </html>

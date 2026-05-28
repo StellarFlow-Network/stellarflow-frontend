@@ -13,32 +13,37 @@ import {
   Database,
   Terminal,
   Wifi,
-  WifiOff
+  WifiOff,
+  Cpu
 } from 'lucide-react';
+import { useXdrWorker } from './useXdrWorker';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { LogEntry } from './types';
+import { LogEntry, FilteredLogResult } from './types';
 
 // --- Mock Data ---
 const MOCK_LOGS: LogEntry[] = [
-  { id: '101', timestamp: '2026-04-28 12:40:01', type: 'transaction', severity: 'info', message: 'Price Update: NGN/XLM set to 1450.22', actor: 'VTPass Lagos', txHash: '0xabc...123' },
+  { id: '101', timestamp: '2026-04-28 12:40:01', type: 'transaction', severity: 'info', message: 'XDR: AAAAAEAAAAAEAAAAC...', actor: 'VTPass Lagos', txHash: '0xabc...123' },
   { id: '102', timestamp: '2026-04-28 12:35:12', type: 'security', severity: 'critical', message: 'Unauthorized API attempt detected from IP 192.168.1.1', actor: 'System Guard' },
   { id: '103', timestamp: '2026-04-28 12:30:45', type: 'system', severity: 'warning', message: 'Regional Failover: Switching to Frankfurt Secondary', actor: 'Network Orchestrator' },
-  { id: '104', timestamp: '2026-04-28 12:20:10', type: 'transaction', severity: 'info', message: 'Price Update: KES/XLM set to 132.45', actor: 'Binance Pan-Africa', txHash: '0xdef...456' },
+  { id: '104', timestamp: '2026-04-28 12:20:10', type: 'transaction', severity: 'info', message: 'XDR: BBBBBEEEEEEFFFFF...', actor: 'Binance Pan-Africa', txHash: '0xdef...456' },
 ];
 
 export default function LogsPage() {
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredResults, setFilteredResults] = useState<any[]>(MOCK_LOGS.map(l => ({ item: l })));
+  const [filteredResults, setFilteredResults] = useState<FilteredLogResult[]>(MOCK_LOGS.map(l => ({ item: l })));
   const [isSearching, setIsSearching] = React.useState(false);
   const workerRef = React.useRef<Worker | null>(null);
 
+  // ── XDR Worker (off-thread base64 → binary decoding) ──────────────────
+  const { batchDecode, decoding: xdrDecoding } = useXdrWorker();
+
   React.useEffect(() => {
-    // Initialize worker
+    // Initialise Fuse.js search worker
     workerRef.current = new Worker(new URL('./search-worker.ts', import.meta.url));
-    
+
     workerRef.current.onmessage = (e) => {
       if (e.data.type === 'RESULTS') {
         setFilteredResults(e.data.payload.results);
@@ -48,10 +53,32 @@ export default function LogsPage() {
 
     workerRef.current.postMessage({ type: 'INIT', payload: { logs: MOCK_LOGS } });
 
-    return () => {
-      workerRef.current?.terminate();
-    };
+    return () => { workerRef.current?.terminate(); };
   }, []);
+
+  // ── Batch-decode all XDR log lines off the main thread ─────────────────
+  React.useEffect(() => {
+    const xdrItems = MOCK_LOGS
+      .filter(log => log.message.startsWith('XDR: '))
+      .map(log => ({ id: log.id, xdr: log.message.replace('XDR: ', '') }));
+
+    if (xdrItems.length === 0) return;
+
+    batchDecode('initial-batch', xdrItems).then(results => {
+      setFilteredResults(prev =>
+        prev.map(res => {
+          const hit = results.find(r => r.id === res.item.id);
+          if (!hit || hit.status === 'ERROR') return res;
+          return {
+            ...res,
+            item: { ...res.item, decodedData: hit.decoded_payload },
+          };
+        })
+      );
+    });
+  // batchDecode is stable (useCallback with no deps) — safe to list here
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [batchDecode]);
 
   // Handle search with debounce logic
   React.useEffect(() => {
@@ -63,7 +90,7 @@ export default function LogsPage() {
           payload: { query: searchQuery, logs: MOCK_LOGS } 
         });
       }
-    }, 150); // Faster response for premium feel
+    }, 250); // Debounce search to 250ms to reduce per-keystroke processing
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
@@ -102,7 +129,14 @@ export default function LogsPage() {
           <p className="text-sm text-gray-500 mb-1">Admin / Audit</p>
           <h1 className="text-3xl font-bold tracking-tight">System Logs</h1>
         </div>
-        <div className="flex gap-3">
+        <div className="flex items-center gap-3">
+          {/* XDR Worker activity badge — visible while worker thread is busy */}
+          {xdrDecoding && (
+            <div className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/30 px-3 py-1.5 rounded-full animate-pulse">
+              <Cpu size={13} className="text-purple-400" />
+              <span className="text-xs font-mono text-purple-300 uppercase tracking-wider">Decoding XDR&hellip;</span>
+            </div>
+          )}
           <button 
             onClick={() => {
               const headers = ['Timestamp', 'Type', 'Severity', 'Message', 'Actor', 'Hash'];
@@ -182,7 +216,8 @@ export default function LogsPage() {
           )}
         </AnimatePresence>
 
-        <div className="grid grid-cols-[140px_120px_100px_1fr_150px_120px] text-gray-500 text-[10px] uppercase tracking-wider border-b border-gray-800 bg-[#0d1117]/80 backdrop-blur-md sticky top-0 z-10">
+        {/* Sticky header sits outside the scroll container so it never scrolls away */}
+        <div className="grid grid-cols-[140px_120px_100px_1fr_150px_120px] text-gray-500 text-[10px] uppercase tracking-wider border-b border-gray-800 bg-[#0d1117]/80 backdrop-blur-md">
           <div className="px-6 py-4 font-medium">Timestamp</div>
           <div className="px-6 py-4 font-medium">Type</div>
           <div className="px-6 py-4 font-medium">Severity</div>
@@ -191,6 +226,7 @@ export default function LogsPage() {
           <div className="px-6 py-4 font-medium text-right">Reference</div>
         </div>
 
+        {/* Scroll container — useVirtualizer's getScrollElement targets this ref */}
         <div 
           ref={parentRef}
           className="overflow-auto max-h-[600px] scrollbar-thin scrollbar-thumb-gray-700"
@@ -235,27 +271,37 @@ export default function LogsPage() {
                   <div className="px-6 py-4">
                     <SeverityIndicator severity={log.severity} />
                   </div>
-                  <div className="px-6 py-4 truncate text-gray-200">
-                    <SearchHighlight text={log.message} matches={matches.find((m: any) => m.key === 'message')?.indices} />
-                  </div>
-                  <div className="px-6 py-4 text-gray-400 truncate">
-                    <SearchHighlight text={log.actor} matches={matches.find((m: any) => m.key === 'actor')?.indices} />
-                  </div>
-                  <div className="px-6 py-4 text-right">
-                    {log.txHash ? (
-                      <button className="text-blue-500 hover:text-blue-400 flex items-center gap-1 justify-end ml-auto group/hash">
-                        <span className="text-xs uppercase group-hover/hash:underline">
-                          <SearchHighlight text={log.txHash} matches={matches.find((m: any) => m.key === 'txHash')?.indices} />
-                        </span>
-                        <ExternalLink size={12} />
-                      </button>
-                    ) : (
-                      <span className="text-gray-600">—</span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                     <div className="px-6 py-4 truncate text-gray-200">
+                       {log.decodedData ? (
+                         <div className="flex flex-col gap-1">
+                           <span className="text-[10px] text-purple-400 uppercase font-bold tracking-wider">Decoded XDR</span>
+                           <span className="text-xs text-green-400 font-mono">{JSON.stringify(log.decodedData)}</span>
+                         </div>
+                       ) : (
+                         <SearchHighlight text={log.message} matches={matches.find((m: { key: string; indices: [number, number][] }) => m.key === 'message')?.indices} />
+                       )}
+                     </div>
+                     <div className="px-6 py-4 text-gray-400 truncate">
+                       <SearchHighlight text={log.actor} matches={matches.find((m: { key: string; indices: [number, number][] }) => m.key === 'actor')?.indices} />
+                     </div>
+                     <div className="px-6 py-4 text-right">
+                       {log.txHash ? (
+                         <button className="text-blue-500 hover:text-blue-400 flex items-center gap-1 justify-end ml-auto group/hash">
+                           <span className="text-xs uppercase group-hover/hash:underline">
+                             <SearchHighlight text={log.txHash} matches={matches.find((m: { key: string; indices: [number, number][] }) => m.key === 'txHash')?.indices} />
+                           </span>
+                           <ExternalLink size={12} />
+                         </button>
+                       ) : (
+                         <span className="text-gray-600">—</span>
+                       )}
+                     </div>
+                   </div>
+                 </div>
+               );
+             })}
+
+
             
             {displayedResults.length === 0 && (
               <div className="px-6 py-20 text-center text-gray-500 h-full flex flex-col items-center justify-center gap-2">

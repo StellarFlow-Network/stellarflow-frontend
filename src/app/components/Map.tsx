@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import "leaflet/dist/leaflet.css";
+import React, { useEffect, useState, memo } from "react";
 import dynamic from "next/dynamic";
+import { useErrorTimeout } from "../hooks/useErrorTimeout";
 
 // Dynamically import map components to avoid SSR issues
 const MapContainer = dynamic(() => import("react-leaflet").then((mod) => mod.MapContainer), { ssr: false });
@@ -14,10 +16,10 @@ interface NetworkNode {
   nodes: number;
 }
 
-export default function Map() {
+function Map() {
   const [geoData, setGeoData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { error, setError } = useErrorTimeout({ timeoutMs: 5000 });
 
   useEffect(() => {
     const loadMapData = async () => {
@@ -110,7 +112,12 @@ export default function Map() {
   }
 
   return (
-    <div className="relative min-h-[320px] overflow-hidden rounded-[28px] border border-[#A7C957]/30 bg-[#0A1020] p-5 shadow-[0_24px_80px_rgba(2,8,23,0.42)]">
+    <div
+      className="relative min-h-[320px] overflow-hidden rounded-[28px] border border-[#A7C957]/30 bg-[#0A1020] p-5 shadow-[0_24px_80px_rgba(2,8,23,0.42)]"
+      // @ts-expect-error — fetchPriority is a valid HTML attribute but not yet in React types
+      fetchPriority="high"
+      data-lcp-element="network-map"
+    >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,rgba(217,249,157,0.12),transparent_35%),radial-gradient(circle_at_85%_80%,rgba(96,165,250,0.12),transparent_40%)]" />
       <div className="relative h-full min-h-[280px] rounded-[24px] border border-white/10 overflow-hidden">
         <div className="w-full h-full">
@@ -141,3 +148,5 @@ export default function Map() {
     </div>
   );
 }
+
+export default memo(Map);

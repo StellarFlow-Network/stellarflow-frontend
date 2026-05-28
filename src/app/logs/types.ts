@@ -1,3 +1,5 @@
+import { XdrFields } from './worker-types';
+
 export interface LogEntry {
   id: string;
   timestamp: string;
@@ -6,4 +8,10 @@ export interface LogEntry {
   message: string;
   actor: string;
   txHash?: string;
+  decodedData?: XdrFields;
+}
+
+export interface FilteredLogResult {
+  item: LogEntry;
+  matches?: [number, number][];
 }

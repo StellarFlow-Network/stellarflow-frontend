@@ -69,4 +69,4 @@ const ModularStatsCard: React.FC<ModularStatsCardProps> = ({
   );
 };
 
-export default ModularStatsCard;
+export default React.memo(ModularStatsCard);

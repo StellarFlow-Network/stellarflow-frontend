@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import Nav from "./components/nav";
-import useIntersectionObserver from "./hooks/useIntersectionObserver";
 import FloatingSidebar from "./components/FloatingSidebar";
 import SystemStats from "./components/SystemStats";
 import ModularStatsCard from "./components/ModularStatsCard";
@@ -73,28 +72,25 @@ const LoadingChartState = () => {
 
 export default function DashboardPage() {
   const [cardsReady, setCardsReady] = useState(false);
-  const { ref: priceFeedRef, isVisible: isPriceFeedVisible } =
-    useIntersectionObserver();
-  const { ref: networkMapRef, isVisible: isNetworkMapVisible } =
-    useIntersectionObserver();
+
   useEffect(() => {
     const id = requestAnimationFrame(() => setCardsReady(true));
     return () => cancelAnimationFrame(id);
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#020817] text-white selection:bg-[#CBF34D]/30">
+    <div className="min-h-screen bg-[#020817] text-white selection:bg-[#CBF34D]/30 overflow-x-hidden">
       <Nav />
       {/* Sidebar - Positioned for the dashboard layout */}
       <FloatingSidebar />
 
-      <main className="pl-24 pr-8 py-10 md:py-16">
+      <main className="min-w-0 px-4 py-8 pl-16 sm:pl-20 md:px-8 lg:px-10 xl:px-12 md:pl-24 md:pr-8 md:py-16">
         <div className="max-w-6xl mx-auto space-y-12">
           {/* System At-A-Glance Stats Section */}
           <SystemStats />
 
           {/* Modular Stats Cards Section */}
-          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <section className="min-w-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="aspect-[16/10]">
               <ModularStatsCard
                 label="Network Throughput"
@@ -125,10 +121,11 @@ export default function DashboardPage() {
           </section>
 
           {/* Local FX rates with memoized sparklines */}
-          <section className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <section className="min-w-0 grid grid-cols-1 sm:grid-cols-3 gap-6">
             {rateCards.map((card, index) => (
               <motion.div
                 key={card.currency}
+                className="min-w-0"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{
@@ -143,15 +140,9 @@ export default function DashboardPage() {
           </section>
 
           {/* Dynamic Price Feed — NGN/XLM */}
-          <section
-            ref={priceFeedRef}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            <div className="sm:col-span-2 lg:col-span-1 aspect-[4/3] min-h-[320px]">
-              <PriceFeedCard
-                refreshInterval={30000}
-                isVisible={isPriceFeedVisible}
-              />
+          <section className="min-w-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="min-w-0 w-full max-w-full aspect-auto sm:aspect-4/3 min-h-[260px] sm:min-h-[320px] overflow-hidden">
+              <PriceFeedCard refreshInterval={30000} />
             </div>
           </section>
 
@@ -167,31 +158,24 @@ export default function DashboardPage() {
             </h2>
             <RelayerStatusTable relayers={mockRelayers} />
           </section>
-          <section ref={networkMapRef} className="space-y-4">
+          <section className="space-y-4">
             <h2 className="text-xl font-semibold text-white uppercase tracking-wider mb-4">
               Live Network Map
             </h2>
-
             <AnimatePresence mode="wait">
-              {isNetworkMapVisible ? (
-                <motion.div
-                  key="network-map"
-                  initial={{ opacity: 0, scale: 0.98, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.98, y: 10 }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 260,
-                    damping: 20,
-                  }}
-                >
-                  <LiveNetworkMap />
-                </motion.div>
-              ) : (
-                <div className="min-h-[320px] rounded-[28px] border border-[#A7C957]/20 bg-[#0A1020] p-6 text-sm text-slate-400">
-                  Live Network Map paused while off-screen.
-                </div>
-              )}
+              <motion.div
+                key="network-map"
+                initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98, y: 10 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 260,
+                  damping: 20,
+                }}
+              >
+                <LiveNetworkMap />
+              </motion.div>
             </AnimatePresence>
           </section>
 
