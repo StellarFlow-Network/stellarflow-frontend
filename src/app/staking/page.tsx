@@ -181,7 +181,11 @@ export default function StakingPage() {
 // --- Sub-components ---
 function StatCard({ title, value, icon, subtitle }: { title: string, value: string, icon: React.ReactNode, subtitle: string }) {
   return (
-    <div className="bg-[#161b22] border border-gray-800 p-6 rounded-xl">
+    <div
+      data-tooltip={subtitle}
+      tabIndex={0}
+      className="bg-[#161b22] border border-gray-800 p-6 rounded-xl"
+    >
       <div className="flex justify-between items-start mb-2">
         <span className="text-gray-400 text-sm font-medium">{title}</span>
         {icon}

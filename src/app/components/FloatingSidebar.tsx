@@ -23,29 +23,27 @@ const FloatingSidebar = memo(() => {
   const pathname = usePathname();
   const router = useRouter();
   const [active, setActive] = useState(pathname ?? "Dashboard");
-  const [hovered, setHovered] = useState<string | null>(null);
 
   const handleSetActive = useCallback((href: string) => {
     setActive(href);
   }, []);
 
-  const handleSetHovered = useCallback((label: string | null) => {
-    setHovered(label);
-  }, []);
+  const handlePrefetch = useCallback(
+    (href: string) => {
+      if (!href) return;
+      if (href === pathname) return;
 
-  const handlePrefetch = useCallback((href: string) => {
-    if (!href) return;
-    if (href === pathname) return;
-
-    try {
-      // Proactively trigger Next.js route prefetch to start asset compilation
-      router.prefetch(href);
-    } catch (err) {
-      // Swallow — prefetch is advisory and may throw in some environments
-      // eslint-disable-next-line no-console
-      console.debug('Prefetch failed for', href, err);
-    }
-  }, [router]);
+      try {
+        // Proactively trigger Next.js route prefetch to start asset compilation
+        router.prefetch(href);
+      } catch (err) {
+        // Swallow — prefetch is advisory and may throw in some environments
+        // eslint-disable-next-line no-console
+        console.debug("Prefetch failed for", href, err);
+      }
+    },
+    [router],
+  );
   const handlePrefetch = useCallback(
     (href: string) => {
       if (href === "/contracts") {
@@ -70,7 +68,6 @@ const FloatingSidebar = memo(() => {
     >
       {navItems.map(({ icon: Icon, label, href }) => {
         const isActive = pathname === href || active === href;
-        const isHovered = hovered === label;
 
         return (
           <div key={label} className="relative flex items-center">
@@ -100,50 +97,22 @@ const FloatingSidebar = memo(() => {
 
             <Link
               href={href}
-              prefetch={false}
+              prefetch={href === "/contracts" ? false : undefined}
               onClick={() => handleSetActive(href)}
               onFocus={() => handlePrefetch(href)}
-              onMouseEnter={() => {
-                handleSetHovered(label);
-                handlePrefetch(href);
-              }}
-              onPointerEnter={() => handlePrefetch(href)}
               onMouseOver={() => handlePrefetch(href)}
-              onMouseLeave={() => handleSetHovered(null)}
-              className="relative flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200"
+              data-tooltip={label}
+              className="relative flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-200 hover:scale-110 hover:bg-white/[0.08] hover:text-white"
               style={{
-                color: isActive
-                  ? "#f5c842"
-                  : isHovered
-                    ? "#ffffff"
-                    : "rgba(255,255,255,0.45)",
-                background: isActive
-                  ? "rgba(245,200,66,0.12)"
-                  : isHovered
-                    ? "rgba(255,255,255,0.08)"
-                    : "transparent",
-                transform: isHovered && !isActive ? "scale(1.08)" : "scale(1)",
+                color: isActive ? "#f5c842" : "rgba(255,255,255,0.45)",
+                background: isActive ? "rgba(245,200,66,0.12)" : "transparent",
               }}
               aria-label={label}
             >
               <Icon size={20} strokeWidth={isActive ? 2.2 : 1.8} />
             </Link>
 
-            {/* Tooltip */}
-            {isHovered && (
-              <span
-                className="absolute left-14 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold pointer-events-none"
-                style={{
-                  background: "rgba(15,23,35,0.95)",
-                  border: "1px solid rgba(245,200,66,0.3)",
-                  color: "#f5c842",
-                  letterSpacing: "0.04em",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-                }}
-              >
-                {label}
-              </span>
-            )}
+            
           </div>
         );
       })}

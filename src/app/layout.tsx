@@ -7,7 +7,7 @@ import { ProgressBarProvider } from "./components/TopLoadingBar";
 import { UserProvider } from "./components/providers/UserProvider";
 import Script from "next/script";
 import {SocketProvider} from "./components/providers/SocketProvider";
-
+import SharedTooltip from "./components/SharedTooltip";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -38,12 +38,7 @@ export default function RootLayout({
         {/* Prevent background flash before next-themes hydrates */}
         <style>{`html { background-color: #0d1117; }`}</style>
         {/* Preload the critical above-the-fold logo asset */}
-        <link
-          rel="preload"
-          href="/sf.webp"
-          as="image"
-          type="image/webp"
-        />
+        <link rel="preload" href="/sf.webp" as="image" type="image/webp" />
         <Script
           id="polyfill-loader"
           strategy="beforeInteractive"
@@ -58,7 +53,7 @@ export default function RootLayout({
                 js.src = 'https://polyfill-library.fastly.dev/v3/polyfill.min.js?features=default,IntersectionObserver,ResizeObserver,fetch,Promise';
                 document.head.appendChild(js);
               }
-            `
+            `,
           }}
         />
       </head>
@@ -74,6 +69,7 @@ export default function RootLayout({
           <UserProvider>
             <ProgressBarProvider>
               {children}
+              <SharedTooltip />
             </ProgressBarProvider>
           </UserProvider>
         </ThemeProvider>
