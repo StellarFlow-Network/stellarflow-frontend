@@ -46,14 +46,7 @@ const FloatingSidebar = memo(() => {
       console.debug('Prefetch failed for', href, err);
     }
   }, [router]);
-  const handlePrefetch = useCallback(
-    (href: string) => {
-      if (href === "/contracts") {
-        router.prefetch("/contracts");
-      }
-    },
-    [router],
-  );
+
 
   return (
     <nav
