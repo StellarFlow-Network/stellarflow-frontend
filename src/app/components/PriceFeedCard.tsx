@@ -8,6 +8,11 @@ import { useDebounce } from "../hooks/useDebounce";
 import { useErrorTimeout } from "../hooks/useErrorTimeout";
 import { useSocketConnection, useSocketData } from "./providers/SocketProvider";
 import { Shimmer } from "@/components/skeletons/Shimmer";
+import {
+  getTrendClasses,
+  getConnectionStatusClasses,
+  combineVariantClasses,
+} from "@/lib/styleVariants";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -186,16 +191,14 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   const isUp = data !== null && data.change_24h >= 0;
   const changeAbs = data ? Math.abs(data.change_24h).toFixed(2) : "0.00";
 
-  // ── Colour tokens ──────────────────────────────────────────────────────────
-  const trendBg = isUp
-    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-    : "bg-rose-500/10 border-rose-500/20 text-rose-400";
-
-  const trendGlow = isUp
-    ? "shadow-[0_0_18px_rgba(52,211,153,0.18)]"
-    : "shadow-[0_0_18px_rgba(244,63,94,0.18)]";
-
-  const priceColor = isUp ? "text-emerald-400" : "text-rose-400";
+  // ── Style variants (Issue #165: Isolating Dynamic Style Updates) ──────────
+  const trendVariant = getTrendClasses(isUp);
+  const trendBg = combineVariantClasses(
+    trendVariant.container,
+    trendVariant.text,
+  );
+  const trendGlow = trendVariant.glow;
+  const priceColor = trendVariant.text;
 
   return (
     <div
@@ -229,6 +232,9 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
                 ? "border-[#39FF14]/20 bg-[#39FF14]/10 text-[#39FF14]"
                 : "border-yellow-500/20 bg-yellow-500/10 text-yellow-500"
             }`}
+            data-connection-status={
+              enableWebSocket && isConnected ? "live" : "offline"
+            }
           >
             <span className="relative flex h-1.5 w-1.5">
               <span
@@ -292,6 +298,7 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
             <div
               className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${trendBg}`}
               aria-label={`24-hour change: ${isUp ? "up" : "down"} ${changeAbs}%`}
+              data-trend-direction={isUp ? "up" : "down"}
             >
               {/* Arrow: ▲ when 24h_change >= 0, ▼ when 24h_change < 0 */}
               <span aria-hidden="true">{isUp ? "▲" : "▼"}</span>
