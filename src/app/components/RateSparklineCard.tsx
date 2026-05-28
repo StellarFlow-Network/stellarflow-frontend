@@ -84,7 +84,10 @@ const RateSparklineCard: React.FC<RateSparklineCardProps> = ({
 
   if (loading) {
     return (
-      <div className="aspect-[16/10] rounded-3xl border border-[#1B2A3B] bg-[#08111E] p-5 shadow-lg shadow-black/20">
+      <div
+        style={{ contain: "paint layout" }}
+        className="aspect-[16/10] rounded-3xl border border-[#1B2A3B] bg-[#08111E] p-5 shadow-lg shadow-black/20"
+      >
         <div className="flex h-full flex-col justify-between">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-2">
@@ -104,7 +107,10 @@ const RateSparklineCard: React.FC<RateSparklineCardProps> = ({
   }
 
   return (
-    <div className="aspect-[16/10] rounded-3xl border border-[#1B2A3B] bg-[#08111E] p-5 shadow-lg shadow-black/20 transition duration-300 hover:border-[#39FF14]/40">
+    <div
+      style={{ contain: "paint layout" }}
+      className="aspect-[16/10] rounded-3xl border border-[#1B2A3B] bg-[#08111E] p-5 shadow-lg shadow-black/20 transition duration-300 hover:border-[#39FF14]/40"
+    >
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
