@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { memo, useState } from 'react';
 import { 
   Users, 
   Key, 
@@ -36,20 +36,11 @@ const MOCK_CONSUMERS: Consumer[] = [
   { id: 'C-04', projectName: 'Test Sandbox', contractAddress: 'GDD2VHZLKMNPQRSXYZABCDEFGHIJKLM3311', tier: 'Staging', status: 'paused', monthlyRequests: '12K', balanceXLM: 0.00 },
 ];
 
+const SECRET_PASSPHRASE = 'soroban_oracle_secret_payload_hash_alignment';
+
 export default function ConsumersPage() {
-  const [showSecret, setShowSecret] = useState(false);
-  const [copied, setCopied] = useState(false);
-
   // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
-  const transformedConsumers = useMemo(
-    () => useTransformedCustomAddressField(MOCK_CONSUMERS, 'contractAddress'),
-    []
-  );
-
-  const handleCopy = () => {
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const transformedConsumers = useTransformedCustomAddressField(MOCK_CONSUMERS, 'contractAddress');
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
@@ -89,29 +80,7 @@ export default function ConsumersPage() {
           </div>
           <div className="space-y-2">
             <label className="text-xs text-gray-500 uppercase font-bold">Secret Authentication Passkey</label>
-            <div className="relative">
-              <input 
-                type={showSecret ? "text" : "password"} 
-                defaultValue="soroban_oracle_secret_payload_hash_alignment" 
-                readOnly
-                className="w-full bg-[#0d1117] border border-gray-700 rounded-md py-2.5 pl-3 pr-24 text-sm font-mono text-gray-300 focus:outline-none" 
-              />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
-                <button 
-                  onClick={() => setShowSecret(!showSecret)}
-                  className="p-1 text-gray-500 hover:text-gray-300"
-                >
-                  {showSecret ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-                <button 
-                  onClick={handleCopy}
-                  className="p-1 text-gray-500 hover:text-gray-300 relative"
-                >
-                  <Copy size={16} />
-                  {copied && <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded">Copied!</span>}
-                </button>
-              </div>
-            </div>
+            <SecretPasskeyField secret={SECRET_PASSPHRASE} />
           </div>
         </div>
       </div>
@@ -191,7 +160,47 @@ export default function ConsumersPage() {
 }
 
 // --- Sub-components ---
-function StatCard({ title, value, icon, subtitle }: { title: string, value: string, icon: React.ReactNode, subtitle: string }) {
+const SecretPasskeyField = memo(function SecretPasskeyField({ secret }: { secret: string }) {
+  const [showSecret, setShowSecret] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="relative">
+      <input
+        type={showSecret ? "text" : "password"}
+        value={secret}
+        readOnly
+        className="w-full bg-[#0d1117] border border-gray-700 rounded-md py-2.5 pl-3 pr-24 text-sm font-mono text-gray-300 focus:outline-none"
+      />
+      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+        <button
+          type="button"
+          onClick={() => setShowSecret((current) => !current)}
+          className="p-1 text-gray-500 hover:text-gray-300"
+          aria-label={showSecret ? 'Hide secret passkey' : 'Show secret passkey'}
+        >
+          {showSecret ? <EyeOff size={16} /> : <Eye size={16} />}
+        </button>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="p-1 text-gray-500 hover:text-gray-300 relative"
+          aria-label="Copy secret passkey"
+        >
+          <Copy size={16} />
+          {copied && <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded">Copied!</span>}
+        </button>
+      </div>
+    </div>
+  );
+});
+
+const StatCard = memo(function StatCard({ title, value, icon, subtitle }: { title: string, value: string, icon: React.ReactNode, subtitle: string }) {
   return (
     <div className="bg-[#161b22] border border-gray-800 p-6 rounded-xl">
       <div className="flex justify-between items-start mb-2">
@@ -202,4 +211,4 @@ function StatCard({ title, value, icon, subtitle }: { title: string, value: stri
       <div className="text-xs text-gray-500">{subtitle}</div>
     </div>
   );
-}
+});
