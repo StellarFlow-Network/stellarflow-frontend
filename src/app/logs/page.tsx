@@ -21,6 +21,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { LogEntry, FilteredLogResult } from './types';
+import { getPageCount, getPageItems, getPageRange } from '@/utils/arrayHelpers';
 
 // --- Mock Data ---
 const MOCK_LOGS: LogEntry[] = [
@@ -30,9 +31,13 @@ const MOCK_LOGS: LogEntry[] = [
   { id: '104', timestamp: '2026-04-28 12:20:10', type: 'transaction', severity: 'info', message: 'XDR: BBBBBEEEEEEFFFFF...', actor: 'Binance Pan-Africa', txHash: '0xdef...456' },
 ];
 
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
+
 export default function LogsPage() {
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [filteredResults, setFilteredResults] = useState<FilteredLogResult[]>(MOCK_LOGS.map(l => ({ item: l })));
   const [isSearching, setIsSearching] = React.useState(false);
   const workerRef = React.useRef<Worker | null>(null);
@@ -95,14 +100,58 @@ export default function LogsPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const displayedResults = filteredResults.filter(res => 
-    filter === 'all' || res.item.severity === filter
+  const displayedResults = React.useMemo(
+    () => filteredResults.filter(res => filter === 'all' || res.item.severity === filter),
+    [filteredResults, filter]
   );
+
+  const pageCount = React.useMemo(
+    () => getPageCount(displayedResults.length, pageSize),
+    [displayedResults.length, pageSize]
+  );
+
+  React.useEffect(() => {
+    if (currentPage > pageCount) {
+      setCurrentPage(pageCount);
+    }
+  }, [currentPage, pageCount]);
+
+  const paginatedResults = React.useMemo(
+    () => getPageItems(displayedResults, currentPage, pageSize),
+    [displayedResults, currentPage, pageSize]
+  );
+
+  const pageRange = React.useMemo(
+    () => getPageRange(displayedResults.length, currentPage, pageSize),
+    [displayedResults.length, currentPage, pageSize]
+  );
+
+  const { start: pageStart, end: pageEnd } = pageRange;
+
+  React.useEffect(() => {
+    const xdrItems = paginatedResults
+      .map(res => res.item)
+      .filter(log => log.message.startsWith('XDR: ') && !log.decodedData)
+      .map(log => ({ id: log.id, xdr: log.message.replace('XDR: ', '') }));
+
+    if (xdrItems.length === 0) return;
+
+    batchDecode('page-batch', xdrItems).then(results => {
+      setFilteredResults(prev => prev.map(res => {
+        const hit = results.find(r => r.id === res.item.id);
+        if (!hit || hit.status === 'ERROR') return res;
+        return {
+          ...res,
+          item: { ...res.item, decodedData: hit.decoded_payload },
+        };
+      }));
+    });
+  }, [batchDecode, paginatedResults]);
 
   // Virtualization setup
   const parentRef = React.useRef<HTMLDivElement>(null);
   const rowVirtualizer = useVirtualizer({
-    count: displayedResults.length,
+    count: paginatedResults.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 64, // Estimate based on typical row height
     overscan: 10,
@@ -182,7 +231,10 @@ export default function LogsPage() {
             type="text" 
             placeholder="Filter logs by message, actor, or hash..." 
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
             className="w-full bg-[#0d1117] border border-gray-700 rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-blue-500 transition-colors"
           />
         </div>
@@ -190,7 +242,11 @@ export default function LogsPage() {
           <Filter size={18} className="text-gray-500" />
           <select 
             className="bg-[#0d1117] border border-gray-700 rounded-md py-2 px-4 text-sm focus:outline-none"
-            onChange={(e) => setFilter(e.target.value)}
+            value={filter}
+            onChange={(e) => {
+              setFilter(e.target.value);
+              setCurrentPage(1);
+            }}
           >
             <option value="all">All Severities</option>
             <option value="info">Info Only</option>
@@ -239,7 +295,7 @@ export default function LogsPage() {
             }}
           >
             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-              const result = displayedResults[virtualRow.index];
+              const result = paginatedResults[virtualRow.index];
               const log = result.item;
               const matches = result.matches || [];
               
@@ -313,13 +369,36 @@ export default function LogsPage() {
         </div>
 
         {/* --- Pagination Footer --- */}
-        <div className="p-4 border-t border-gray-800 flex justify-between items-center text-sm text-gray-500">
-          <span>Showing {displayedResults.length} of {MOCK_LOGS.length} entries</span>
-          <div className="flex gap-2">
-            <button className="p-2 border border-gray-700 rounded-md hover:bg-gray-800 disabled:opacity-50" disabled>
+        <div className="p-4 border-t border-gray-800 flex flex-col gap-3 md:flex-row md:items-center md:justify-between text-sm text-gray-500">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+            <span>Showing {pageStart}–{pageEnd} of {displayedResults.length} matching entries</span>
+            <span className="text-xs text-gray-400">Page {currentPage} of {pageCount}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <select
+              className="bg-[#0d1117] border border-gray-700 rounded-md py-2 px-3 text-sm focus:outline-none"
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+            >
+              {PAGE_SIZE_OPTIONS.map(size => (
+                <option key={size} value={size}>{size} rows</option>
+              ))}
+            </select>
+            <button
+              className="p-2 border border-gray-700 rounded-md hover:bg-gray-800 disabled:opacity-50"
+              disabled={currentPage <= 1}
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+            >
               <ChevronLeft size={16} />
             </button>
-            <button className="p-2 border border-gray-700 rounded-md hover:bg-gray-800">
+            <button
+              className="p-2 border border-gray-700 rounded-md hover:bg-gray-800 disabled:opacity-50"
+              disabled={currentPage >= pageCount}
+              onClick={() => setCurrentPage((page) => Math.min(pageCount, page + 1))}
+            >
               <ChevronRight size={16} />
             </button>
           </div>
