@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback, memo } from "react";
-import { useRAFInterval } from "@/app/hooks/useRAFInterval";
+import { useSharedRAFInterval } from "@/app/hooks/useSharedRAFInterval";
 import { RefreshCw } from "lucide-react";
 import { useProgressBar } from "./TopLoadingBar";
 import { useDebounce } from "../hooks/useDebounce";
@@ -180,7 +180,7 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
     if (pollingActive) load();
   }, [pollingActive, load]);
 
-  useRAFInterval(load, refreshInterval, pollingActive);
+  useSharedRAFInterval(load, refreshInterval, pollingActive);
 
   // ── Guardrail: Up/Down arrow is STRICTLY driven by the 24h_change field ──
   const isUp = data !== null && data.change_24h >= 0;
