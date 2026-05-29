@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Vote, 
   FilePlus, 
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useTransformedCustomAddressField } from '@/app/hooks/useTransformedData';
 import { useRAFInterval } from '@/app/hooks/useRAFInterval';
+import { requestValidatorStatus, type ValidatorStatusMetadata } from '@/app/services/validatorStatusBatch';
 
 // --- Types ---
 interface Proposal {
@@ -49,6 +50,8 @@ export default function GovernancePage() {
   const [ledgerCounts, setLedgerCounts] = useState<Record<string, number>>(
     () => Object.fromEntries(MOCK_PROPOSALS.map(p => [p.id, p.endsInLedgers]))
   );
+  const [validatorStatuses, setValidatorStatuses] = useState<Record<string, ValidatorStatusMetadata>>({});
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   useRAFInterval(() => {
     setLedgerCounts(prev => {
@@ -59,6 +62,34 @@ export default function GovernancePage() {
       return next;
     });
   }, 5000);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const activeAddresses = Array.from(
+      new Set(
+        transformedProposals
+          .filter((proposal) => proposal.status === 'Active')
+          .map((proposal) => proposal.proposer)
+      )
+    );
+
+    if (activeAddresses.length === 0) return;
+
+    Promise.all(activeAddresses.map((address) => requestValidatorStatus(address)))
+      .then((results) => {
+        if (!isMounted) return;
+        setValidatorStatuses(Object.fromEntries(results.map((status) => [status.address, status])));
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setStatusError(err instanceof Error ? err.message : 'Unable to load validator statuses.');
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [transformedProposals]);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
@@ -126,6 +157,11 @@ export default function GovernancePage() {
                   <h3 className="text-lg font-semibold text-gray-100 group-hover:text-blue-400 transition-colors">{proposal.title}</h3>
                   {/* PERFORMANCE OPTIMIZATION: Use pre-computed shortened address instead of runtime string slicing */}
                   <p className="text-xs text-gray-500 font-mono">Proposed by authority wallet: <span className="text-gray-400">{proposal.shortenedAddress}</span></p>
+                  {proposal.status === 'Active' && (
+                    <p className="text-xs text-gray-400 font-mono">
+                      Validator status: <span className="text-green-300">{validatorStatuses[proposal.proposer]?.status ?? 'Loading...'}</span>
+                    </p>
+                  )}
                 </div>
 
                 {/* Progress Indicators and Actions */}
