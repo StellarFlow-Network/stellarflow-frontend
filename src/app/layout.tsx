@@ -37,6 +37,19 @@ export default function RootLayout({
       <head>
         {/* Prevent background flash before next-themes hydrates */}
         <style>{`html { background-color: #0d1117; }`}</style>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var theme = localStorage.getItem('theme') || 'dark';
+                  document.documentElement.classList.add(theme);
+                  document.documentElement.style.colorScheme = theme;
+                } catch (e) {}
+              })()
+            `,
+          }}
+        />
         {/* Preload the critical above-the-fold logo asset */}
         <link
           rel="preload"
