@@ -183,11 +183,17 @@ async function fetchLiveRate(providerRpcUrl) {
               </button>
             </div>
 
-            {/* Code Mirror Container */}
+            {/* Code Mirror Container — both panes rendered once, toggled via CSS to avoid unmount/remount cycles */}
             <div className="p-6 bg-[#0d1117] font-mono text-sm overflow-x-auto text-gray-300 leading-relaxed min-h-[380px]">
-              <pre className="whitespace-pre">
-                {codeSnippets[activeTab]}
-              </pre>
+              {(Object.keys(codeSnippets) as Array<keyof typeof codeSnippets>).map((lang) => (
+                <pre
+                  key={lang}
+                  className="whitespace-pre"
+                  style={{ display: activeTab === lang ? 'block' : 'none' }}
+                >
+                  {codeSnippets[lang]}
+                </pre>
+              ))}
             </div>
 
           </div>
