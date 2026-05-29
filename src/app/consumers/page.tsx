@@ -16,6 +16,13 @@ import {
   Copy 
 } from 'lucide-react';
 import { useTransformedCustomAddressField } from '@/app/hooks/useTransformedData';
+import { 
+  CONSUMER_TIER_BADGE_CLASS, 
+  CONSUMER_TIER_VARIANTS, 
+  CONSUMER_STATUS_TEXT_VARIANTS, 
+  CONSUMER_STATUS_DOT_VARIANTS,
+  getBalanceColorClass 
+} from '@/lib/classNameVariants';
 
 // --- Types ---
 interface Consumer {
