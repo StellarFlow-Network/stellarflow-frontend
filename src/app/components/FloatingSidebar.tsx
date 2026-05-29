@@ -46,14 +46,6 @@ const FloatingSidebar = memo(() => {
       console.debug('Prefetch failed for', href, err);
     }
   }, [router]);
-  const handlePrefetch = useCallback(
-    (href: string) => {
-      if (href === "/contracts") {
-        router.prefetch("/contracts");
-      }
-    },
-    [router],
-  );
 
   return (
     <nav
@@ -107,8 +99,6 @@ const FloatingSidebar = memo(() => {
                 handleSetHovered(label);
                 handlePrefetch(href);
               }}
-              onPointerEnter={() => handlePrefetch(href)}
-              onMouseOver={() => handlePrefetch(href)}
               onMouseLeave={() => handleSetHovered(null)}
               className="relative flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200"
               style={{
