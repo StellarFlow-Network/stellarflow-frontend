@@ -66,9 +66,13 @@ const rateCards = [
   },
 ];
 
-const LoadingChartState = () => {
-  return <MapSkeleton />;
-};
+const DashboardTrafficChart = dynamic(
+  () => import("./components/DashboardTrafficChart"),
+  {
+    ssr: false,
+    loading: () => <MapSkeleton />,
+  },
+);
 
 export default function DashboardPage() {
   const [cardsReady, setCardsReady] = useState(false);
@@ -192,11 +196,11 @@ export default function DashboardPage() {
                   </h3>
                 </div>
                 <span className="rounded-full border border-[#D9F99D]/20 bg-[#D9F99D]/10 px-3 py-1 text-xs font-medium text-[#D9F99D]">
-                  Live chart pending
+                  Live chart 
                 </span>
               </div>
 
-              <LoadingChartState />
+              <DashboardTrafficChart />
             </div>
 
             <div className="rounded-[32px] border border-[#A7C957]/30 bg-[#0A1020] p-5 shadow-[0_24px_80px_rgba(2,8,23,0.42)]">
