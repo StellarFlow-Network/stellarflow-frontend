@@ -8,6 +8,7 @@ import { useDebounce } from "../hooks/useDebounce";
 import { useErrorTimeout } from "../hooks/useErrorTimeout";
 import { useSocketConnection, useSocketData } from "./providers/SocketProvider";
 import { Shimmer } from "@/components/skeletons/Shimmer";
+import { useCryptoWorker } from "@/utils/crypto";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -105,8 +106,10 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [filterInput, setFilterInput] = useState("");
+  const [payloadHash, setPayloadHash] = useState<string | null>(null);
   const debouncedFilter = useDebounce(filterInput, 250);
   const { start, done } = useProgressBar();
+  const { hash } = useCryptoWorker();
 
   // Granular context subscriptions — each hook only re-renders this component
   // when its specific slice changes, not on every unrelated socket event.
@@ -173,6 +176,14 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
       setError(`WebSocket error: ${wsError}`);
     }
   }, [wsError, enableWebSocket]);
+
+  // Hash the oracle payload off-thread whenever data updates
+  useEffect(() => {
+    if (!data) return;
+    hash(JSON.stringify(data)).then(({ hex }) =>
+      setPayloadHash(hex.slice(0, 16))
+    );
+  }, [data, hash]);
 
   // Initial fetch + fallback polling (only when WebSocket is disabled or disconnected)
   const pollingActive = isPageVisible && (!enableWebSocket || !isConnected);
@@ -387,6 +398,14 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
           STELLARFLOW ORACLE
         </span>
       </div>
+      {payloadHash && (
+        <div className="relative mt-1 flex items-center gap-1.5">
+          <span className="text-[8px] text-gray-700 font-mono">SHA-256</span>
+          <span className="text-[8px] text-[#39FF14]/40 font-mono tracking-wider">
+            {payloadHash}…
+          </span>
+        </div>
+      )}
     </div>
   );
 };
