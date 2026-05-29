@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   Vote, 
   FilePlus, 
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useTransformedCustomAddressField } from '@/app/hooks/useTransformedData';
 import { useRAFInterval } from '@/app/hooks/useRAFInterval';
+import { useProposalCache } from '@/app/hooks/useProposalCache';
 
 // --- Types ---
 interface Proposal {
@@ -38,16 +39,33 @@ const MOCK_PROPOSALS: Proposal[] = [
 
 export default function GovernancePage() {
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'archived'>('all');
+  const [proposals, setProposals] = useState<Proposal[]>(MOCK_PROPOSALS);
+  const { saveProposals, loadProposals } = useProposalCache<Proposal>();
+  const hydrated = useRef(false);
+
+  // On mount: pull archived collections from IndexedDB cache; fall back to mock data
+  useEffect(() => {
+    if (hydrated.current) return;
+    hydrated.current = true;
+    loadProposals().then((cached) => {
+      if (cached.length > 0) {
+        setProposals(cached);
+      } else {
+        // Seed the cache with initial data on first load
+        saveProposals(MOCK_PROPOSALS).catch(console.error);
+      }
+    }).catch(console.error);
+  }, [loadProposals, saveProposals]);
 
   // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
   const transformedProposals = useMemo(
-    () => useTransformedCustomAddressField(MOCK_PROPOSALS, 'proposer'),
-    []
+    () => useTransformedCustomAddressField(proposals, 'proposer'),
+    [proposals]
   );
 
   // Live ledger countdown — one shared RAF tick every ~5 s (Stellar avg ledger time)
   const [ledgerCounts, setLedgerCounts] = useState<Record<string, number>>(
-    () => Object.fromEntries(MOCK_PROPOSALS.map(p => [p.id, p.endsInLedgers]))
+    () => Object.fromEntries(proposals.map(p => [p.id, p.endsInLedgers]))
   );
 
   useRAFInterval(() => {
