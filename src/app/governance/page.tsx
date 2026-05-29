@@ -28,6 +28,13 @@ interface Proposal {
   endsInLedgers: number;
 }
 
+interface ProposalWithMetrics extends Proposal {
+  shortenedAddress: string;
+  totalVotes: number;
+  forPercentage: number;
+  againstPercentage: number;
+}
+
 // --- Mock Data ---
 const MOCK_PROPOSALS: Proposal[] = [
   { id: 'SFP-12', title: 'Whitelist West African GHS/XLM Asset Pair Feed', proposer: 'GA5THZLKMNPQRSXYZABCDEFGHIJKLMNBC9A', status: 'Active', votesFor: 785000, votesAgainst: 120000, quorumThreshold: 60, endsInLedgers: 4200 },
@@ -39,11 +46,22 @@ const MOCK_PROPOSALS: Proposal[] = [
 export default function GovernancePage() {
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'archived'>('all');
 
-  // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
-  const transformedProposals = useMemo(
-    () => useTransformedCustomAddressField(MOCK_PROPOSALS, 'proposer'),
-    []
-  );
+  // Pre-compute shortened addresses and voting math once per raw proposal dataset
+  const memoizedProposals = useMemo<ProposalWithMetrics[]>(() => {
+    const transformed = useTransformedCustomAddressField(MOCK_PROPOSALS, 'proposer');
+
+    return transformed.map((proposal) => {
+      const totalVotes = proposal.votesFor + proposal.votesAgainst;
+      const forPercentage = totalVotes > 0 ? (proposal.votesFor / totalVotes) * 100 : 0;
+
+      return {
+        ...proposal,
+        totalVotes,
+        forPercentage,
+        againstPercentage: 100 - forPercentage,
+      };
+    });
+  }, []);
 
   // Live ledger countdown — one shared RAF tick every ~5 s (Stellar avg ledger time)
   const [ledgerCounts, setLedgerCounts] = useState<Record<string, number>>(
@@ -98,10 +116,7 @@ export default function GovernancePage() {
 
       {/* --- Proposal List Suite --- */}
       <div className="space-y-4">
-        {transformedProposals.map((proposal) => {
-          const totalVotes = proposal.votesFor + proposal.votesAgainst;
-          const forPercentage = totalVotes > 0 ? (proposal.votesFor / totalVotes) * 100 : 0;
-          
+        {memoizedProposals.map((proposal) => {
           return (
             <div key={proposal.id} className="bg-[#161b22] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-colors group">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -132,8 +147,8 @@ export default function GovernancePage() {
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-6 lg:min-w-[320px]">
                   <div className="w-full space-y-1.5">
                     <div className="flex justify-between text-xs font-mono">
-                      <span className="text-emerald-400 font-bold">For: {forPercentage.toFixed(1)}%</span>
-                      <span className="text-red-400 font-bold">Against: {(100 - forPercentage).toFixed(1)}%</span>
+                      <span className="text-emerald-400 font-bold">For: {proposal.forPercentage.toFixed(1)}%</span>
+                      <span className="text-red-400 font-bold">Against: {proposal.againstPercentage.toFixed(1)}%</span>
                     </div>
                     {/* Voting Ratio Track Bar */}
                     <div className="w-full bg-red-950/40 h-2 rounded-full overflow-hidden flex border border-gray-800">
