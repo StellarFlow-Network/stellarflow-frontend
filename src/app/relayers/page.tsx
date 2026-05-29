@@ -35,6 +35,7 @@ const MOCK_RELAYERS: Relayer[] = [
 
 export default function RelayersPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isAddRelayerOpen, setIsAddRelayerOpen] = useState(false);
   const debouncedSearch = useDebounce(searchTerm, 250);
 
   const displayedRelayers = useMemo(() => {
@@ -59,7 +60,10 @@ export default function RelayersPage() {
           <p className="text-sm text-gray-500 mb-1">Admin / Network</p>
           <h1 className="text-3xl font-bold tracking-tight">Relayer Management</h1>
         </div>
-        <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all font-medium">
+        <button 
+          onClick={() => setIsAddRelayerOpen(true)}
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all font-medium"
+        >
           <Plus size={18} />
           Add New Relayer
         </button>
@@ -152,6 +156,9 @@ export default function RelayersPage() {
           </div>
         </div>
       </div>
+
+      {/* ─── State-Driven Modal (Clean mount/unmount via short-circuit rendering) ─── */}
+      {isAddRelayerOpen && <AddRelayerModal onClose={() => setIsAddRelayerOpen(false)} />}
     </div>
   );
 }
@@ -186,3 +193,93 @@ const StatusBadge = React.memo(
 );
 
 StatusBadge.displayName = 'StatusBadge';
+
+interface AddRelayerModalProps {
+  onClose: () => void;
+}
+
+const AddRelayerModal = React.memo(({ onClose }: AddRelayerModalProps) => {
+  const [name, setName] = useState('');
+  const [address, setAddress] = useState('');
+  const [region, setRegion] = useState('West-1');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !address) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+    alert(`Relayer successfully registered:\nName: ${name}\nRegion: ${region}`);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md">
+      <div className="bg-[#0c0f1d] border border-gray-800 rounded-3xl p-6 max-w-lg w-full mx-4 shadow-[0_24px_80px_rgba(0,0,0,0.8)] relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.08),transparent_50%)] pointer-events-none" />
+        <h2 className="text-xl font-bold mb-2 text-white flex items-center gap-2">
+          <Plus className="text-blue-400" size={20} />
+          Add New Network Relayer
+        </h2>
+        <p className="text-xs text-gray-400 mb-6">Register a high-frequency validator telemetry feed in the decentralized registry.</p>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Relayer Name</label>
+            <input 
+              type="text" 
+              placeholder="e.g. VTPass Accra" 
+              value={name} 
+              onChange={(e) => setName(e.target.value)}
+              className="w-full bg-[#0d1117] border border-gray-700 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors placeholder-gray-600 text-white" 
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Freighter/Stellar Wallet Address</label>
+            <input 
+              type="text" 
+              placeholder="e.g. GBC2VHZLKMNPQRSXYZ..." 
+              value={address} 
+              onChange={(e) => setAddress(e.target.value)}
+              className="w-full bg-[#0d1117] border border-gray-700 rounded-xl py-2.5 px-3 text-sm font-mono focus:outline-none focus:border-blue-500 transition-colors placeholder-gray-600 text-white" 
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Operating Region</label>
+              <select 
+                value={region} 
+                onChange={(e) => setRegion(e.target.value)}
+                className="w-full bg-[#0d1117] border border-gray-700 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors text-white"
+              >
+                <option value="West-1">West Africa (West-1)</option>
+                <option value="East-1">East Africa (East-1)</option>
+                <option value="South-1">Southern Africa (South-1)</option>
+                <option value="Global-1">Global Anycast (Global-1)</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Default Target Latency</label>
+              <div className="w-full bg-[#0d1117]/60 border border-gray-800 text-gray-400 rounded-xl py-2.5 px-3 text-sm">
+                &lt; 50ms Target
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button type="button" onClick={onClose} className="w-1/2 py-2.5 border border-gray-700 hover:bg-gray-800 rounded-xl text-sm font-medium transition-colors text-gray-300">
+              Cancel
+            </button>
+            <button type="submit" className="w-1/2 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-xl text-sm font-bold text-white transition-colors">
+              Register Relayer
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+});
+
+AddRelayerModal.displayName = 'AddRelayerModal';
