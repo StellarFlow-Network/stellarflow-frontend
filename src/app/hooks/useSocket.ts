@@ -51,6 +51,7 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
   const wsRef = useRef<WebSocket | null>(null)
   const subscribedAssetsRef = useRef<Set<string>>(new Set(assetIds))
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const bufferRef = useRef<SocketMessage[]>([])
 
   // Refs keep options fresh inside callbacks without triggering re-renders or
   // causing `connect` to be recreated on every tick.
@@ -65,6 +66,35 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
     maxReconnectAttemptsRef.current = maxReconnectAttempts
     reconnectIntervalRef.current = reconnectInterval
   }, [maxReconnectAttempts, reconnectInterval])
+
+  // Steady 150ms interval to flush the telemetry/price updates from the buffer
+  // to the interface state, preventing high-frequency message flooding from locking the UI.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (bufferRef.current.length > 0) {
+        const messages = [...bufferRef.current]
+        bufferRef.current = []
+
+        setLastUpdate((prev: PriceData | null) => {
+          let currentState = prev
+          for (const msg of messages) {
+            if (msg.type === 'delta_update' && msg.assetId) {
+              currentState = currentState
+                ? { ...currentState, ...(msg.data as PriceData) }
+                : (msg.data as PriceData)
+            } else {
+              currentState = msg.data as PriceData
+            }
+          }
+          return currentState
+        })
+      }
+    }, 150)
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [])
 
   // `connect` has an empty dependency array because every value it needs is
   // accessed through a ref.  This breaks the cycle where a WS message would
@@ -104,17 +134,7 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
             message.type === 'price_update' ||
             message.type === 'delta_update'
           ) {
-            if (message.type === 'delta_update' && message.assetId) {
-              // Functional updater — reads current state without it becoming a
-              // dependency of this callback.
-              setLastUpdate((prev: PriceData | null) =>
-                prev
-                  ? { ...prev, ...(message.data as PriceData) }
-                  : (message.data as PriceData),
-              )
-            } else {
-              setLastUpdate(message.data as PriceData)
-            }
+            bufferRef.current.push(message)
           }
         } catch (err) {
           console.error('Failed to parse WebSocket message:', err)
@@ -158,6 +178,7 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
       wsRef.current = null
     }
 
+    bufferRef.current = []
     setIsConnected(false)
   }, [])
 
