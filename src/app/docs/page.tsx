@@ -19,16 +19,28 @@ export default function DocsPage() {
   const [invoking, setInvoking] = useState(false);
   const [invokeResult, setInvokeResult] = useState<string | null>(null);
 
+  const copyTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const invokeTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+      if (invokeTimeoutRef.current) clearTimeout(invokeTimeoutRef.current);
+    };
+  }, []);
+
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
   };
 
   const handleTestInvoke = () => {
     setInvoking(true);
     setInvokeResult(null);
-    setTimeout(() => {
+    if (invokeTimeoutRef.current) clearTimeout(invokeTimeoutRef.current);
+    invokeTimeoutRef.current = setTimeout(() => {
       setInvoking(false);
       setInvokeResult(
         JSON.stringify({
