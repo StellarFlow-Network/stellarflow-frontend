@@ -38,6 +38,9 @@ const withPWA = require("next-pwa")({
   ],
 });
 
+
+export default pwaConfig(nextConfig);
+
 // 3. Your optimized Next.js base configurations
 const nextConfig: NextConfig = {
   reactCompiler: false,
