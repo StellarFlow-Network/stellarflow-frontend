@@ -5,6 +5,7 @@ import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { ProgressBarProvider } from "./components/TopLoadingBar";
 import { UserProvider } from "./components/providers/UserProvider";
+import { MasterRAFTimerProvider } from "./providers/MasterRAFTimerProvider";
 import Script from "next/script";
 import {SocketProvider} from "./components/providers/SocketProvider";
 
@@ -71,11 +72,13 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <UserProvider>
-            <ProgressBarProvider>
-              {children}
-            </ProgressBarProvider>
-          </UserProvider>
+          <MasterRAFTimerProvider>
+            <UserProvider>
+              <ProgressBarProvider>
+                {children}
+              </ProgressBarProvider>
+            </UserProvider>
+          </MasterRAFTimerProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useCallback, useRef, useState } from "react";
-import { useRAFInterval } from "@/app/hooks/useRAFInterval";
+import { useSharedRAFInterval } from "@/app/hooks/useSharedRAFInterval";
 
 // ─── Context ──────────────────────────────────────────────────────────────────
 
@@ -73,7 +73,7 @@ export function ProgressBarProvider({ children }: { children: React.ReactNode })
   }, [stop]);
 
   // Single RAF-backed trickle tick at 120 ms — replaces setInterval
-  useRAFInterval(
+  useSharedRAFInterval(
     useCallback(() => {
       if (!trickling.current) return;
       const c = currentRef.current;

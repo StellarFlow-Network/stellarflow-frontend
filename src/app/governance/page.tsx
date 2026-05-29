@@ -14,7 +14,7 @@ import {
   Wallet 
 } from 'lucide-react';
 import { useTransformedCustomAddressField } from '@/app/hooks/useTransformedData';
-import { useRAFInterval } from '@/app/hooks/useRAFInterval';
+import { useSharedRAFInterval } from '@/app/hooks/useSharedRAFInterval';
 
 // --- Types ---
 interface Proposal {
@@ -50,7 +50,7 @@ export default function GovernancePage() {
     () => Object.fromEntries(MOCK_PROPOSALS.map(p => [p.id, p.endsInLedgers]))
   );
 
-  useRAFInterval(() => {
+  useSharedRAFInterval(() => {
     setLedgerCounts(prev => {
       const next = { ...prev };
       for (const id in next) {
