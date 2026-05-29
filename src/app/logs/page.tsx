@@ -22,6 +22,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import { LogEntry, FilteredLogResult } from './types';
 
+// --- Constants ---
+const MAX_LOG_LIMIT = 200;
+
 // --- Mock Data ---
 const MOCK_LOGS: LogEntry[] = [
   { id: '101', timestamp: '2026-04-28 12:40:01', type: 'transaction', severity: 'info', message: 'XDR: AAAAAEAAAAAEAAAAC...', actor: 'VTPass Lagos', txHash: '0xabc...123' },
@@ -33,7 +36,7 @@ const MOCK_LOGS: LogEntry[] = [
 export default function LogsPage() {
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredResults, setFilteredResults] = useState<FilteredLogResult[]>(MOCK_LOGS.map(l => ({ item: l })));
+  const [filteredResults, setFilteredResults] = useState<FilteredLogResult[]>(MOCK_LOGS.slice(-MAX_LOG_LIMIT).map(l => ({ item: l })));
   const [isSearching, setIsSearching] = React.useState(false);
   const workerRef = React.useRef<Worker | null>(null);
 
@@ -46,7 +49,7 @@ export default function LogsPage() {
 
     workerRef.current.onmessage = (e) => {
       if (e.data.type === 'RESULTS') {
-        setFilteredResults(e.data.payload.results);
+        setFilteredResults(e.data.payload.results.slice(-MAX_LOG_LIMIT));
         setIsSearching(false);
       }
     };
@@ -65,16 +68,17 @@ export default function LogsPage() {
     if (xdrItems.length === 0) return;
 
     batchDecode('initial-batch', xdrItems).then(results => {
-      setFilteredResults(prev =>
-        prev.map(res => {
+      setFilteredResults(prev => {
+        const updated = prev.map(res => {
           const hit = results.find(r => r.id === res.item.id);
           if (!hit || hit.status === 'ERROR') return res;
           return {
             ...res,
             item: { ...res.item, decodedData: hit.decoded_payload },
           };
-        })
-      );
+        });
+        return updated.slice(-MAX_LOG_LIMIT);
+      });
     });
   // batchDecode is stable (useCallback with no deps) — safe to list here
   // eslint-disable-next-line react-hooks/exhaustive-deps
