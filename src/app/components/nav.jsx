@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { Wallet, Bell, CircleUser, LogOut } from "lucide-react";
 import { useProgressBar } from "./TopLoadingBar";
+import { useWalletBalance } from "@/app/hooks/useWalletBalance";
 
 const Nav = memo(() => {
   const hasAnomaly = true;
@@ -13,12 +14,13 @@ const Nav = memo(() => {
   const pathname = usePathname();
   const { start, done } = useProgressBar();
 
-  const handleConnectWallet = useCallback(async () => {
-    start();
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    done();
-    alert("Connect Wallet clicked! (Add your Web3 logic here)");
-  }, [start, done]);
+const { initializeSigning } = useWalletBalance();
+ const handleConnectWallet = useCallback(async () => {
+  start();
+  initializeSigning();
+  await new Promise((resolve) => setTimeout(resolve, 1200));
+  done();
+}, [start, done, initializeSigning]);
 
   return (
     <main className="sticky top-0 z-50 bg-zinc-950 border-b border-zinc-800">
@@ -79,10 +81,6 @@ const Nav = memo(() => {
             onMouseEnter={() => {
               if (pathname !== '/admin/settings') router.prefetch('/admin/settings')
             }}
-            onPointerEnter={() => {
-              if (pathname !== '/admin/settings') router.prefetch('/admin/settings')
-            }}
-            onMouseEnter={() => router.prefetch("/admin/settings")}
             aria-label="Admin settings"
             className="p-2 rounded-xl hover:bg-zinc-800 transition-colors"
           >
