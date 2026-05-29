@@ -1,4 +1,4 @@
-import Fuse from 'fuse.js';
+import Fuse from 'fuse.js/basic';
 import { LogEntry } from './types';
 
 let fuse: Fuse<LogEntry> | null = null;
