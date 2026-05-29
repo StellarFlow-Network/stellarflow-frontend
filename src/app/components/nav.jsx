@@ -3,7 +3,7 @@
 import React, { memo, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Wallet, Bell, CircleUser, LogOut } from "lucide-react";
 import { useProgressBar } from "./TopLoadingBar";
 
@@ -82,7 +82,6 @@ const Nav = memo(() => {
             onPointerEnter={() => {
               if (pathname !== '/admin/settings') router.prefetch('/admin/settings')
             }}
-            onMouseEnter={() => router.prefetch("/admin/settings")}
             aria-label="Admin settings"
             className="p-2 rounded-xl hover:bg-zinc-800 transition-colors"
           >

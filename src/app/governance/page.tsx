@@ -137,7 +137,13 @@ export default function GovernancePage() {
                     </div>
                     {/* Voting Ratio Track Bar */}
                     <div className="w-full bg-red-950/40 h-2 rounded-full overflow-hidden flex border border-gray-800">
-                      <div className="bg-emerald-500 h-full" style={{ width: `${forPercentage}%` }} />
+                      <div
+                        className="bg-emerald-500 h-full w-full origin-left transition-transform duration-500 ease-out"
+                        style={{
+                          transform: `scaleX(${forPercentage / 100})`,
+                          willChange: 'transform'
+                        }}
+                      />
                     </div>
                     <div className="text-[10px] text-gray-500 font-mono text-right">
                       Quorum Target Required: {proposal.quorumThreshold}%

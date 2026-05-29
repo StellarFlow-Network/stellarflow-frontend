@@ -13,5 +13,10 @@ export interface LogEntry {
 
 export interface FilteredLogResult {
   item: LogEntry;
-  matches?: [number, number][];
+  matches?: {
+    indices: [number, number][];
+    key: string;
+    refIndex?: number;
+    value?: string;
+  }[];
 }
