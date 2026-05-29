@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  BatchDecodeResult,
-  DecodeXdrItem,
+  DecodedResult,
+  DecodeXdrPayload,
   XdrDecodedMessage,
   XdrWorkerMessage,
 } from './worker-types';
@@ -21,8 +21,8 @@ export function useXdrWorker() {
 
   const batchDecode = useCallback(async (
     _batchId: string,
-    items: DecodeXdrItem[]
-  ): Promise<BatchDecodeResult[]> => {
+    items: DecodeXdrPayload[]
+  ): Promise<DecodedResult[]> => {
     return new Promise((resolve, reject) => {
       if (!workerRef.current) {
         reject(new Error('XDR Worker not initialized'));
@@ -32,17 +32,17 @@ export function useXdrWorker() {
       setDecoding(true);
 
       let completed = 0;
-      const results: BatchDecodeResult[] = [];
+      const results: DecodedResult[] = [];
 
       const handleMessage = (event: MessageEvent<XdrDecodedMessage>) => {
         const { type, payload } = event.data;
 
         if (type === 'DECODED_XDR') {
           results.push({
-            id: payload.payload.id,
-            status: payload.payload.status,
-            decoded_payload: payload.payload.decoded_payload,
-            error: payload.payload.error,
+            id: payload.id,
+            status: payload.status,
+            decoded_payload: payload.decoded_payload,
+            error: payload.error,
           });
           completed++;
 

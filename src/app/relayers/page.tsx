@@ -239,15 +239,15 @@ export default function RelayersPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full table-fixed text-left">
             <thead>
               <tr className="text-gray-500 text-xs uppercase tracking-wider border-b border-gray-800">
-                <th className="px-6 py-4 font-medium">Relayer Name</th>
-                <th className="px-6 py-4 font-medium">Status</th>
-                <th className="px-6 py-4 font-medium">Uptime (24h)</th>
-                <th className="px-6 py-4 font-medium">Latency</th>
-                <th className="px-6 py-4 font-medium">Success Rate</th>
-                <th className="px-6 py-4 font-medium text-right">Actions</th>
+                <th className="px-6 py-4 font-medium w-[260px]">Relayer Name</th>
+                <th className="px-6 py-4 font-medium w-[120px]">Status</th>
+                <th className="px-6 py-4 font-medium w-[120px]">Uptime (24h)</th>
+                <th className="px-6 py-4 font-medium w-[110px]">Latency</th>
+                <th className="px-6 py-4 font-medium w-[160px]">Success Rate</th>
+                <th className="px-6 py-4 font-medium w-[100px] text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800">

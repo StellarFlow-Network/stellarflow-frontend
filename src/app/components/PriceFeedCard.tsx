@@ -107,6 +107,22 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   const [filterInput, setFilterInput] = useState("");
   const debouncedFilter = useDebounce(filterInput, 250);
   const { start, done } = useProgressBar();
+  const [isPageVisible, setIsPageVisible] = useState(() => {
+    if (typeof document === "undefined") return true;
+    return document.visibilityState === "visible";
+  });
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsPageVisible(document.visibilityState === "visible");
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
   // Granular context subscriptions — each hook only re-renders this component
   // when its specific slice changes, not on every unrelated socket event.
@@ -196,22 +212,6 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
     : "shadow-[0_0_18px_rgba(244,63,94,0.18)]";
 
   const priceColor = isUp ? "text-emerald-400" : "text-rose-400";
-  const [isPageVisible, setIsPageVisible] = useState(() => {
-    if (typeof document === "undefined") return true;
-    return document.visibilityState === "visible";
-  });
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      setIsPageVisible(document.visibilityState === "visible");
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, []);
   return (
     <div
       style={{ contain: "paint layout" }}

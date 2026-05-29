@@ -105,15 +105,15 @@ export default function StakingPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full table-fixed text-left">
             <thead>
               <tr className="text-gray-500 text-xs uppercase tracking-wider border-b border-gray-800">
-                <th className="px-6 py-4 font-medium">Node Operator</th>
-                <th className="px-6 py-4 font-medium">Bonded Stake</th>
-                <th className="px-6 py-4 font-medium">Accrued Fees</th>
-                <th className="px-6 py-4 font-medium">Health Rating</th>
-                <th className="px-6 py-4 font-medium">Infractions</th>
-                <th className="px-6 py-4 font-medium text-right">Actions</th>
+                <th className="px-6 py-4 font-medium w-[260px]">Node Operator</th>
+                <th className="px-6 py-4 font-medium w-[150px]">Bonded Stake</th>
+                <th className="px-6 py-4 font-medium w-[140px]">Accrued Fees</th>
+                <th className="px-6 py-4 font-medium w-[140px]">Health Rating</th>
+                <th className="px-6 py-4 font-medium w-[140px]">Infractions</th>
+                <th className="px-6 py-4 font-medium w-[110px] text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800">

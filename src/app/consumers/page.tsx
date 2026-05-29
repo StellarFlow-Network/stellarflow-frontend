@@ -16,6 +16,7 @@ import {
   Copy 
 } from 'lucide-react';
 import { useTransformedCustomAddressField } from '@/app/hooks/useTransformedData';
+import { CONSUMER_TIER_BADGE_CLASS, CONSUMER_TIER_VARIANTS, CONSUMER_STATUS_TEXT_VARIANTS, CONSUMER_STATUS_DOT_VARIANTS, getBalanceColorClass } from '@/lib/classNameVariants';
 
 // --- Types ---
 interface Consumer {
@@ -133,15 +134,15 @@ export default function ConsumersPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full table-fixed text-left">
             <thead>
               <tr className="text-gray-500 text-xs uppercase tracking-wider border-b border-gray-800">
-                <th className="px-6 py-4 font-medium">Project Integration</th>
-                <th className="px-6 py-4 font-medium">Plan Tier</th>
-                <th className="px-6 py-4 font-medium">Status</th>
-                <th className="px-6 py-4 font-medium">Requests (MTD)</th>
-                <th className="px-6 py-4 font-medium">Gas Tank Balance</th>
-                <th className="px-6 py-4 font-medium text-right">Verification</th>
+                <th className="px-6 py-4 font-medium w-[260px]">Project Integration</th>
+                <th className="px-6 py-4 font-medium w-[120px]">Plan Tier</th>
+                <th className="px-6 py-4 font-medium w-[120px]">Status</th>
+                <th className="px-6 py-4 font-medium w-[140px]">Requests (MTD)</th>
+                <th className="px-6 py-4 font-medium w-[160px]">Gas Tank Balance</th>
+                <th className="px-6 py-4 font-medium w-[120px] text-right">Verification</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800">

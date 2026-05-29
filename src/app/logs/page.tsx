@@ -297,7 +297,6 @@ export default function LogsPage() {
                        )}
                      </div>
                    </div>
-                 </div>
                );
              })}
 
