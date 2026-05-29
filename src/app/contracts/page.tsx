@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   Cpu, 
   Upload, 
@@ -16,10 +16,16 @@ import {
 import { CONTRACT_HEALTH_ICON_VARIANTS } from '@/lib/classNameVariants';
 
 export default function ContractsPage() {
-  const [isHalted, setIsHalted] = useState(false);
+  const handleHaltToggle = () => {
+    const container = document.getElementById("contracts-page-container");
+    if (container) {
+      const currentStatus = container.getAttribute("data-status");
+      container.setAttribute("data-status", currentStatus === "halted" ? "active" : "halted");
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
+    <div id="contracts-page-container" data-status="active" className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
       {/* --- Header Section --- */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
@@ -95,24 +101,26 @@ export default function ContractsPage() {
         <div className="space-y-6">
           
           {/* Emergency Halt Section */}
-          <div className={`border p-6 rounded-xl transition-all ${isHalted ? 'bg-red-900/10 border-red-500' : 'bg-[#161b22] border-gray-800'}`}>
+          <div className="border p-6 rounded-xl transition-all bg-[var(--status-bg)] border-[var(--status-border)]">
             <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
-              <ShieldAlert size={20} className={isHalted ? 'text-red-500' : 'text-gray-400'} />
+              <ShieldAlert size={20} className="transition-colors text-[var(--status-icon-color)]" />
               Emergency Halt
             </h2>
             <p className="text-xs text-gray-500 mb-6">
               Instantly pauses all price updates across the network. Use only in case of data compromise or critical failure.
             </p>
             <button 
-              onClick={() => setIsHalted(!isHalted)}
-              className={`w-full py-3 rounded-lg flex items-center justify-center gap-2 font-bold transition-all ${
-                isHalted 
-                ? 'bg-green-600 hover:bg-green-700 text-white' 
-                : 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/20'
-              }`}
+              onClick={handleHaltToggle}
+              className="w-full py-3 rounded-lg flex items-center justify-center gap-2 font-bold transition-all bg-[var(--status-btn-bg)] hover:bg-[var(--status-btn-hover-bg)] text-[var(--status-btn-text)] shadow-lg shadow-[var(--status-btn-shadow)]"
             >
-              {isHalted ? <Unlock size={18} /> : <Lock size={18} />}
-              {isHalted ? 'RESUME ORACLE' : 'HALT ALL OPERATIONS'}
+              <span className="active-only flex items-center gap-2">
+                <Lock size={18} />
+                <span>HALT ALL OPERATIONS</span>
+              </span>
+              <span className="halted-only flex items-center gap-2">
+                <Unlock size={18} />
+                <span>RESUME ORACLE</span>
+              </span>
             </button>
           </div>
 

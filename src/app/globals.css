@@ -150,3 +150,36 @@ body {
   background: rgba(255, 255, 255, 0.15);
   box-shadow: none;
 }
+
+/* ─── Contracts Page Theme Switching (CSS Variables) ─── */
+#contracts-page-container {
+  --status-bg: #161b22;
+  --status-border: rgba(255, 255, 255, 0.08);
+  --status-icon-color: #9ca3af;
+  --status-btn-bg: #dc2626;
+  --status-btn-hover-bg: #b91c1c;
+  --status-btn-text: #ffffff;
+  --status-btn-shadow: 0 10px 15px -3px rgba(127, 29, 29, 0.2);
+}
+
+#contracts-page-container[data-status="halted"] {
+  --status-bg: rgba(127, 29, 29, 0.1);
+  --status-border: #ef4444;
+  --status-icon-color: #ef4444;
+  --status-btn-bg: #16a34a;
+  --status-btn-hover-bg: #15803d;
+  --status-btn-shadow: none;
+}
+
+#contracts-page-container .halted-only {
+  display: none !important;
+}
+
+#contracts-page-container[data-status="halted"] .halted-only {
+  display: inline-flex !important;
+}
+
+#contracts-page-container[data-status="halted"] .active-only {
+  display: none !important;
+}
+
