@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useMemo } from "react";
+import { Shimmer } from "@/components/skeletons";
 
 interface RateSparklineCardProps {
   currency: string;
   rate: number;
   trend: number;
-  sparklineData: number[];
+  sparklineData?: number[];
+  loading?: boolean;
 }
 
 const MiniSparkline = React.memo(function MiniSparkline({
@@ -36,7 +38,12 @@ const MiniSparkline = React.memo(function MiniSparkline({
   }, [data]);
 
   return (
-    <svg viewBox="0 0 120 32" className="h-8 w-full overflow-visible" role="img" aria-label="Sparkline chart">
+    <svg
+      viewBox="0 0 120 32"
+      className="h-8 w-full overflow-visible"
+      role="img"
+      aria-label="Sparkline chart"
+    >
       <polyline
         fill="none"
         stroke="currentColor"
@@ -53,47 +60,69 @@ const RateSparklineCard: React.FC<RateSparklineCardProps> = ({
   currency,
   rate,
   trend,
-  sparklineData,
+  sparklineData = [],
+  loading = false,
 }) => {
   const isPositive = trend >= 0;
+  const displayData = sparklineData;
 
   const formattedRate = useMemo(
     () => `${currency} ${rate.toFixed(2)}`,
-    [currency, rate]
+    [currency, rate],
   );
 
   const trendLabel = useMemo(
     () => `${isPositive ? "▲" : "▼"} ${Math.abs(trend).toFixed(2)}%`,
-    [isPositive, trend]
+    [isPositive, trend],
   );
 
-  const trendClasses = useMemo(
-    () =>
-      isPositive
-        ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
-        : "bg-rose-500/10 text-rose-300 border border-rose-500/20",
-    [isPositive]
-  );
+  const trendClasses = isPositive
+    ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
+    : "bg-rose-500/10 text-rose-300 border border-rose-500/20";
 
-  const sparklineClasses = useMemo(
-    () => (isPositive ? "text-emerald-400" : "text-rose-400"),
-    [isPositive]
-  );
+  const sparklineClasses = isPositive ? "text-emerald-400" : "text-rose-400";
+
+  if (loading) {
+    return (
+      <div className="aspect-[16/10] rounded-3xl border border-[#1B2A3B] bg-[#08111E] p-5 shadow-lg shadow-black/20">
+        <div className="flex h-full flex-col justify-between">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2">
+              <Shimmer className="h-3 w-14 rounded-md" />
+              <Shimmer className="h-8 w-32 rounded-md" />
+            </div>
+            <Shimmer className="h-6 w-16 rounded-full" />
+          </div>
+
+          <div className="space-y-3">
+            <Shimmer className="h-[1px] w-full" />
+            <Shimmer className="h-8 w-full rounded-md" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="rounded-3xl border border-[#1B2A3B] bg-[#08111E] p-5 shadow-lg shadow-black/20 transition duration-300 hover:border-[#39FF14]/40">
+    <div className="aspect-[16/10] rounded-3xl border border-[#1B2A3B] bg-[#08111E] p-5 shadow-lg shadow-black/20 transition duration-300 hover:border-[#39FF14]/40">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-gray-500">{currency}</p>
-          <p className="mt-2 text-2xl font-black text-white tracking-tight">{formattedRate}</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
+            {currency}
+          </p>
+          <p className="mt-2 text-2xl font-black text-white tracking-tight">
+            {formattedRate}
+          </p>
         </div>
-        <span className={`inline-flex items-center rounded-full px-3 py-1 text-[10px] font-semibold ${trendClasses}`}>
+        <span
+          className={`inline-flex items-center rounded-full px-3 py-1 text-[10px] font-semibold ${trendClasses}`}
+        >
           {trendLabel}
         </span>
       </div>
 
       <div className={`mt-4 ${sparklineClasses}`}>
-        <MiniSparkline data={sparklineData} />
+        <MiniSparkline data={displayData} />
       </div>
     </div>
   );

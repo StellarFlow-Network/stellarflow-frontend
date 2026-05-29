@@ -1,0 +1,143 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Nigeria",
+        "network": "active",
+        "nodes": 245
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              2.6919,
+              13.8856
+            ],
+            [
+              2.6919,
+              13.8856
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kenya",
+        "network": "active",
+        "nodes": 189
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              33.9037,
+              5.4067
+            ],
+            [
+              33.9037,
+              5.4067
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "South Africa",
+        "network": "active",
+        "nodes": 312
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              16.3449,
+              -22.0913
+            ],
+            [
+              16.3449,
+              -22.0913
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Egypt",
+        "network": "active",
+        "nodes": 156
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              24.7103,
+              31.6885
+            ],
+            [
+              24.7103,
+              31.6885
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Ghana",
+        "network": "active",
+        "nodes": 98
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -3.2478,
+              11.0591
+            ],
+            [
+              -3.2478,
+              11.0591
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Morocco",
+        "network": "active",
+        "nodes": 134
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -17.0204,
+              35.9225
+            ],
+            [
+              -17.0204,
+              35.9225
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

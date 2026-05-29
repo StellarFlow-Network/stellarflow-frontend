@@ -1,22 +1,56 @@
-'use client'
+"use client"
 
-import { useQuery } from '@tanstack/react-query'
+import React, { useEffect, useState, memo } from 'react'
+import { useSocket } from '../../hooks/useSocket'
 
-export default function LivePrices({ initialData }: any) {
-  const { data } = useQuery({
-    queryKey: ['prices'],
-    queryFn: async () => {
-      const res = await fetch('/api/prices')
-      return res.json()
-    },
-    initialData,
-    refetchInterval: 15000,
+interface PriceData {
+  symbol: string
+  price: number
+  timestamp: number
+}
+
+function LivePrices({ initialData }: any) {
+  const [data, setData] = useState<PriceData[]>(initialData || [])
+  
+  // Subscribe to multiple asset updates
+  const { isConnected, lastUpdate, error } = useSocket({
+    assetIds: ['NGN-XLM', 'USD-XLM', 'EUR-XLM'],
+    enableDeltaUpdates: true,
   })
+
+  useEffect(() => {
+    if (lastUpdate) {
+      // Update the specific asset in the data array
+      setData(prevData => {
+        const index = prevData.findIndex(p => p.symbol === lastUpdate.assetPair)
+        if (index !== -1) {
+          const newData = [...prevData]
+          newData[index] = {
+            ...newData[index],
+            price: lastUpdate.price,
+            timestamp: lastUpdate.timestamp,
+          }
+          return newData
+        } else {
+          // Add new asset if not found
+          return [...prevData, {
+            symbol: lastUpdate.assetPair,
+            price: lastUpdate.price,
+            timestamp: lastUpdate.timestamp,
+          }]
+        }
+      })
+    }
+  }, [lastUpdate])
 
   return (
     <div>
       <h2>Live Prices</h2>
-      {data?.map((p: any) => (
+      <div className={`text-xs mb-2 ${isConnected ? 'text-green-400' : 'text-yellow-400'}`}>
+        {isConnected ? 'WebSocket Connected' : 'WebSocket Disconnected'}
+      </div>
+      {error && <div className="text-red-400 text-xs mb-2">Error: {error}</div>}
+      {data?.map((p: PriceData) => (
         <div key={p.symbol}>
           {p.symbol}: {p.price}
         </div>
@@ -24,3 +58,5 @@ export default function LivePrices({ initialData }: any) {
     </div>
   )
 }
+
+export default memo(LivePrices);
