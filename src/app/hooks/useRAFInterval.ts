@@ -24,6 +24,7 @@ export function useRAFInterval(
   const callbackRef = useRef(callback)
   const rafRef = useRef<number | null>(null)
   const lastTickRef = useRef<number | null>(null)
+  const isMountedRef = useRef(true)
 
   // Keep callback ref current without restarting the loop
   useEffect(() => {
@@ -32,6 +33,9 @@ export function useRAFInterval(
 
   const tick = useCallback(
     (now: number) => {
+      // If we unmounted, stop scheduling and stop execution
+      if (!isMountedRef.current) return
+
       if (lastTickRef.current === null) lastTickRef.current = now
 
       if (now - lastTickRef.current >= intervalMs) {
@@ -39,18 +43,23 @@ export function useRAFInterval(
         callbackRef.current()
       }
 
-      rafRef.current = requestAnimationFrame(tick)
+      // Re-verify mount state before next schedule in case callback caused unmount
+      if (isMountedRef.current) {
+        rafRef.current = requestAnimationFrame(tick)
+      }
     },
     [intervalMs],
   )
 
   useEffect(() => {
+    isMountedRef.current = true
     if (!enabled) return
 
     lastTickRef.current = null
     rafRef.current = requestAnimationFrame(tick)
 
     return () => {
+      isMountedRef.current = false
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current)
         rafRef.current = null

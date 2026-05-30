@@ -35,9 +35,10 @@ interface PriceFeedCardProps {
  * Fetches the NGN/XLM price feed from the StellarFlow oracle API.
  * Adjust the endpoint URL to match your actual backend.
  */
-async function fetchNgnXlmFeed(): Promise<PriceFeedData> {
+async function fetchNgnXlmFeed(signal?: AbortSignal): Promise<PriceFeedData> {
   const res = await fetch("/api/price-feed/ngn-xlm", {
     cache: "no-store",
+    signal,
   });
 
   if (!res.ok) {
@@ -113,8 +114,16 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   const { isConnected, error: wsError } = useSocketConnection();
   const { lastUpdate: wsUpdate } = useSocketData();
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const load = useCallback(
     async (manual = false) => {
+      // Cancel any in-flight requests before starting a new one
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
+
       if (manual) {
         setIsRefreshing(true);
         start();
@@ -122,10 +131,14 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
       setError(null);
 
       try {
-        const feed = await fetchNgnXlmFeed();
+        const feed = await fetchNgnXlmFeed(abortControllerRef.current.signal);
         setData(feed);
         setLastRefresh(new Date());
       } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          // Ignore planned aborts
+          return;
+        }
         setError(
           err instanceof Error ? err.message : "Failed to load price feed.",
         );
@@ -135,8 +148,17 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
         if (manual) done();
       }
     },
-    [start, done],
+    [start, done, setError],
   );
+
+  // Cleanup in-flight requests on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   // Merge WebSocket delta updates into local state.
   // Using a functional setData updater means we read `prev` (current state)
