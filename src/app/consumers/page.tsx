@@ -1,21 +1,19 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
-import { 
-  Users, 
-  Key, 
-  Layers, 
-  CreditCard, 
-  Plus, 
-  Search, 
-  ExternalLink, 
-  CheckCircle2, 
-  RefreshCcw, 
-  Eye, 
-  EyeOff, 
-  Copy 
-} from 'lucide-react';
-import { useTransformedCustomAddressField } from '@/app/hooks/useTransformedData';
+import React, { useState } from 'react';
+import Users from 'lucide-react/dist/esm/icons/users';
+import Key from 'lucide-react/dist/esm/icons/key';
+import Layers from 'lucide-react/dist/esm/icons/layers';
+import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Search from 'lucide-react/dist/esm/icons/search';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
+import RefreshCcw from 'lucide-react/dist/esm/icons/refresh-ccw';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
+import Copy from 'lucide-react/dist/esm/icons/copy';
+import { withShortenedAddressField } from '@/utils/addressUtils';
 
 // --- Types ---
 interface Consumer {
@@ -36,15 +34,11 @@ const MOCK_CONSUMERS: Consumer[] = [
   { id: 'C-04', projectName: 'Test Sandbox', contractAddress: 'GDD2VHZLKMNPQRSXYZABCDEFGHIJKLM3311', tier: 'Staging', status: 'paused', monthlyRequests: '12K', balanceXLM: 0.00 },
 ];
 
+const TRANSFORMED_CONSUMERS = withShortenedAddressField(MOCK_CONSUMERS, 'contractAddress');
+
 export default function ConsumersPage() {
   const [showSecret, setShowSecret] = useState(false);
   const [copied, setCopied] = useState(false);
-
-  // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
-  const transformedConsumers = useMemo(
-    () => useTransformedCustomAddressField(MOCK_CONSUMERS, 'contractAddress'),
-    []
-  );
 
   const handleCopy = () => {
     setCopied(true);
@@ -145,7 +139,7 @@ export default function ConsumersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800">
-              {transformedConsumers.map((consumer) => (
+              {TRANSFORMED_CONSUMERS.map((consumer) => (
                 <tr key={consumer.id} className="hover:bg-[#1c2128] transition-colors group">
                   <td className="px-6 py-4">
                     <div className="font-medium text-gray-200">{consumer.projectName}</div>

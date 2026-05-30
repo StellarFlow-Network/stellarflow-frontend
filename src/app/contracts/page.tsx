@@ -1,18 +1,15 @@
 "use client";
 
 import React, { useState } from 'react';
-import { 
-  Cpu, 
-  Upload, 
-  ShieldAlert, 
-  Zap, 
-  Lock, 
-  Unlock, 
-  History, 
-  Code2, 
-  CheckCircle2, 
-  AlertTriangle 
-} from 'lucide-react';
+import Upload from 'lucide-react/dist/esm/icons/upload';
+import ShieldAlert from 'lucide-react/dist/esm/icons/shield-alert';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import Lock from 'lucide-react/dist/esm/icons/lock';
+import Unlock from 'lucide-react/dist/esm/icons/unlock';
+import History from 'lucide-react/dist/esm/icons/history';
+import Code2 from 'lucide-react/dist/esm/icons/code-2';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
+import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 import { CONTRACT_HEALTH_ICON_VARIANTS } from '@/lib/classNameVariants';
 
 export default function ContractsPage() {

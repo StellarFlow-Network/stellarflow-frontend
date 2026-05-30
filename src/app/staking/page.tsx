@@ -2,19 +2,17 @@
 
 import React, { useState, useMemo } from 'react';
 import { useDebounce } from '../hooks/useDebounce';
-import { useTransformedCustomAddressField } from '@/app/hooks/useTransformedData';
-import { 
-  ShieldCheck, 
-  Coins, 
-  Percent, 
-  Flame, 
-  Search, 
-  RefreshCw, 
-  AlertTriangle, 
-  Gavel, 
-  TrendingUp, 
-  ArrowUpRight 
-} from 'lucide-react';
+import { withShortenedAddressField } from '@/utils/addressUtils';
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import Coins from 'lucide-react/dist/esm/icons/coins';
+import Percent from 'lucide-react/dist/esm/icons/percent';
+import Flame from 'lucide-react/dist/esm/icons/flame';
+import Search from 'lucide-react/dist/esm/icons/search';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
+import Gavel from 'lucide-react/dist/esm/icons/gavel';
+import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
+import ArrowUpRight from 'lucide-react/dist/esm/icons/arrow-up-right';
 import {
   getHealthBarColor,
   STAKER_SLASHING_NO_EVENTS,
@@ -40,6 +38,13 @@ const MOCK_STAKERS: StakerNode[] = [
   { id: 'N-404', nodeName: 'Accra Frontier Oracle', operatorAddress: 'GCXXVHZLKMNPQRSXYZABCDEFGHIJKLM7766', stakedAmountXLM: 25000.00, accruedRewardsXLM: 310.20, totalSlashingEvents: 3, healthFactor: 62 },
 ];
 
+const SHORTENED_STAKER_ADDRESS_MAP = Object.fromEntries(
+  withShortenedAddressField(MOCK_STAKERS, 'operatorAddress').map((staker) => [
+    staker.id,
+    staker.shortenedAddress,
+  ]),
+);
+
 export default function StakingPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 250);
@@ -49,14 +54,6 @@ export default function StakingPage() {
     if (!q) return MOCK_STAKERS;
     return MOCK_STAKERS.filter(s => s.nodeName.toLowerCase().includes(q) || s.operatorAddress.toLowerCase().includes(q));
   }, [debouncedSearch]);
-
-  // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
-  const shortenedAddressMap = useMemo<Record<string, string>>(
-    () => Object.fromEntries(
-      useTransformedCustomAddressField(MOCK_STAKERS, 'operatorAddress').map(s => [s.id, s.shortenedAddress])
-    ),
-    []
-  );
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
@@ -122,7 +119,7 @@ export default function StakingPage() {
                   <td className="px-6 py-4">
                     <div className="font-medium text-gray-200">{node.nodeName}</div>
                     {/* PERFORMANCE OPTIMIZATION: O(1) map lookup instead of O(n) array scan */}
-                    <div className="text-xs text-gray-500 font-mono">{shortenedAddressMap[node.id]}</div>
+                    <div className="text-xs text-gray-500 font-mono">{SHORTENED_STAKER_ADDRESS_MAP[node.id]}</div>
                   </td>
                   <td className="px-6 py-4 text-sm font-mono text-gray-300">
                     {node.stakedAmountXLM.toLocaleString()} XLM
