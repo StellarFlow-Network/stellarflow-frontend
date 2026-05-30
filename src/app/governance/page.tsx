@@ -1,19 +1,14 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
-import { 
-  Vote, 
-  FilePlus, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
-  Users, 
-  Search, 
-  RefreshCw, 
-  ChevronRight, 
-  Wallet 
-} from 'lucide-react';
-import { useTransformedCustomAddressField } from '@/app/hooks/useTransformedData';
+import React, { useMemo, useState } from 'react';
+import Vote from 'lucide-react/dist/esm/icons/vote';
+import FilePlus from 'lucide-react/dist/esm/icons/file-plus';
+import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import Users from 'lucide-react/dist/esm/icons/users';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import Wallet from 'lucide-react/dist/esm/icons/wallet';
+import { withShortenedAddressField } from '@/utils/addressUtils';
 import { useRAFInterval } from '@/app/hooks/useRAFInterval';
 
 // --- Types ---
@@ -36,13 +31,31 @@ const MOCK_PROPOSALS: Proposal[] = [
   { id: 'SFP-09', title: 'Increase Relayer Missed-Heartbeat Penalty Weight by 2%', proposer: 'GCXXVHZLKMNPQRSXYZABCDEFGHIJKLM7766', status: 'Defeated', votesFor: 110000, votesAgainst: 920000, quorumThreshold: 50, endsInLedgers: 0 },
 ];
 
+const TRANSFORMED_PROPOSALS = withShortenedAddressField(MOCK_PROPOSALS, 'proposer');
+/** Pre-allocated stack for full mock set (4 × card height + gaps) — stable before filter/async hydration */
+const PROPOSAL_LIST_SURFACE_CLASSES = 'space-y-4 min-h-[800px] md:min-h-[720px] lg:min-h-[672px]';
+const PROPOSAL_CARD_SURFACE_CLASSES = 'h-[188px] md:h-[168px] lg:h-[156px] overflow-hidden';
+const PROPOSAL_LEDGER_SLOT_CLASSES = 'h-5 min-w-[220px] flex items-center gap-1 text-xs text-gray-500 font-mono tabular-nums';
+
+function filterProposalsByTab<T extends { status: Proposal['status'] }>(
+  proposals: T[],
+  tab: 'all' | 'active' | 'archived',
+): T[] {
+  if (tab === 'active') {
+    return proposals.filter((p) => p.status === 'Active');
+  }
+  if (tab === 'archived') {
+    return proposals.filter((p) => p.status !== 'Active');
+  }
+  return proposals;
+}
+
 export default function GovernancePage() {
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'archived'>('all');
 
-  // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
-  const transformedProposals = useMemo(
-    () => useTransformedCustomAddressField(MOCK_PROPOSALS, 'proposer'),
-    []
+  const visibleProposals = useMemo(
+    () => filterProposalsByTab(TRANSFORMED_PROPOSALS, activeTab),
+    [activeTab],
   );
 
   // Live ledger countdown — one shared RAF tick every ~5 s (Stellar avg ledger time)
@@ -97,14 +110,14 @@ export default function GovernancePage() {
       </div>
 
       {/* --- Proposal List Suite --- */}
-      <div className="space-y-4">
-        {transformedProposals.map((proposal) => {
+      <div className={PROPOSAL_LIST_SURFACE_CLASSES}>
+        {visibleProposals.map((proposal) => {
           const totalVotes = proposal.votesFor + proposal.votesAgainst;
           const forPercentage = totalVotes > 0 ? (proposal.votesFor / totalVotes) * 100 : 0;
           
           return (
-            <div key={proposal.id} className="bg-[#161b22] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-colors group">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div key={proposal.id} className={`${PROPOSAL_CARD_SURFACE_CLASSES} bg-[#161b22] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-colors group`}>
+              <div className="flex min-h-full flex-col lg:flex-row lg:items-center justify-between gap-4">
                 
                 {/* Proposal Text Meta */}
                 <div className="space-y-2 max-w-2xl">
@@ -117,11 +130,13 @@ export default function GovernancePage() {
                     }`}>
                       {proposal.status}
                     </span>
-                    {proposal.status === 'Active' && (
-                      <span className="text-xs text-gray-500 flex items-center gap-1 font-mono">
-                        <Clock size={12} /> ~{(ledgerCounts[proposal.id] ?? 0).toLocaleString()} ledgers remaining
-                      </span>
-                    )}
+                    <span
+                      className={`${PROPOSAL_LEDGER_SLOT_CLASSES} ${proposal.status === 'Active' ? '' : 'invisible'}`}
+                      aria-hidden={proposal.status !== 'Active'}
+                    >
+                      <Clock size={12} className="shrink-0" />
+                      ~{(ledgerCounts[proposal.id] ?? 0).toLocaleString()} ledgers remaining
+                    </span>
                   </div>
                   <h3 className="text-lg font-semibold text-gray-100 group-hover:text-blue-400 transition-colors">{proposal.title}</h3>
                   {/* PERFORMANCE OPTIMIZATION: Use pre-computed shortened address instead of runtime string slicing */}
