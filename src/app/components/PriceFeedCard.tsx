@@ -145,7 +145,7 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   // instead of closing over `data` — so `data` is NOT a dependency and the
   // effect does not re-run after every state write, breaking the render cycle.
   useEffect(() => {
-    if (!wsUpdate || !enableWebSocket) return;
+    if (!wsUpdate || !enableWebSocket || !isPageVisible) return;
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setData((prev: PriceFeedData | null) => ({
@@ -177,7 +177,7 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   }, [wsError, enableWebSocket]);
 
   // Initial fetch + fallback polling (only when WebSocket is disabled or disconnected)
-  const pollingActive = !enableWebSocket || !isConnected;
+  const pollingActive = isPageVisible && (!enableWebSocket || !isConnected);
   useEffect(() => {
     if (pollingActive) load();
   }, [pollingActive, load]);
@@ -198,9 +198,25 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
     : "shadow-[0_0_18px_rgba(244,63,94,0.18)]";
 
   const priceColor = isUp ? "text-emerald-400" : "text-rose-400";
+  const [isPageVisible, setIsPageVisible] = useState(() => {
+    if (typeof document === "undefined") return true;
+    return document.visibilityState === "visible";
+  });
 
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsPageVisible(document.visibilityState === "visible");
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
   return (
     <div
+      style={{ contain: "paint layout" }}
       className={`
         relative overflow-hidden max-w-full
         h-full bg-[#0A121E] border border-[#1B2A3B] rounded-2xl p-6
