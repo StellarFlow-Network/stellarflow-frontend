@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { PriceData } from "@/types";
 import { useErrorTimeout } from "./useErrorTimeout";
+import { usePageVisibility } from "./usePageVisibility";
 
 interface SocketMessage {
   type: "price_update" | "delta_update";
@@ -28,6 +29,7 @@ interface UseSocketReturn {
   isConnected: boolean;
   lastUpdate: PriceData | null;
   error: string | null;
+  isPageVisible: boolean;
   reconnectAttempts: number;
   subscribeToAsset: (assetId: string) => void;
   unsubscribeFromAsset: (assetId: string) => void;
@@ -46,6 +48,7 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
   const [isConnected, setIsConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<PriceData | null>(null);
   const { error, setError } = useErrorTimeout({ timeoutMs: errorTimeoutMs });
+  const isPageVisible = usePageVisibility();
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -54,7 +57,9 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
     null,
   );
   const manuallyDisconnectedRef = useRef(false);
-  const pageVisibleRef = useRef(true);
+  const pageVisibleRef = useRef(
+    typeof document === "undefined" || document.visibilityState !== "hidden",
+  );
 
   // Refs keep options fresh inside callbacks without triggering re-renders or
   // causing `connect` to be recreated on every tick.
@@ -70,21 +75,25 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
     reconnectIntervalRef.current = reconnectInterval;
   }, [maxReconnectAttempts, reconnectInterval]);
 
-  // `connect` has an empty dependency array because every value it needs is
-  // accessed through a ref.  This breaks the cycle where a WS message would
-  // update `lastUpdate` → recreate `connect` → effect fires → socket torn down.
+  // `connect` only depends on stable callbacks and refs.  This breaks the cycle
+  // where a WS message would update `lastUpdate` → recreate `connect` → effect
+  // fires → socket torn down.
   const connect = useCallback(function doConnect() {
     if (
       typeof document !== "undefined" &&
       document.visibilityState === "hidden"
     ) {
+      pageVisibleRef.current = false;
       return;
     }
 
     pageVisibleRef.current = true;
     manuallyDisconnectedRef.current = false;
 
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
+    if (
+      wsRef.current?.readyState === WebSocket.OPEN ||
+      wsRef.current?.readyState === WebSocket.CONNECTING
+    ) {
       return;
     }
     try {
@@ -162,7 +171,30 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
       setError("Failed to establish WebSocket connection");
       console.error("Connection error:", err);
     }
-  }, []); // ← intentionally empty; all mutable values go through refs
+  }, [setError]);
+
+  const pauseLiveUpdates = useCallback((reason = "Page hidden") => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(
+        JSON.stringify({
+          type: "unsubscribe",
+          assetIds: Array.from(subscribedAssetsRef.current),
+        }),
+      );
+    }
+
+    if (wsRef.current) {
+      wsRef.current.close(1000, reason);
+      wsRef.current = null;
+    }
+
+    setIsConnected(false);
+  }, []);
 
   const disconnect = useCallback(() => {
     manuallyDisconnectedRef.current = true;
@@ -235,51 +267,25 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
     };
   }, []);
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      const isVisible = document.visibilityState === "visible";
-      pageVisibleRef.current = isVisible;
+    pageVisibleRef.current = isPageVisible;
 
-      if (!isVisible) {
-        if (reconnectTimeoutRef.current) {
-          clearTimeout(reconnectTimeoutRef.current);
-          reconnectTimeoutRef.current = null;
-        }
+    if (!isPageVisible) {
+      pauseLiveUpdates();
+      return;
+    }
 
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-          wsRef.current.send(
-            JSON.stringify({
-              type: "unsubscribe",
-              assetIds: Array.from(subscribedAssetsRef.current),
-            }),
-          );
-        }
+    if (!manuallyDisconnectedRef.current) {
+      reconnectAttemptsRef.current = 0;
+      setReconnectAttempts(0);
+      connect();
+    }
+  }, [isPageVisible, connect, pauseLiveUpdates]);
 
-        if (wsRef.current) {
-          wsRef.current.close(1000, "Page hidden");
-          wsRef.current = null;
-        }
-
-        setIsConnected(false);
-        return;
-      }
-
-      if (!manuallyDisconnectedRef.current) {
-        reconnectAttemptsRef.current = 0;
-        setReconnectAttempts(0);
-        connect();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [connect]);
   return {
     isConnected,
     lastUpdate,
     error,
+    isPageVisible,
     reconnectAttempts,
     subscribeToAsset,
     unsubscribeFromAsset,
