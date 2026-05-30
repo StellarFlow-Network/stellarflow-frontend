@@ -13,6 +13,7 @@ const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
   display: "swap",
+  axes: ["wght"],
   weight: ["400", "700"]
 });
 
@@ -20,6 +21,7 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
   display: "swap",
+  axes: ["wght"],
   weight: ["400", "700"]
 });
 
