@@ -326,6 +326,9 @@ export default function RelayersPage() {
           </div>
         </div>
       </div>
+
+      {/* ─── State-Driven Modal (Clean mount/unmount via short-circuit rendering) ─── */}
+      {isAddRelayerOpen && <AddRelayerModal onClose={() => setIsAddRelayerOpen(false)} />}
     </div>
   );
 }

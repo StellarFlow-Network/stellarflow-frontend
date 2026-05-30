@@ -38,6 +38,7 @@ const MOCK_PROPOSALS: Proposal[] = [
 
 export default function GovernancePage() {
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'archived'>('all');
+  const [isNewProposalModalOpen, setIsNewProposalModalOpen] = useState(false);
 
   // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
   const transformedProposals = useMemo(
@@ -74,7 +75,10 @@ export default function GovernancePage() {
             <Wallet size={16} className="text-purple-400" />
             Connect Freighter Wallet
           </button>
-          <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all text-sm font-medium">
+          <button 
+            onClick={() => setIsNewProposalModalOpen(true)}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all text-sm font-medium"
+          >
             <FilePlus size={16} />
             Submit New Proposal
           </button>
@@ -155,6 +159,8 @@ export default function GovernancePage() {
         })}
       </div>
 
+      {/* ─── State-Driven Modal (Clean mount/unmount via short-circuit rendering) ─── */}
+      {isNewProposalModalOpen && <SubmitProposalModal onClose={() => setIsNewProposalModalOpen(false)} />}
     </div>
   );
 }
@@ -172,3 +178,88 @@ function StatCard({ title, value, icon, subtitle }: { title: string, value: stri
     </div>
   );
 }
+
+interface SubmitProposalModalProps {
+  onClose: () => void;
+}
+
+const SubmitProposalModal = React.memo(({ onClose }: SubmitProposalModalProps) => {
+  const [title, setTitle] = useState('');
+  const [proposer, setProposer] = useState('');
+  const [quorum, setQuorum] = useState(60);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title || !proposer) {
+      alert("Please fill all required fields");
+      return;
+    }
+    alert(`Proposal submitted: ${title}`);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md">
+      <div className="bg-[#0c0f1d] border border-gray-800 rounded-3xl p-6 max-w-lg w-full mx-4 shadow-[0_24px_80px_rgba(0,0,0,0.8)] relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(96,165,250,0.08),transparent_50%)] pointer-events-none" />
+        <h2 className="text-xl font-bold mb-2 text-white flex items-center gap-2">
+          <FilePlus className="text-blue-400" size={20} />
+          Submit New Proposal
+        </h2>
+        <p className="text-xs text-gray-400 mb-6">Create a decentralized consensus proposal to update or whitelist network elements.</p>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Proposal Title</label>
+            <input 
+              type="text" 
+              placeholder="e.g. Whitelist KES/XLM Asset Pair Feed" 
+              value={title} 
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full bg-[#0d1117] border border-gray-700 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors placeholder-gray-600 text-white" 
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Proposer Authority Wallet Address</label>
+            <input 
+              type="text" 
+              placeholder="e.g. GA5THZLKMNPQRSXYZ..." 
+              value={proposer} 
+              onChange={(e) => setProposer(e.target.value)}
+              className="w-full bg-[#0d1117] border border-gray-700 rounded-xl py-2.5 px-3 text-sm font-mono focus:outline-none focus:border-blue-500 transition-colors placeholder-gray-600 text-white" 
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Quorum Threshold (%)</label>
+              <input 
+                type="number" 
+                value={quorum} 
+                onChange={(e) => setQuorum(Number(e.target.value))}
+                className="w-full bg-[#0d1117] border border-gray-700 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors text-white" 
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Default Duration</label>
+              <div className="w-full bg-[#0d1117]/60 border border-gray-800 text-gray-400 rounded-xl py-2.5 px-3 text-sm">
+                5,000 Ledgers (~6h)
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button type="button" onClick={onClose} className="w-1/2 py-2.5 border border-gray-700 hover:bg-gray-800 rounded-xl text-sm font-medium transition-colors text-gray-300">
+              Cancel
+            </button>
+            <button type="submit" className="w-1/2 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-xl text-sm font-bold text-white transition-colors">
+              Submit Proposal
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+});
+SubmitProposalModal.displayName = 'SubmitProposalModal';

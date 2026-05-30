@@ -42,6 +42,8 @@ const MOCK_STAKERS: StakerNode[] = [
 
 export default function StakingPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isApyOpen, setIsApyOpen] = useState(false);
+  const [isSlashingOpen, setIsSlashingOpen] = useState(false);
   const debouncedSearch = useDebounce(searchTerm, 250);
 
   const displayedStakers = useMemo(() => {
@@ -68,11 +70,17 @@ export default function StakingPage() {
           <h1 className="text-3xl font-bold tracking-tight">Staking & Collateral Pool</h1>
         </div>
         <div className="flex gap-3">
-          <button className="flex items-center gap-2 bg-[#161b22] border border-gray-800 hover:bg-gray-800 text-gray-300 px-4 py-2 rounded-lg transition-all text-sm">
+          <button 
+            onClick={() => setIsApyOpen(true)}
+            className="flex items-center gap-2 bg-[#161b22] border border-gray-800 hover:bg-gray-800 text-gray-300 px-4 py-2 rounded-lg transition-all text-sm font-medium"
+          >
             <Percent size={16} className="text-yellow-500" />
             Adjust Network APY
           </button>
-          <button className="flex items-center gap-2 bg-red-950/40 border border-red-900/50 hover:bg-red-900/30 text-red-400 px-4 py-2 rounded-lg transition-all text-sm font-medium">
+          <button 
+            onClick={() => setIsSlashingOpen(true)}
+            className="flex items-center gap-2 bg-red-950/40 border border-red-900/50 hover:bg-red-900/30 text-red-400 px-4 py-2 rounded-lg transition-all text-sm font-medium"
+          >
             <Flame size={16} />
             Execute Manual Slashing
           </button>
@@ -174,6 +182,9 @@ export default function StakingPage() {
         </div>
       </div>
 
+      {/* ─── State-Driven Modals (Clean mount/unmount via short-circuit rendering) ─── */}
+      {isApyOpen && <AdjustApyModal onClose={() => setIsApyOpen(false)} />}
+      {isSlashingOpen && <ExecuteSlashingModal onClose={() => setIsSlashingOpen(false)} />}
     </div>
   );
 }
@@ -191,3 +202,166 @@ function StatCard({ title, value, icon, subtitle }: { title: string, value: stri
     </div>
   );
 }
+
+interface AdjustApyModalProps {
+  onClose: () => void;
+}
+
+const AdjustApyModal = React.memo(({ onClose }: AdjustApyModalProps) => {
+  const [targetApy, setTargetApy] = useState('5.5');
+  const [reason, setReason] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!targetApy || !reason) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+    alert(`APY adjustment request submitted:\nNew APY: ${targetApy}%\nReason: ${reason}`);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md">
+      <div className="bg-[#0c0f1d] border border-gray-800 rounded-3xl p-6 max-w-lg w-full mx-4 shadow-[0_24px_80px_rgba(0,0,0,0.8)] relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(234,179,8,0.08),transparent_50%)] pointer-events-none" />
+        <h2 className="text-xl font-bold mb-2 text-white flex items-center gap-2">
+          <Percent className="text-yellow-500" size={20} />
+          Adjust Network APY
+        </h2>
+        <p className="text-xs text-gray-400 mb-6">Modify the global cryptographic inflation yield for active node validators and stakers.</p>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">New Target APY (%)</label>
+            <input 
+              type="number"
+              step="0.01"
+              placeholder="e.g. 5.5" 
+              value={targetApy} 
+              onChange={(e) => setTargetApy(e.target.value)}
+              className="w-full bg-[#0d1117] border border-gray-700 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors text-white" 
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Governance/Consensus Proposal Justification</label>
+            <textarea 
+              placeholder="Provide a detailed backing reason for altering the inflation rate parameters..." 
+              value={reason} 
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+              className="w-full bg-[#0d1117] border border-gray-700 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors placeholder-gray-600 text-white resize-none" 
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button type="button" onClick={onClose} className="w-1/2 py-2.5 border border-gray-700 hover:bg-gray-800 rounded-xl text-sm font-medium transition-colors text-gray-300">
+              Cancel
+            </button>
+            <button type="submit" className="w-1/2 py-2.5 bg-yellow-600 hover:bg-yellow-700 rounded-xl text-sm font-bold text-white transition-colors">
+              Adjust APY Rate
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+});
+
+AdjustApyModal.displayName = 'AdjustApyModal';
+
+interface ExecuteSlashingModalProps {
+  onClose: () => void;
+}
+
+const ExecuteSlashingModal = React.memo(({ onClose }: ExecuteSlashingModalProps) => {
+  const [selectedNode, setSelectedNode] = useState(MOCK_STAKERS[0]?.id || '');
+  const [slashingPercent, setSlashingPercent] = useState(5);
+  const [infractionReason, setInfractionReason] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedNode || !slashingPercent || !infractionReason) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+    const nodeName = MOCK_STAKERS.find(s => s.id === selectedNode)?.nodeName || selectedNode;
+    alert(`Slashing protocol executed successfully:\nNode: ${nodeName}\nPenalty: -${slashingPercent}%\nInfraction: ${infractionReason}`);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md">
+      <div className="bg-[#0c0f1d] border border-red-900/40 rounded-3xl p-6 max-w-lg w-full mx-4 shadow-[0_24px_80px_rgba(0,0,0,0.8)] relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(239,68,68,0.08),transparent_50%)] pointer-events-none" />
+        <h2 className="text-xl font-bold mb-2 text-white flex items-center gap-2">
+          <Flame className="text-red-500 animate-pulse" size={20} />
+          Execute Manual Slashing
+        </h2>
+        <p className="text-xs text-gray-400 mb-6">Manually slash validator collateral due to protocol non-compliance or malicious price feed reporting.</p>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Select Malicious Node Operator</label>
+            <select 
+              value={selectedNode} 
+              onChange={(e) => setSelectedNode(e.target.value)}
+              className="w-full bg-[#0d1117] border border-gray-700 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-red-500 transition-colors text-white"
+            >
+              {MOCK_STAKERS.map(node => (
+                <option key={node.id} value={node.id}>
+                  {node.nodeName} ({node.stakedAmountXLM.toLocaleString()} XLM staked)
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Slash Percentage Penalty</label>
+              <select 
+                value={slashingPercent} 
+                onChange={(e) => setSlashingPercent(Number(e.target.value))}
+                className="w-full bg-[#0d1117] border border-gray-700 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-red-500 transition-colors text-white"
+              >
+                <option value={5}>5% Penalty (Standard Deviation)</option>
+                <option value={10}>10% Penalty (Extended Downtime)</option>
+                <option value={25}>25% Penalty (Double-sign Infraction)</option>
+                <option value={50}>50% Penalty (Malicious Manipulation)</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Estimated Slashing Yield</label>
+              <div className="w-full bg-[#0d1117]/60 border border-gray-800 text-red-400 font-mono rounded-xl py-2.5 px-3 text-sm flex items-center">
+                -{((MOCK_STAKERS.find(s => s.id === selectedNode)?.stakedAmountXLM || 0) * (slashingPercent / 100)).toLocaleString()} XLM
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Infraction Details & Log Proof</label>
+            <textarea 
+              placeholder="Paste consensus block mismatch, heartbeat timeout telemetry logs, or other evidence..." 
+              value={infractionReason} 
+              onChange={(e) => setInfractionReason(e.target.value)}
+              rows={3}
+              className="w-full bg-[#0d1117] border border-gray-700 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-red-500 transition-colors placeholder-gray-600 text-white resize-none" 
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button type="button" onClick={onClose} className="w-1/2 py-2.5 border border-gray-700 hover:bg-gray-800 rounded-xl text-sm font-medium transition-colors text-gray-300">
+              Cancel
+            </button>
+            <button type="submit" className="w-1/2 py-2.5 bg-red-600 hover:bg-red-700 rounded-xl text-sm font-bold text-white transition-colors shadow-lg shadow-red-900/20">
+              Execute Slash
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+});
+
+ExecuteSlashingModal.displayName = 'ExecuteSlashingModal';

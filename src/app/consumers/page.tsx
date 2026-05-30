@@ -16,6 +16,13 @@ import {
   Copy 
 } from 'lucide-react';
 import { useTransformedCustomAddressField } from '@/app/hooks/useTransformedData';
+import { 
+  CONSUMER_TIER_VARIANTS, 
+  CONSUMER_TIER_BADGE_CLASS, 
+  CONSUMER_STATUS_TEXT_VARIANTS, 
+  CONSUMER_STATUS_DOT_VARIANTS, 
+  getBalanceColorClass 
+} from '@/lib/classNameVariants';
 
 // --- Types ---
 interface Consumer {
@@ -39,6 +46,7 @@ const MOCK_CONSUMERS: Consumer[] = [
 export default function ConsumersPage() {
   const [showSecret, setShowSecret] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isProvisionOpen, setIsProvisionOpen] = useState(false);
 
   // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
   const transformedConsumers = useMemo(
@@ -60,7 +68,10 @@ export default function ConsumersPage() {
           <p className="text-sm text-gray-500 mb-1">Admin / Gateway</p>
           <h1 className="text-3xl font-bold tracking-tight">Consumer Subscriptions</h1>
         </div>
-        <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all font-medium text-sm">
+        <button 
+          onClick={() => setIsProvisionOpen(true)}
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all font-medium text-sm"
+        >
           <Plus size={16} />
           Provision Client Access
         </button>
@@ -186,6 +197,9 @@ export default function ConsumersPage() {
           </table>
         </div>
       </div>
+
+      {/* ─── State-Driven Modal (Clean mount/unmount via short-circuit rendering) ─── */}
+      {isProvisionOpen && <ProvisionAccessModal onClose={() => setIsProvisionOpen(false)} />}
     </div>
   );
 }
@@ -203,3 +217,96 @@ function StatCard({ title, value, icon, subtitle }: { title: string, value: stri
     </div>
   );
 }
+
+interface ProvisionAccessModalProps {
+  onClose: () => void;
+}
+
+const ProvisionAccessModal = React.memo(({ onClose }: ProvisionAccessModalProps) => {
+  const [projectName, setProjectName] = useState('');
+  const [address, setAddress] = useState('');
+  const [tier, setTier] = useState<'Enterprise' | 'Developer' | 'Staging'>('Developer');
+  const [collateral, setCollateral] = useState(500);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!projectName || !address) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+    alert(`Access successfully provisioned:\nProject: ${projectName}\nTier: ${tier}\nCollateral: ${collateral} XLM`);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md">
+      <div className="bg-[#0c0f1d] border border-gray-800 rounded-3xl p-6 max-w-lg w-full mx-4 shadow-[0_24px_80px_rgba(0,0,0,0.8)] relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,0.08),transparent_50%)] pointer-events-none" />
+        <h2 className="text-xl font-bold mb-2 text-white flex items-center gap-2">
+          <Plus className="text-blue-400" size={20} />
+          Provision Client Access
+        </h2>
+        <p className="text-xs text-gray-400 mb-6">Authorize and deploy a new sandboxed Soroban contract instance to tap global oracle telemetry.</p>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Project Name</label>
+            <input 
+              type="text" 
+              placeholder="e.g. Zazu Lending Pool" 
+              value={projectName} 
+              onChange={(e) => setProjectName(e.target.value)}
+              className="w-full bg-[#0d1117] border border-gray-700 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors placeholder-gray-600 text-white" 
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Soroban Contract / Wallet Address</label>
+            <input 
+              type="text" 
+              placeholder="e.g. CC7VHQGGURUNXSVW..." 
+              value={address} 
+              onChange={(e) => setAddress(e.target.value)}
+              className="w-full bg-[#0d1117] border border-gray-700 rounded-xl py-2.5 px-3 text-sm font-mono focus:outline-none focus:border-blue-500 transition-colors placeholder-gray-600 text-white" 
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Subscription Tier</label>
+              <select 
+                value={tier} 
+                onChange={(e) => setTier(e.target.value as any)}
+                className="w-full bg-[#0d1117] border border-gray-700 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors text-white"
+              >
+                <option value="Enterprise">Enterprise Tier</option>
+                <option value="Developer">Developer Tier</option>
+                <option value="Staging">Staging Sandbox</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Escrowed Collateral (XLM)</label>
+              <input 
+                type="number" 
+                value={collateral} 
+                onChange={(e) => setCollateral(Number(e.target.value))}
+                className="w-full bg-[#0d1117] border border-gray-700 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors text-white" 
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button type="button" onClick={onClose} className="w-1/2 py-2.5 border border-gray-700 hover:bg-gray-800 rounded-xl text-sm font-medium transition-colors text-gray-300">
+              Cancel
+            </button>
+            <button type="submit" className="w-1/2 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-xl text-sm font-bold text-white transition-colors">
+              Provision Gateway
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+});
+
+ProvisionAccessModal.displayName = 'ProvisionAccessModal';
