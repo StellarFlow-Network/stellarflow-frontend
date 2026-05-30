@@ -108,6 +108,79 @@ export default function LogsPage() {
     overscan: 10,
   });
 
+  const scrollTrackerRef = React.useRef({
+    rafId: 0,
+    pendingScrollTop: 0,
+    isTouching: false,
+  });
+
+  React.useEffect(() => {
+    const container = parentRef.current;
+    if (!container) return;
+
+    const scheduleFrame = () => {
+      // Keep scroll/touch input tracking off the synchronous rendering path.
+      // Only update the tracker on RAF to avoid jank during touch-driven scroll.
+      if (scrollTrackerRef.current.rafId) return;
+      scrollTrackerRef.current.rafId = requestAnimationFrame(() => {
+        scrollTrackerRef.current.rafId = 0;
+        scrollTrackerRef.current.pendingScrollTop = container.scrollTop;
+      });
+    };
+
+    const handleScroll = () => {
+      scrollTrackerRef.current.pendingScrollTop = container.scrollTop;
+      scheduleFrame();
+    };
+
+    const handleTouchStart = (event: TouchEvent) => {
+      if (event.touches.length > 0) {
+        scrollTrackerRef.current.isTouching = true;
+        scrollTrackerRef.current.pendingScrollTop = container.scrollTop;
+      }
+    };
+
+    const handleTouchMove = () => {
+      if (!scrollTrackerRef.current.isTouching) return;
+      scrollTrackerRef.current.pendingScrollTop = container.scrollTop;
+      scheduleFrame();
+    };
+
+    const handleTouchEnd = () => {
+      scrollTrackerRef.current.isTouching = false;
+      scheduleFrame();
+    };
+
+    const handleTouchCancel = () => {
+      scrollTrackerRef.current.isTouching = false;
+      scheduleFrame();
+    };
+
+    const handleWheel = () => {
+      scrollTrackerRef.current.pendingScrollTop = container.scrollTop;
+      scheduleFrame();
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    container.addEventListener('touchstart', handleTouchStart, { passive: true });
+    container.addEventListener('touchmove', handleTouchMove, { passive: true });
+    container.addEventListener('touchend', handleTouchEnd, { passive: true });
+    container.addEventListener('touchcancel', handleTouchCancel, { passive: true });
+    container.addEventListener('wheel', handleWheel, { passive: true });
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+      container.removeEventListener('touchcancel', handleTouchCancel);
+      container.removeEventListener('wheel', handleWheel);
+      if (scrollTrackerRef.current.rafId) {
+        cancelAnimationFrame(scrollTrackerRef.current.rafId);
+      }
+    };
+  }, []);
+
   const [isOnline, setIsOnline] = useState(true);
   React.useEffect(() => {
     setIsOnline(navigator.onLine);
@@ -230,6 +303,7 @@ export default function LogsPage() {
         <div 
           ref={parentRef}
           className="overflow-auto max-h-[600px] scrollbar-thin scrollbar-thumb-gray-700"
+          style={{ touchAction: 'pan-y', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
         >
           <div
             style={{
