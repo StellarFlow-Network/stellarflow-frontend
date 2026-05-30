@@ -21,24 +21,38 @@ export function useProgressBar() {
 // ─── Trickle bar — isolated so the RAF hook runs unconditionally ──────────────
 
 function TrickleBar({ width }: { width: number }) {
+  const scale = width / 100;
+
   return (
     <div
-      role="progressbar"
-      aria-label="Loading"
-      aria-valuenow={width}
+      aria-hidden="true"
       style={{
         position: "fixed",
         top: 0,
         left: 0,
+        right: 0,
         height: "3px",
-        width: `${width}%`,
-        background: "linear-gradient(90deg, #99DC1B, #39FF14)",
-        boxShadow: "0 0 8px rgba(153,220,27,0.7)",
-        transition: width === 100 ? "width 0.2s ease-out" : "width 0.12s linear",
+        overflow: "hidden",
         zIndex: 9999,
-        borderRadius: "0 2px 2px 0",
       }}
-    />
+    >
+      <div
+        role="progressbar"
+        aria-label="Loading"
+        aria-valuenow={width}
+        style={{
+          height: "100%",
+          width: "100%",
+          transform: `scaleX(${scale})`,
+          transformOrigin: "left center",
+          willChange: "transform",
+          background: "linear-gradient(90deg, #99DC1B, #39FF14)",
+          boxShadow: "0 0 8px rgba(153,220,27,0.7)",
+          transition: width === 100 ? "transform 0.2s ease-out" : "transform 0.12s linear",
+          borderRadius: "0 2px 2px 0",
+        }}
+      />
+    </div>
   );
 }
 
