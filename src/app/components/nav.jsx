@@ -1,7 +1,7 @@
 "use client";
 
-import React, { memo, useCallback, useState } from "react";
-import Image from "next/image";
+import React, { memo, useCallback } from "react";
+import OptimizedImage from "./OptimizedImage";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { Wallet, Bell, CircleUser, LogOut } from "lucide-react";
@@ -103,9 +103,9 @@ const Nav = memo(() => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex flex-nowrap items-center justify-between gap-3">
         {/* Left Side: Logo + Title */}
         <div className="flex-1 min-w-0 flex items-center gap-3 overflow-hidden">
-          {/* StellarFlow Logo — optimized WebP with next/image */}
-          <div className="shrink-0">
-            <Image
+          {/* StellarFlow Logo — optimized WebP with next/image (Issue #46) */}
+          <div className="shrink-0" style={{ aspectRatio: "1 / 1", width: 48, height: 48 }}>
+            <OptimizedImage
               src="/sf.webp"
               alt="StellarFlow Logo"
               width={48}

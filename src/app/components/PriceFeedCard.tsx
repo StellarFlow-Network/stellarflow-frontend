@@ -214,6 +214,7 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   }, []);
   return (
     <div
+      style={{ contain: "paint layout" }}
       className={`
         relative overflow-hidden max-w-full
         h-full bg-[#0A121E] border border-[#1B2A3B] rounded-2xl p-6

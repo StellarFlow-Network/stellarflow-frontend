@@ -156,13 +156,19 @@ export default function DashboardPage() {
           </section>
 
           {/* Relayer Status Table */}
-          <section className="space-y-4">
+          <section
+            className="content-visibility-auto space-y-4"
+            style={{ "--content-visibility-fallback": "1px 220px" }}
+          >
             <h2 className="text-xl font-semibold text-white uppercase tracking-wider mb-4">
               Relayer Network Status
             </h2>
             <RelayerStatusTable relayers={mockRelayers} />
           </section>
-          <section className="space-y-4">
+          <section
+            className="content-visibility-auto space-y-4"
+            style={{ "--content-visibility-fallback": "1px 520px" }}
+          >
             <h2 className="text-xl font-semibold text-white uppercase tracking-wider mb-4">
               Live Network Map
             </h2>
@@ -184,7 +190,10 @@ export default function DashboardPage() {
           </section>
 
           {/* Chart loading state and source table shell */}
-          <section className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]">
+          <section
+            className="content-visibility-auto grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]"
+            style={{ "--content-visibility-fallback": "1px 620px" }}
+          >
             <div className="rounded-[32px] border border-[#A7C957]/30 bg-[#0A1020] p-5 shadow-[0_24px_80px_rgba(2,8,23,0.42)]">
               <div className="mb-5 flex items-center justify-between gap-4 border-b border-white/10 pb-4">
                 <div>

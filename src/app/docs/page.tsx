@@ -92,7 +92,10 @@ async function fetchLiveRate(providerRpcUrl) {
         
         {/* --- Left Column: Documentation Outline --- */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-[#161b22] border border-gray-800 rounded-xl p-6">
+          <div
+            className="content-visibility-auto bg-[#161b22] border border-gray-800 rounded-xl p-6"
+            style={{ '--content-visibility-fallback': '1px 320px' } as React.CSSProperties}
+          >
             <h2 className="text-sm font-bold uppercase text-gray-400 tracking-wider mb-4 flex items-center gap-2">
               <BookOpen size={16} className="text-blue-400" />
               Integration Invariants
@@ -120,7 +123,10 @@ async function fetchLiveRate(providerRpcUrl) {
           </div>
 
           {/* --- Live Interactive On-Chain Invoker Box --- */}
-          <div className="bg-[#161b22] border border-gray-800 rounded-xl p-6">
+          <div
+            className="content-visibility-auto bg-[#161b22] border border-gray-800 rounded-xl p-6"
+            style={{ '--content-visibility-fallback': '1px 280px' } as React.CSSProperties}
+          >
             <h2 className="text-sm font-bold uppercase text-gray-400 tracking-wider mb-2 flex items-center gap-2">
               <Cpu size={16} className="text-purple-400" />
               Soroban RPC Invoker Playground
@@ -146,7 +152,10 @@ async function fetchLiveRate(providerRpcUrl) {
 
         {/* --- Right Column: Interactive Code Workspace --- */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-[#161b22] border border-gray-800 rounded-xl overflow-hidden flex flex-col h-full">
+          <div
+            className="content-visibility-auto bg-[#161b22] border border-gray-800 rounded-xl overflow-hidden flex flex-col h-full"
+            style={{ '--content-visibility-fallback': '1px 520px' } as React.CSSProperties}
+          >
             
             {/* Tab Controller Bar */}
             <div className="bg-[#0d1117] px-4 pt-3 border-b border-gray-800 flex justify-between items-center">

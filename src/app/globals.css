@@ -28,6 +28,11 @@ body {
   overflow-x: hidden;
 }
 
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: var(--content-visibility-fallback, 1px 480px);
+}
+
 .wallet-btn {
   background-color: #d9f99d;
   color: #1f2937;
