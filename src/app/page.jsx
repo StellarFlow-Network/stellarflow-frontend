@@ -70,7 +70,11 @@ const DashboardTrafficChart = dynamic(
   () => import("./components/DashboardTrafficChart"),
   {
     ssr: false,
-    loading: () => <MapSkeleton />,
+    loading: () => (
+      <div className="h-[280px] w-full rounded-3xl border border-white/10 bg-white/5 p-6">
+        <Shimmer className="h-full w-full rounded-3xl" />
+      </div>
+    ),
   },
 );
 
