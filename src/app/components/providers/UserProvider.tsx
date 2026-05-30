@@ -23,13 +23,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const abortController = new AbortController();
+
     // Fetching user validation details once at the root level
     // This prevents redundant network requests across independent dashboard modules
     const fetchUserValidation = async () => {
       setIsLoading(true);
       try {
         // Attempting to fetch validation details
-        const res = await fetch("/api/user/validation").catch(() => null);
+        const res = await fetch("/api/user/validation", {
+          signal: abortController.signal
+        }).catch(() => null);
         
         if (res && res.ok) {
            const data = await res.json();
@@ -44,6 +48,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
            });
         }
       } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
         setError(err instanceof Error ? err.message : "Failed to fetch user validation");
       } finally {
         setIsLoading(false);
@@ -51,6 +56,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
     };
 
     fetchUserValidation();
+
+    return () => {
+      abortController.abort();
+    };
   }, []);
 
   return (

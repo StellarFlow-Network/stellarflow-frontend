@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { 
   Vote, 
   FilePlus, 
@@ -50,7 +50,7 @@ export default function GovernancePage() {
     () => Object.fromEntries(MOCK_PROPOSALS.map(p => [p.id, p.endsInLedgers]))
   );
 
-  useRAFInterval(() => {
+  const updateLedgerCounts = useCallback(() => {
     setLedgerCounts(prev => {
       const next = { ...prev };
       for (const id in next) {
@@ -58,7 +58,9 @@ export default function GovernancePage() {
       }
       return next;
     });
-  }, 5000);
+  }, []);
+
+  useRAFInterval(updateLedgerCounts, 5000);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
