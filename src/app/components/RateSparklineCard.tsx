@@ -2,6 +2,7 @@
 
 import React, { useMemo } from "react";
 import { Shimmer } from "@/components/skeletons";
+import { compressTelemetryStream } from "./chartUtils";
 
 interface RateSparklineCardProps {
   currency: string;
@@ -64,7 +65,10 @@ const RateSparklineCard: React.FC<RateSparklineCardProps> = ({
   loading = false,
 }) => {
   const isPositive = trend >= 0;
-  const displayData = sparklineData;
+  const displayData = useMemo(
+    () => compressTelemetryStream(sparklineData, 50),
+    [sparklineData],
+  );
 
   const formattedRate = useMemo(
     () => `${currency} ${rate.toFixed(2)}`,
