@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import {
   Chart,
   LineController,
@@ -12,6 +12,7 @@ import {
   Tooltip,
   type ChartConfiguration,
 } from "chart.js";
+import { compressTelemetryPairs } from "./chartUtils";
 
 Chart.register(
   LineController,
@@ -35,17 +36,22 @@ export default function DashboardTrafficChart({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chartRef = useRef<Chart<"line"> | null>(null);
 
+  const filtered = useMemo(
+    () => compressTelemetryPairs(labels, values, 50),
+    [labels, values],
+  );
+
   useEffect(() => {
     if (!canvasRef.current) return;
 
     const config: ChartConfiguration<"line"> = {
       type: "line",
       data: {
-        labels,
+        labels: filtered.labels,
         datasets: [
           {
             label: "NGN/XLM traffic",
-            data: values,
+            data: filtered.values,
             borderColor: "#D9F99D",
             backgroundColor: "rgba(217, 249, 157, 0.12)",
             fill: true,
