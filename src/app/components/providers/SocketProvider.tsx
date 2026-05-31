@@ -17,6 +17,7 @@ import { PriceData } from '@/types'
 interface SocketConnectionContextType {
   isConnected: boolean
   error: string | null
+  isPageVisible: boolean
   reconnectAttempts: number
 }
 
@@ -52,6 +53,7 @@ export function SocketProvider({ children, options }: SocketProviderProps) {
     isConnected,
     lastUpdate,
     error,
+    isPageVisible,
     reconnectAttempts,
     subscribeToAsset,
     unsubscribeFromAsset,
@@ -63,8 +65,8 @@ export function SocketProvider({ children, options }: SocketProviderProps) {
   // `dataValue` object changes; `connectionValue` and `actionsValue` keep the
   // same reference, so their consumers are skipped by React's reconciler.
   const connectionValue = useMemo<SocketConnectionContextType>(
-    () => ({ isConnected, error, reconnectAttempts }),
-    [isConnected, error, reconnectAttempts],
+    () => ({ isConnected, error, isPageVisible, reconnectAttempts }),
+    [isConnected, error, isPageVisible, reconnectAttempts],
   )
 
   const dataValue = useMemo<SocketDataContextType>(

@@ -110,11 +110,17 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
 
   // Granular context subscriptions — each hook only re-renders this component
   // when its specific slice changes, not on every unrelated socket event.
-  const { isConnected, error: wsError } = useSocketConnection();
+  const {
+    isConnected,
+    error: wsError,
+    isPageVisible,
+  } = useSocketConnection();
   const { lastUpdate: wsUpdate } = useSocketData();
 
   const load = useCallback(
     async (manual = false) => {
+      if (!manual && !isPageVisible) return;
+
       if (manual) {
         setIsRefreshing(true);
         start();
@@ -135,7 +141,7 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
         if (manual) done();
       }
     },
-    [start, done],
+    [done, isPageVisible, setError, start],
   );
 
   // Merge WebSocket delta updates into local state.
@@ -164,20 +170,30 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
     setLastRefresh(new Date());
     setLoading(false);
     setError(null);
-  }, [wsUpdate, enableWebSocket]); // `data` intentionally omitted — accessed via functional updater
+  }, [wsUpdate, enableWebSocket, isPageVisible, setError]); // `data` intentionally omitted — accessed via functional updater
 
   // Handle WebSocket errors
   useEffect(() => {
     if (wsError && enableWebSocket) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError(`WebSocket error: ${wsError}`);
     }
-  }, [wsError, enableWebSocket]);
+  }, [wsError, enableWebSocket, setError]);
 
   // Initial fetch + fallback polling (only when WebSocket is disabled or disconnected)
   const pollingActive = isPageVisible && (!enableWebSocket || !isConnected);
+  const isPaused = !isPageVisible;
+  const isLive = isPageVisible && enableWebSocket && isConnected;
+
   useEffect(() => {
-    if (pollingActive) load();
+    if (!pollingActive) return;
+
+    const timeoutId = window.setTimeout(() => {
+      void load();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [pollingActive, load]);
 
   useRAFInterval(load, refreshInterval, pollingActive);
@@ -196,22 +212,6 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
     : "shadow-[0_0_18px_rgba(244,63,94,0.18)]";
 
   const priceColor = isUp ? "text-emerald-400" : "text-rose-400";
-  const [isPageVisible, setIsPageVisible] = useState(() => {
-    if (typeof document === "undefined") return true;
-    return document.visibilityState === "visible";
-  });
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      setIsPageVisible(document.visibilityState === "visible");
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, []);
   return (
     <div
       style={{ contain: "paint layout" }}
@@ -241,7 +241,9 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
         <div className="flex items-center gap-2">
           <span
             className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
-              enableWebSocket && isConnected
+              isPaused
+                ? "border-slate-500/20 bg-slate-500/10 text-slate-400"
+                : isLive
                 ? "border-[#39FF14]/20 bg-[#39FF14]/10 text-[#39FF14]"
                 : "border-yellow-500/20 bg-yellow-500/10 text-yellow-500"
             }`}
@@ -249,20 +251,30 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
             <span className="relative flex h-1.5 w-1.5">
               <span
                 className={`absolute inline-flex h-full w-full rounded-full ${
-                  enableWebSocket && isConnected
+                  isLive
                     ? "animate-ping bg-[#39FF14] opacity-60"
+                    : isPaused
+                    ? "bg-slate-500 opacity-60"
                     : "bg-yellow-500 opacity-60"
                 }`}
               />
               <span
                 className={`relative inline-flex h-1.5 w-1.5 rounded-full ${
-                  enableWebSocket && isConnected
+                  isLive
                     ? "bg-[#39FF14]"
+                    : isPaused
+                    ? "bg-slate-500"
                     : "bg-yellow-500"
                 }`}
               />
             </span>
-            {enableWebSocket ? (isConnected ? "WS LIVE" : "WS OFF") : "POLLING"}
+            {isPaused
+              ? "PAUSED"
+              : enableWebSocket
+                ? isConnected
+                  ? "WS LIVE"
+                  : "WS OFF"
+                : "POLLING"}
           </span>
 
           <button
