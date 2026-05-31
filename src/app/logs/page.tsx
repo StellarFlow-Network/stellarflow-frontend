@@ -20,7 +20,7 @@ import { useXdrWorker } from './useXdrWorker';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { LogEntry, FilteredLogResult } from './types';
+import { LogEntry, FilteredLogResult, FuseMatch } from './types';
 
 // --- Mock Data ---
 const MOCK_LOGS: LogEntry[] = [
@@ -227,89 +227,89 @@ export default function LogsPage() {
         </div>
 
         {/* Scroll container — useVirtualizer's getScrollElement targets this ref */}
-        <div 
-          ref={parentRef}
-          className="overflow-auto max-h-[600px] scrollbar-thin scrollbar-thumb-gray-700"
-        >
-          <div
-            style={{
-              height: `${rowVirtualizer.getTotalSize()}px`,
-              width: '100%',
-              position: 'relative',
-            }}
-          >
-            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-              const result = displayedResults[virtualRow.index];
-              const log = result.item;
-              const matches = result.matches || [];
-              
-              return (
-                <div
-                  key={virtualRow.key}
-                  data-index={virtualRow.index}
-                  ref={rowVirtualizer.measureElement}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                  className="grid grid-cols-[140px_120px_100px_1fr_150px_120px] border-b border-gray-800/50 hover:bg-[#1c2128] transition-colors group font-mono text-[13px] items-center"
-                >
-                  <div className="px-6 py-4 text-gray-400 whitespace-nowrap">
-                    {log.timestamp}
-                  </div>
-                  <div className="px-6 py-4">
-                    <span className="flex items-center gap-2 text-gray-200">
-                      {log.type === 'transaction' && <Database size={14} className="text-blue-400" />}
-                      {log.type === 'security' && <ShieldAlert size={14} className="text-red-400" />}
-                      {log.type === 'system' && <FileText size={14} className="text-gray-400" />}
-                      <span className="capitalize">{log.type}</span>
-                    </span>
-                  </div>
-                  <div className="px-6 py-4">
-                    <SeverityIndicator severity={log.severity} />
-                  </div>
-                     <div className="px-6 py-4 truncate text-gray-200">
-                       {log.decodedData ? (
-                         <div className="flex flex-col gap-1">
-                           <span className="text-[10px] text-purple-400 uppercase font-bold tracking-wider">Decoded XDR</span>
-                           <span className="text-xs text-green-400 font-mono">{JSON.stringify(log.decodedData)}</span>
-                         </div>
-                       ) : (
-                         <SearchHighlight text={log.message} matches={matches} />
-                       )}
-                     </div>
-                     <div className="px-6 py-4 text-gray-400 truncate">
-                       <SearchHighlight text={log.actor} matches={matches} />
-                     </div>
-                     <div className="px-6 py-4 text-right">
-                       {log.txHash ? (
-                         <button className="text-blue-500 hover:text-blue-400 flex items-center gap-1 justify-end ml-auto group/hash">
-                           <span className="text-xs uppercase group-hover/hash:underline">
-                             <SearchHighlight text={log.txHash} matches={matches} />
-                           </span>
-                           <ExternalLink size={12} />
-                         </button>
-                       ) : (
-                         <span className="text-gray-600">—</span>
-                       )}
-                     </div>
-                   </div>
-               );
-             })}
-
-
-            
-            {displayedResults.length === 0 && (
-              <div className="px-6 py-20 text-center text-gray-500 h-full flex flex-col items-center justify-center gap-2">
-                <Search size={32} className="opacity-20" />
-                <p>No logs matching "{searchQuery}"</p>
-              </div>
-            )}
+        {displayedResults.length === 0 ? (
+          <div className="px-6 py-20 text-center text-gray-500 flex flex-col items-center justify-center gap-2">
+            <Search size={32} className="opacity-20" />
+            <p>No logs matching &ldquo;{searchQuery}&rdquo;</p>
           </div>
-        </div>
+        ) : (
+          <div
+            ref={parentRef}
+            className="overflow-auto max-h-[600px] scrollbar-thin scrollbar-thumb-gray-700"
+          >
+            {/* Total height spacer — keeps the scrollbar proportional to the full dataset */}
+            <div
+              style={{
+                height: `${rowVirtualizer.getTotalSize()}px`,
+                width: '100%',
+                position: 'relative',
+              }}
+            >
+              {/* Only the rows intersecting the viewport are mounted in the DOM */}
+              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const result = displayedResults[virtualRow.index];
+                const log = result.item;
+                const matches = result.matches || [];
+
+                return (
+                  <div
+                    key={virtualRow.key}
+                    data-index={virtualRow.index}
+                    ref={rowVirtualizer.measureElement}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                    className="grid grid-cols-[140px_120px_100px_1fr_150px_120px] border-b border-gray-800/50 hover:bg-[#1c2128] transition-colors group font-mono text-[13px] items-center"
+                  >
+                    <div className="px-6 py-4 text-gray-400 whitespace-nowrap">
+                      {log.timestamp}
+                    </div>
+                    <div className="px-6 py-4">
+                      <span className="flex items-center gap-2 text-gray-200">
+                        {log.type === 'transaction' && <Database size={14} className="text-blue-400" />}
+                        {log.type === 'security' && <ShieldAlert size={14} className="text-red-400" />}
+                        {log.type === 'system' && <FileText size={14} className="text-gray-400" />}
+                        <span className="capitalize">{log.type}</span>
+                      </span>
+                    </div>
+                    <div className="px-6 py-4">
+                      <SeverityIndicator severity={log.severity} />
+                    </div>
+                    <div className="px-6 py-4 truncate text-gray-200">
+                      {log.decodedData ? (
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] text-purple-400 uppercase font-bold tracking-wider">Decoded XDR</span>
+                          <span className="text-xs text-green-400 font-mono">{JSON.stringify(log.decodedData)}</span>
+                        </div>
+                      ) : (
+                        <SearchHighlight text={log.message} matches={matches.find((m: FuseMatch) => m.key === 'message')?.indices} />
+                      )}
+                    </div>
+                    <div className="px-6 py-4 text-gray-400 truncate">
+                      <SearchHighlight text={log.actor} matches={matches.find((m: FuseMatch) => m.key === 'actor')?.indices} />
+                    </div>
+                    <div className="px-6 py-4 text-right">
+                      {log.txHash ? (
+                        <button className="text-blue-500 hover:text-blue-400 flex items-center gap-1 justify-end ml-auto group/hash">
+                          <span className="text-xs uppercase group-hover/hash:underline">
+                            <SearchHighlight text={log.txHash} matches={matches.find((m: FuseMatch) => m.key === 'txHash')?.indices} />
+                          </span>
+                          <ExternalLink size={12} />
+                        </button>
+                      ) : (
+                        <span className="text-gray-600">—</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* --- Pagination Footer --- */}
         <div className="p-4 border-t border-gray-800 flex justify-between items-center text-sm text-gray-500">
