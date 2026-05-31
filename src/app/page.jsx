@@ -21,11 +21,9 @@ const LiveNetworkMap = dynamic(() => import("@/app/components/Map"), {
   loading: () => <MapSkeleton />,
 });
 
-const RateSparklineCard = dynamic(
-  () => import("./components/RateSparklineCard"),
-  {
-    ssr: false,
-    loading: () => <RateSparklineSkeleton />,
+    loading: () => (
+      <div className="h-[280px] w-full rounded-lg bg-[#071026] animate-pulse" />
+    ),
   },
 );
 
@@ -71,9 +69,13 @@ const DashboardTrafficChart = dynamic(
   {
     ssr: false,
     loading: () => (
+<<<<<<< HEAD
       <div className="h-[280px] w-full rounded-3xl border border-white/10 bg-white/5 p-6">
         <Shimmer className="h-full w-full rounded-3xl" />
       </div>
+=======
+      <div className="h-[280px] w-full rounded-lg bg-[#071026] animate-pulse" />
+>>>>>>> e4c4bb0 (chore(ui): lightweight skeleton for deferred Dashboard chart (lazy load))
     ),
   },
 );
