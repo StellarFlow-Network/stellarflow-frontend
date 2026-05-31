@@ -34,3 +34,12 @@ export interface PriceData {
   confidenceScore: number;
   metadata?: unknown; // Using unknown as per guardrail (no 'any')
 }
+
+export interface HistoricalDataPoint {
+  assetPair: string;
+  timestamp: number;
+  price: number;
+  decimals: number;
+  source: string;
+  confidenceScore: number;
+}
