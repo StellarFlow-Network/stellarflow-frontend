@@ -112,4 +112,12 @@ Technical requirements
 - **Run explicit build analysis** before testnet deployment to identify large or duplicated modules.
 - **Audit vendor bundles** and remove unused imports or dynamic-import where feasible.
 
+## ✅ Deployment verification checklist
+- Confirm your provider supports HTTP/3 for frontend delivery (Vercel and Netlify enable it on supported clients).
+- For a live deployment, verify with:
+  - `curl -I --http3 https://your-site.example.com`
+  - Browser DevTools Network panel `Protocol` column showing `h3`.
+- If using a custom Docker/Node server, note that HTTP/3 is handled by the hosting/proxy layer, not by `server.js` itself.
+- Do not rely on app code alone; deployment behavior is determined by the hosting provider and edge/network configuration.
+
 If you find this useful, please star the project and leave a review! 😁
