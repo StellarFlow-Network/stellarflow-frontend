@@ -8,6 +8,7 @@ import { UserProvider } from "./components/providers/UserProvider";
 import { QueryProvider } from "./components/providers/QueryProvider";
 import Script from "next/script";
 import {SocketProvider} from "./components/providers/SocketProvider";
+import { HistoryProvider } from "./components/providers/HistoryProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -74,9 +75,13 @@ export default function RootLayout({
         >
           <UserProvider>
             <QueryProvider>
-              <ProgressBarProvider>
-                {children}
-              </ProgressBarProvider>
+              <SocketProvider>
+                <HistoryProvider>
+                  <ProgressBarProvider>
+                    {children}
+                  </ProgressBarProvider>
+                </HistoryProvider>
+              </SocketProvider>
             </QueryProvider>
           </UserProvider>
         </ThemeProvider>
