@@ -1,62 +1,42 @@
 "use client"
 
-import React, { useEffect, useState, memo } from 'react'
-import { useSocket } from '../../hooks/useSocket'
+import React, { memo } from "react"
+import { useAssetPrice } from "../../hooks/useAssetPrice"
+import { useSocketConnection } from "../providers/SocketProvider"
 
-interface PriceData {
-  symbol: string
-  price: number
-  timestamp: number
+interface PriceRowProps {
+  assetId: string
 }
 
-function LivePrices({ initialData }: any) {
-  const [data, setData] = useState<PriceData[]>(initialData || [])
-  
-  // Subscribe to multiple asset updates
-  const { isConnected, lastUpdate, error } = useSocket({
-    assetIds: ['NGN-XLM', 'USD-XLM', 'EUR-XLM'],
-    enableDeltaUpdates: true,
-  })
+const PriceRow: React.FC<PriceRowProps> = memo(function PriceRow({ assetId }) {
+  const { price } = useAssetPrice(assetId)
 
-  useEffect(() => {
-    if (lastUpdate) {
-      // Update the specific asset in the data array
-      setData(prevData => {
-        const index = prevData.findIndex(p => p.symbol === lastUpdate.assetPair)
-        if (index !== -1) {
-          const newData = [...prevData]
-          newData[index] = {
-            ...newData[index],
-            price: lastUpdate.price,
-            timestamp: lastUpdate.timestamp,
-          }
-          return newData
-        } else {
-          // Add new asset if not found
-          return [...prevData, {
-            symbol: lastUpdate.assetPair,
-            price: lastUpdate.price,
-            timestamp: lastUpdate.timestamp,
-          }]
-        }
-      })
-    }
-  }, [lastUpdate])
+  return (
+    <div className="flex items-center justify-between py-1" aria-live="polite">
+      <span className="text-xs font-medium text-gray-400">{assetId}</span>
+      <span className="text-sm font-semibold text-white">{price ?? "—"}</span>
+    </div>
+  )
+})
+
+function LivePrices({ initialAssets = ["NGN-XLM", "USD-XLM", "EUR-XLM"] }: any) {
+  const { isConnected, error } = useSocketConnection()
 
   return (
     <div>
-      <h2>Live Prices</h2>
-      <div className={`text-xs mb-2 ${isConnected ? 'text-green-400' : 'text-yellow-400'}`}>
-        {isConnected ? 'WebSocket Connected' : 'WebSocket Disconnected'}
+      <h2 className="text-sm font-bold mb-2">Live Prices</h2>
+      <div className={`text-xs mb-2 ${isConnected ? "text-green-400" : "text-yellow-400"}`}>
+        {isConnected ? "WebSocket Connected" : "WebSocket Disconnected"}
       </div>
       {error && <div className="text-red-400 text-xs mb-2">Error: {error}</div>}
-      {data?.map((p: PriceData) => (
-        <div key={p.symbol}>
-          {p.symbol}: {p.price}
-        </div>
-      ))}
+
+      <div className="space-y-1">
+        {initialAssets.map((id: string) => (
+          <PriceRow key={id} assetId={id} />
+        ))}
+      </div>
     </div>
   )
 }
 
-export default memo(LivePrices);
+export default memo(LivePrices)

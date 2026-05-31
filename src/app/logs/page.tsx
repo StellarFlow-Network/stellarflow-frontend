@@ -278,17 +278,17 @@ export default function LogsPage() {
                            <span className="text-xs text-green-400 font-mono">{JSON.stringify(log.decodedData)}</span>
                          </div>
                        ) : (
-                         <SearchHighlight text={log.message} matches={matches.find((m: { key: string; indices: [number, number][] }) => m.key === 'message')?.indices} />
+                         <SearchHighlight text={log.message} matches={matches} />
                        )}
                      </div>
                      <div className="px-6 py-4 text-gray-400 truncate">
-                       <SearchHighlight text={log.actor} matches={matches.find((m: { key: string; indices: [number, number][] }) => m.key === 'actor')?.indices} />
+                       <SearchHighlight text={log.actor} matches={matches} />
                      </div>
                      <div className="px-6 py-4 text-right">
                        {log.txHash ? (
                          <button className="text-blue-500 hover:text-blue-400 flex items-center gap-1 justify-end ml-auto group/hash">
                            <span className="text-xs uppercase group-hover/hash:underline">
-                             <SearchHighlight text={log.txHash} matches={matches.find((m: { key: string; indices: [number, number][] }) => m.key === 'txHash')?.indices} />
+                             <SearchHighlight text={log.txHash} matches={matches} />
                            </span>
                            <ExternalLink size={12} />
                          </button>
@@ -297,7 +297,6 @@ export default function LogsPage() {
                        )}
                      </div>
                    </div>
-                 </div>
                );
              })}
 

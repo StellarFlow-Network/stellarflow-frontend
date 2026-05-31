@@ -6,7 +6,8 @@ import { RefreshCw } from "lucide-react";
 import { useProgressBar } from "./TopLoadingBar";
 import { useDebounce } from "../hooks/useDebounce";
 import { useErrorTimeout } from "../hooks/useErrorTimeout";
-import { useSocketConnection, useSocketData } from "./providers/SocketProvider";
+import { useSocketConnection } from "./providers/SocketProvider";
+import { useAssetPrice } from "../hooks/useAssetPrice";
 import { Shimmer } from "@/components/skeletons/Shimmer";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -98,6 +99,7 @@ function formatTime(iso: string): string {
 const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   refreshInterval = 30_000,
   enableWebSocket = true,
+  assetId,
 }) => {
   const [data, setData] = useState<PriceFeedData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -111,7 +113,6 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   // Granular context subscriptions — each hook only re-renders this component
   // when its specific slice changes, not on every unrelated socket event.
   const { isConnected, error: wsError } = useSocketConnection();
-  const { lastUpdate: wsUpdate } = useSocketData();
 
   const load = useCallback(
     async (manual = false) => {
@@ -138,33 +139,28 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
     [start, done],
   );
 
-  // Merge WebSocket delta updates into local state.
-  // Using a functional setData updater means we read `prev` (current state)
-  // instead of closing over `data` — so `data` is NOT a dependency and the
-  // effect does not re-run after every state write, breaking the render cycle.
-  useEffect(() => {
-    if (!wsUpdate || !enableWebSocket || !isPageVisible) return;
+  // The live price display is isolated into a memoized leaf (`PriceValue`)
+  // which subscribes to the WS for the specific `assetId`. That leaf handles
+  // frequent price ticks itself so the parent `PriceFeedCard` does not re-
+  // render on every tick.
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setData((prev: PriceFeedData | null) => ({
-      price: wsUpdate.price || prev?.price || 0,
-      // Reset 24 h change indicator when a fresh price arrives.
-      change_24h: wsUpdate.price ? 0 : prev?.change_24h || 0,
-      high_24h: wsUpdate.price
-        ? Math.max(wsUpdate.price, prev?.high_24h || 0)
-        : prev?.high_24h || 0,
-      low_24h: wsUpdate.price
-        ? Math.min(wsUpdate.price, prev?.low_24h || Infinity)
-        : prev?.low_24h || 0,
-      volume_24h: prev?.volume_24h || 0, // volume comes from REST, not WS
-      last_updated: wsUpdate.timestamp
-        ? new Date(wsUpdate.timestamp).toISOString()
-        : prev?.last_updated || new Date().toISOString(),
-    }));
-    setLastRefresh(new Date());
-    setLoading(false);
-    setError(null);
-  }, [wsUpdate, enableWebSocket]); // `data` intentionally omitted — accessed via functional updater
+  const assetToSubscribe = "NGN-XLM";
+
+  const PriceValue: React.FC<{
+    assetId: string
+    fallback?: number
+    className?: string
+  }> = React.memo(function PriceValue({ assetId, fallback, className }) {
+    const { price } = useAssetPrice(assetId)
+
+    const display = price ?? fallback ?? 0
+
+    return (
+      <div className={`text-4xl font-black leading-none tracking-tight ${className ?? ""}`}>
+        {display ? formatPrice(display) : "—"}
+      </div>
+    )
+  })
 
   // Handle WebSocket errors
   useEffect(() => {
@@ -175,6 +171,11 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   }, [wsError, enableWebSocket]);
 
   // Initial fetch + fallback polling (only when WebSocket is disabled or disconnected)
+  const [isPageVisible, setIsPageVisible] = useState(() => {
+    if (typeof document === "undefined") return true;
+    return document.visibilityState === "visible";
+  });
+
   const pollingActive = isPageVisible && (!enableWebSocket || !isConnected);
   useEffect(() => {
     if (pollingActive) load();
@@ -196,10 +197,6 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
     : "shadow-[0_0_18px_rgba(244,63,94,0.18)]";
 
   const priceColor = isUp ? "text-emerald-400" : "text-rose-400";
-  const [isPageVisible, setIsPageVisible] = useState(() => {
-    if (typeof document === "undefined") return true;
-    return document.visibilityState === "visible";
-  });
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -297,11 +294,7 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
       ) : (
         <div className="relative mb-5">
           {/* Current price */}
-          <div
-            className={`text-4xl font-black leading-none tracking-tight ${priceColor}`}
-          >
-            {data && formatPrice(data.price)}
-          </div>
+          <PriceValue assetId={assetId ?? assetToSubscribe} fallback={data?.price} className={priceColor} />
 
           {/* 24h change badge — arrow direction is STRICTLY from 24h_change field */}
           <div className="mt-3 flex items-center gap-2">

@@ -82,7 +82,6 @@ const Nav = memo(() => {
             onPointerEnter={() => {
               if (pathname !== '/admin/settings') router.prefetch('/admin/settings')
             }}
-            onMouseEnter={() => router.prefetch("/admin/settings")}
             aria-label="Admin settings"
             className="p-2 rounded-xl hover:bg-zinc-800 transition-colors"
           >

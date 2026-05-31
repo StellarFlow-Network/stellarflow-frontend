@@ -1,6 +1,5 @@
 import "@/config/env";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { ProgressBarProvider } from "./components/TopLoadingBar";
@@ -8,20 +7,6 @@ import { UserProvider } from "./components/providers/UserProvider";
 import { QueryProvider } from "./components/providers/QueryProvider";
 import Script from "next/script";
 import {SocketProvider} from "./components/providers/SocketProvider";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-  display: "swap",
-  weight: ["400", "700"]
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-  display: "swap",
-  weight: ["400", "700"]
-});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -63,9 +48,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className="antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
@@ -75,7 +58,9 @@ export default function RootLayout({
           <UserProvider>
             <QueryProvider>
               <ProgressBarProvider>
-                {children}
+                <SocketProvider>
+                  {children}
+                </SocketProvider>
               </ProgressBarProvider>
             </QueryProvider>
           </UserProvider>

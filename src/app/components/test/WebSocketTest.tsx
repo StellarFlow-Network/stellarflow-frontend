@@ -1,20 +1,13 @@
 'use client'
 
 import React from 'react'
-import { useSocket } from '../../hooks/useSocket'
+import { useSocketConnection, useSocketActions } from '../providers/SocketProvider'
+import { useAssetPrice } from '../../hooks/useAssetPrice'
 
 export default function WebSocketTest() {
-  const {
-    isConnected,
-    lastUpdate,
-    error,
-    reconnectAttempts,
-    subscribeToAsset,
-    unsubscribeFromAsset,
-  } = useSocket({
-    assetIds: ['NGN-XLM'],
-    enableDeltaUpdates: true,
-  })
+  const { isConnected, error, reconnectAttempts } = useSocketConnection()
+  const { subscribeToAsset, unsubscribeFromAsset } = useSocketActions()
+  const { price, timestamp } = useAssetPrice('NGN-XLM')
 
   return (
     <div className="p-4 bg-gray-900 text-white rounded-lg max-w-md mx-auto mt-8">
@@ -37,16 +30,13 @@ export default function WebSocketTest() {
           </div>
         )}
         
-        {lastUpdate && (
-          <div className="px-3 py-1 bg-blue-900 rounded">
-            <div className="font-semibold">Last Update:</div>
-            <div className="text-xs">
-              Asset: {lastUpdate.assetPair}<br />
-              Price: {lastUpdate.price.toFixed(6)}<br />
-              Timestamp: {new Date(lastUpdate.timestamp).toLocaleTimeString()}
-            </div>
+        <div className="px-3 py-1 bg-blue-900 rounded">
+          <div className="font-semibold">Latest NGN-XLM:</div>
+          <div className="text-xs">
+            Price: {price ? price.toFixed(6) : '—'}<br />
+            Timestamp: {timestamp ? new Date(timestamp).toLocaleTimeString() : '—'}
           </div>
-        )}
+        </div>
         
         <div className="flex gap-2 mt-4">
           <button
