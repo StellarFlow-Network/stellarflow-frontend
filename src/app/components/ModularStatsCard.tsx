@@ -26,7 +26,7 @@ const ModularStatsCard: React.FC<ModularStatsCardProps> = ({
 
   return (
     <div
-      style={{ contain: "paint layout" }}
+      style={{ contain: "layout paint" }}
       className="relative h-full bg-[#0A121E] border border-[#1B2A3B] rounded-xl p-6 shadow-lg hover:border-[#39FF14]/50 transition-all duration-300 group"
     >
       <div className="flex flex-col gap-2">

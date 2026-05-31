@@ -10,7 +10,7 @@ interface StatsCardProps {
 
 const StatsCard = ({ label, value, showDot = false }: StatsCardProps) => {
   return (
-    <div className="flex flex-col items-center md:items-start gap-1">
+    <div style={{ contain: "layout paint" }} className="flex flex-col items-center md:items-start gap-1">
       <div className="flex items-center gap-2">
         <h3 className="text-[#39FF14] font-bold text-sm md:text-base tracking-widest">
           {label}
