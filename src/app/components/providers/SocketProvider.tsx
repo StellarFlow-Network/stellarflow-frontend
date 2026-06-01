@@ -8,6 +8,7 @@ import React, {
 } from 'react'
 import { useSocket, UseSocketOptions } from '../../hooks/useSocket'
 import { PriceData } from '@/types'
+import { useMounted } from '@/app/hooks/useMounted'
 
 // ---------------------------------------------------------------------------
 // Three independent contexts — each slice re-renders only its own consumers.
@@ -48,6 +49,8 @@ interface SocketProviderProps {
 }
 
 export function SocketProvider({ children, options }: SocketProviderProps) {
+  const mounted = useMounted();
+  
   const {
     isConnected,
     lastUpdate,
@@ -78,6 +81,34 @@ export function SocketProvider({ children, options }: SocketProviderProps) {
     () => ({ subscribeToAsset, unsubscribeFromAsset, disconnect, reconnect }),
     [subscribeToAsset, unsubscribeFromAsset, disconnect, reconnect],
   )
+
+  // Serve static placeholder during SSR to prevent hydration mismatch
+  if (!mounted) {
+    const placeholderConnection: SocketConnectionContextType = {
+      isConnected: false,
+      error: null,
+      reconnectAttempts: 0,
+    };
+    const placeholderData: SocketDataContextType = {
+      lastUpdate: null,
+    };
+    const placeholderActions: SocketActionsContextType = {
+      subscribeToAsset: () => {},
+      unsubscribeFromAsset: () => {},
+      disconnect: () => {},
+      reconnect: () => {},
+    };
+
+    return (
+      <SocketConnectionContext.Provider value={placeholderConnection}>
+        <SocketDataContext.Provider value={placeholderData}>
+          <SocketActionsContext.Provider value={placeholderActions}>
+            {children}
+          </SocketActionsContext.Provider>
+        </SocketDataContext.Provider>
+      </SocketConnectionContext.Provider>
+    );
+  }
 
   return (
     <SocketConnectionContext.Provider value={connectionValue}>

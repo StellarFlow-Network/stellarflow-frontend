@@ -7,6 +7,7 @@ import React, {
   useMemo,
   useState,
 } from 'react';
+import { useMounted } from '@/app/hooks/useMounted';
 
 export interface WalletState {
   publicKey: string | null;
@@ -103,11 +104,14 @@ async function getWalletState(): Promise<WalletState | null> {
 }
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
+  const mounted = useMounted();
   const [wallet, setWallet] = useState<WalletState | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const refreshWalletState = React.useCallback(async () => {
+    if (!mounted) return null;
+    
     setIsChecking(true);
     setError(null);
 
@@ -121,16 +125,22 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsChecking(false);
     }
-  }, []);
+  }, [mounted]);
 
   useEffect(() => {
+    if (!mounted) return;
     refreshWalletState();
-  }, [refreshWalletState]);
+  }, [mounted, refreshWalletState]);
 
   const value = useMemo(
     () => ({ wallet, isChecking, error, refreshWalletState }),
     [wallet, isChecking, error, refreshWalletState],
   );
+
+  // Serve static placeholder during SSR to prevent hydration mismatch
+  if (!mounted) {
+    return <WalletContext.Provider value={{ wallet: null, isChecking: false, error: null, refreshWalletState }}>{children}</WalletContext.Provider>;
+  }
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
 }
