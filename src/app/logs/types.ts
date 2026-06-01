@@ -1,4 +1,5 @@
 import { XdrFields } from './worker-types';
+import type { FuseResultMatch } from 'fuse.js';
 
 export interface LogEntry {
   id: string;
@@ -13,5 +14,5 @@ export interface LogEntry {
 
 export interface FilteredLogResult {
   item: LogEntry;
-  matches?: [number, number][];
+  matches?: readonly FuseResultMatch[];
 }
