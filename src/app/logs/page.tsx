@@ -1,21 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { 
-  FileText, 
-  Search, 
-  Download, 
-  Filter, 
-  ChevronLeft, 
-  ChevronRight, 
-  ExternalLink,
-  ShieldAlert,
-  Database,
-  Terminal,
-  Wifi,
-  WifiOff,
-  Cpu
-} from 'lucide-react';
+import { Icon, ICON_IDS } from '@/components/icons';
 import { useXdrWorker } from './useXdrWorker';
 import { buildHighlightedParts } from '@/utils/textUtils';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -134,7 +120,7 @@ export default function LogsPage() {
           {/* XDR Worker activity badge — visible while worker thread is busy */}
           {xdrDecoding && (
             <div className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/30 px-3 py-1.5 rounded-full animate-pulse">
-              <Cpu size={13} className="text-purple-400" />
+              <Icon id={ICON_IDS.cpu} size={13} className="text-purple-400" />
               <span className="text-xs font-mono text-purple-300 uppercase tracking-wider">Decoding XDR&hellip;</span>
             </div>
           )}
@@ -165,11 +151,11 @@ export default function LogsPage() {
             }}
             className="flex items-center gap-2 bg-[#161b22] border border-gray-700 hover:bg-gray-800 text-gray-300 px-4 py-2 rounded-lg transition-all text-sm group"
           >
-            <Download size={16} className="group-hover:translate-y-0.5 transition-transform" />
+            <Icon id={ICON_IDS.download} size={16} className="group-hover:translate-y-0.5 transition-transform" />
             Export CSV
           </button>
           <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all text-sm font-medium">
-            <Terminal size={16} />
+            <Icon id={ICON_IDS.terminal} size={16} />
             Live Console
           </button>
         </div>
@@ -178,7 +164,7 @@ export default function LogsPage() {
       {/* --- Filter & Search Bar --- */}
       <div className="bg-[#161b22] border border-gray-800 rounded-xl p-4 mb-6 flex flex-col md:flex-row gap-4 items-center">
         <div className="relative flex-1 w-full">
-          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${isSearching ? 'text-blue-500 animate-pulse' : 'text-gray-500'}`} size={18} />
+          <Icon id={ICON_IDS.search} size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${isSearching ? 'text-blue-500 animate-pulse' : 'text-gray-500'}`} />
           <input 
             type="text" 
             placeholder="Filter logs by message, actor, or hash..." 
@@ -188,7 +174,7 @@ export default function LogsPage() {
           />
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
-          <Filter size={18} className="text-gray-500" />
+          <Icon id={ICON_IDS.filter} size={18} className="text-gray-500" />
           <select 
             className="bg-[#0d1117] border border-gray-700 rounded-md py-2 px-4 text-sm focus:outline-none"
             onChange={(e) => setFilter(e.target.value)}
@@ -211,7 +197,7 @@ export default function LogsPage() {
               exit={{ opacity: 0, y: -10 }}
               className="absolute top-0 inset-x-0 z-20 bg-yellow-500/90 text-black py-1.5 px-4 flex items-center justify-center gap-2 text-xs font-bold"
             >
-              <WifiOff size={14} />
+              <Icon id={ICON_IDS.wifiOff} size={14} />
               Operating in Offline Mode — Cached data is being shown
             </motion.div>
           )}
@@ -230,7 +216,7 @@ export default function LogsPage() {
         {/* Scroll container — useVirtualizer's getScrollElement targets this ref */}
         {displayedResults.length === 0 ? (
           <div className="px-6 py-20 text-center text-gray-500 flex flex-col items-center justify-center gap-2">
-            <Search size={32} className="opacity-20" />
+            <Icon id={ICON_IDS.search} size={32} className="opacity-20" />
             <p>No logs matching &ldquo;{searchQuery}&rdquo;</p>
           </div>
         ) : (
@@ -271,9 +257,9 @@ export default function LogsPage() {
                     </div>
                     <div className="px-6 py-4">
                       <span className="flex items-center gap-2 text-gray-200">
-                        {log.type === 'transaction' && <Database size={14} className="text-blue-400" />}
-                        {log.type === 'security' && <ShieldAlert size={14} className="text-red-400" />}
-                        {log.type === 'system' && <FileText size={14} className="text-gray-400" />}
+                        {log.type === 'transaction' && <Icon id={ICON_IDS.database} size={14} className="text-blue-400" />}
+                        {log.type === 'security' && <Icon id={ICON_IDS.shieldAlert} size={14} className="text-red-400" />}
+                        {log.type === 'system' && <Icon id={ICON_IDS.fileText} size={14} className="text-gray-400" />}
                         <span className="capitalize">{log.type}</span>
                       </span>
                     </div>
@@ -299,7 +285,7 @@ export default function LogsPage() {
                           <span className="text-xs uppercase group-hover/hash:underline">
                             <SearchHighlight text={log.txHash} matches={matches.find((m: FuseMatch) => m.key === 'txHash')?.indices} />
                           </span>
-                          <ExternalLink size={12} />
+                          <Icon id={ICON_IDS.externalLink} size={12} />
                         </button>
                       ) : (
                         <span className="text-gray-600">—</span>
@@ -317,10 +303,10 @@ export default function LogsPage() {
           <span>Showing {displayedResults.length} of {MOCK_LOGS.length} entries</span>
           <div className="flex gap-2">
             <button className="p-2 border border-gray-700 rounded-md hover:bg-gray-800 disabled:opacity-50" disabled>
-              <ChevronLeft size={16} />
+              <Icon id={ICON_IDS.chevronLeft} size={16} />
             </button>
             <button className="p-2 border border-gray-700 rounded-md hover:bg-gray-800">
-              <ChevronRight size={16} />
+              <Icon id={ICON_IDS.chevronRight} size={16} />
             </button>
           </div>
         </div>

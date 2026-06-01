@@ -1,19 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { 
-  User, 
-  Key, 
-  Bell, 
-  Shield, 
-  Smartphone, 
-  Mail, 
-  Globe, 
-  Save,
-  RotateCcw,
-  Eye,
-  EyeOff
-} from 'lucide-react';
+import { Icon, ICON_IDS } from '@/components/icons';
 import { useDebounce } from '../hooks/useDebounce';
 
 interface Settings {
@@ -84,7 +72,7 @@ export default function SettingsPage() {
         
         <section className="bg-[#161b22] border border-gray-800 rounded-xl p-6">
           <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
-            <User size={20} className="text-blue-400" />
+            <Icon id={ICON_IDS.user} size={20} className="text-blue-400" />
             Admin Profile
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -102,11 +90,11 @@ export default function SettingsPage() {
         <section className="bg-[#161b22] border border-gray-800 rounded-xl p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Key size={20} className="text-yellow-400" />
+              <Icon id={ICON_IDS.key} size={20} className="text-yellow-400" />
               Infrastructure Keys
             </h2>
             <button className="text-xs text-blue-500 hover:underline flex items-center gap-1">
-              <RotateCcw size={12} /> Rotate Keys
+              <Icon id={ICON_IDS.rotateCcw} size={12} /> Rotate Keys
             </button>
           </div>
           <div className="space-y-4">
@@ -122,7 +110,7 @@ export default function SettingsPage() {
                   onClick={() => setShowKey(!showKey)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
                 >
-                  {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showKey ? <Icon id={ICON_IDS.eyeOff} size={16} /> : <Icon id={ICON_IDS.eye} size={16} />}
                 </button>
               </div>
             </div>
@@ -131,26 +119,26 @@ export default function SettingsPage() {
 
         <section className="bg-[#161b22] border border-gray-800 rounded-xl p-6">
           <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
-            <Bell size={20} className="text-purple-400" />
+            <Icon id={ICON_IDS.bell} size={20} className="text-purple-400" />
             Alert Channels
           </h2>
           <div className="space-y-4">
             <ToggleItem 
-              icon={<Mail size={18} />} 
+              icon={<Icon id={ICON_IDS.mailIcon} size={18} />} 
               title="Email Reports" 
               description="Receive weekly institutional summaries and uptime reports."
               enabled={settings.emailReports}
               onToggle={() => handleToggle('emailReports')}
             />
             <ToggleItem 
-              icon={<Smartphone size={18} />} 
+              icon={<Icon id={ICON_IDS.smartphone} size={18} />} 
               title="Push Notifications" 
               description="Alerts for Oracle Kill Switch and high-volatility events."
               enabled={settings.pushNotifications}
               onToggle={() => handleToggle('pushNotifications')}
             />
             <ToggleItem 
-              icon={<Globe size={18} />} 
+              icon={<Icon id={ICON_IDS.globe} size={18} />} 
               title="Public Status Page" 
               description="Automatically update the status.stellarflow.io page."
               enabled={settings.publicStatusPage}
@@ -161,7 +149,7 @@ export default function SettingsPage() {
 
         <section className="bg-[#161b22] border border-gray-800 rounded-xl p-6">
           <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
-            <Shield size={20} className="text-green-400" />
+            <Icon id={ICON_IDS.shield} size={20} className="text-green-400" />
             Governance Security
           </h2>
           <div className="space-y-6">
@@ -203,7 +191,7 @@ export default function SettingsPage() {
             disabled={!hasChanges || isPending}
             className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-bold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Save size={18} />
+            <Icon id={ICON_IDS.save} size={18} />
             {isPending ? 'Saving...' : 'Save Changes'}
           </button>
         </div>

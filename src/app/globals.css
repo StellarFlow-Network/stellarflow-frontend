@@ -155,3 +155,144 @@ body {
   background: rgba(255, 255, 255, 0.15);
   box-shadow: none;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   HARDWARE-ACCELERATED EXPANSION/COLLAPSE ANIMATIONS
+   
+   Replace height-based animations with GPU-accelerated transform/opacity.
+   These utilities lift animation processing away from the main thread,
+   preventing layout recalculation loops during structural expansion.
+   ───────────────────────────────────────────────────────────────── */
+
+/** 
+ * Expandable container — Applies layout containment and will-change optimization
+ * Isolates animation from affecting sibling layout calculations
+ */
+.expandable-container {
+  contain: layout style paint;
+  will-change: transform, opacity;
+}
+
+/**
+ * Expandable content wrapper — Transform-origin positioned at top
+ * Ensures scaleY animation expands downward, not from center
+ */
+.expandable-content {
+  transform-origin: top;
+  will-change: transform, opacity;
+}
+
+/**
+ * Animation utilities for indicator icons (chevrons, arrows)
+ * Rotate is GPU-accelerated via transform, not affecting layout
+ */
+.expandable-indicator {
+  display: inline-flex;
+  will-change: transform;
+  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.expandable-indicator.rotated {
+  transform: rotate(180deg);
+}
+
+/**
+
+ * Performance optimization for high-density grids
+ * Prevents cascading layout recalculation during multi-row expansion
+ */
+.expandable-grid-item {
+  contain: content layout;
+}
+
+.expandable-grid-header {
+  cursor: pointer;
+  transition: background-color 150ms ease-out;
+  user-select: none;
+}
+
+.expandable-grid-header:hover {
+  background-color: rgba(28, 33, 40, 0.5);
+}
+
+/* CSS variable-based scaling for dynamic animations */
+.dynamic-scale-x {
+  transform: scaleX(var(--scale-x, 1));
+  transform-origin: left;
+  will-change: transform;
+  contain: strict;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   LAYOUT CONTAINMENT FOR HIGH-FREQUENCY UPDATING WIDGETS
+   
+   These utilities apply contain: strict to prevent text shifts and
+   badge updates from causing layout recalculation ripples across
+   adjacent dashboard blocks.
+   ───────────────────────────────────────────────────────────────── */
+
+/**
+ * High-frequency status badges — Apply strict containment
+ * Prevents status text changes (active/paused/offline) from causing
+ * layout shifts that ripple to sibling elements
+ */
+.high-frequency-badge {
+  display: inline-flex;
+  contain: strict;
+  will-change: contents;
+  min-width: min-content;
+  line-height: 1.2;
+}
+
+/**
+ * Real-time metric indicators — Health bars, latency, success rates
+ * Isolates progress bar animations and numeric updates from affecting
+ * adjacent table cells or grid items
+ */
+.metric-indicator {
+  contain: strict;
+  will-change: transform;
+  overflow: hidden;
+}
+
+/**
+ * Node status cell — Table cell container for real-time data
+ * Prevents frequent numeric updates (rewards, latency, success rate)
+ * from causing layout thrashing across entire table rows
+ */
+.node-status-cell {
+  contain: layout style;
+  will-change: contents;
+}
+
+/**
+ * Stat card widget — Dashboard metrics that update in real-time
+ * Isolates value changes from affecting adjacent stat cards
+ */
+.stat-card-widget {
+  contain: layout style paint;
+  will-change: contents;
+  overflow: hidden;
+}
+
+/**
+ * Voting ratio indicator — Real-time vote tally progress
+ * Strict containment prevents vote percentage changes from
+ * affecting layout of adjacent proposal metadata
+ */
+.voting-ratio-indicator {
+  contain: strict;
+  will-change: transform;
+  line-height: 1;
+}
+
+/**
+ * Numeric value container — Any frequently updating number
+ * Prevents font rendering changes (10 → 100%) from causing reflow
+ */
+.numeric-value {
+  contain: layout;
+  font-variant-numeric: tabular-nums;
+  will-change: contents;
+}
+

@@ -3,20 +3,15 @@
 import React, { memo, useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  LayoutDashboard,
-  Database,
-  LineChart,
-  Globe,
-  Settings,
-} from "lucide-react";
+import { Icon, ICON_IDS } from "@/components/icons";
+import type { IconId } from "@/components/icons";
 
-const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/" },
-  { icon: Database, label: "Contracts", href: "/contracts" },
-  { icon: LineChart, label: "Analytics", href: "/analytics" },
-  { icon: Globe, label: "Governance", href: "/governance" },
-  { icon: Settings, label: "Settings", href: "/settings" },
+const navItems: { iconId: IconId; label: string; href: string }[] = [
+  { iconId: ICON_IDS.layoutDashboard, label: "Dashboard",  href: "/" },
+  { iconId: ICON_IDS.database,        label: "Contracts",  href: "/contracts" },
+  { iconId: ICON_IDS.lineChart,       label: "Analytics",  href: "/analytics" },
+  { iconId: ICON_IDS.globe,           label: "Governance", href: "/governance" },
+  { iconId: ICON_IDS.settings,        label: "Settings",   href: "/settings" },
 ];
 
 const FloatingSidebar = memo(() => {
@@ -46,14 +41,6 @@ const FloatingSidebar = memo(() => {
       console.debug('Prefetch failed for', href, err);
     }
   }, [router]);
-  const handlePrefetch = useCallback(
-    (href: string) => {
-      if (href === "/contracts") {
-        router.prefetch("/contracts");
-      }
-    },
-    [router],
-  );
 
   return (
     <nav
@@ -68,7 +55,7 @@ const FloatingSidebar = memo(() => {
       }}
       aria-label="Primary dashboard navigation"
     >
-      {navItems.map(({ icon: Icon, label, href }) => {
+      {navItems.map(({ iconId, label, href }) => {
         const isActive = pathname === href || active === href;
         const isHovered = hovered === label;
 
@@ -126,7 +113,7 @@ const FloatingSidebar = memo(() => {
               }}
               aria-label={label}
             >
-              <Icon size={20} strokeWidth={isActive ? 2.2 : 1.8} />
+              <Icon id={iconId} size={20} strokeWidth={isActive ? 2.2 : 1.8} />
             </Link>
 
             {/* Tooltip */}

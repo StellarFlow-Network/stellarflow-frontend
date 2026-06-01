@@ -68,16 +68,16 @@ export default function ConsumersPage() {
 
       {/* --- Performance/Billing High-Level Overview --- */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <StatCard title="Active Integrations" value="24 Projects" icon={<Users className="text-blue-400" />} subtitle="8 Added this month" />
-        <StatCard title="Total Network Volume" value="17.4M" icon={<Layers className="text-purple-400" />} subtitle="Requests across 24h" />
-        <StatCard title="Total Escrowed Collateral" value="3,160.50 XLM" icon={<CreditCard className="text-green-400" />} subtitle="Gas tank aggregation" />
-        <StatCard title="System Performance" value="100%" icon={<CheckCircle2 className="text-emerald-400" />} subtitle="0 Failed handshakes" />
+        <StatCard title="Active Integrations" value="24 Projects" icon={<Icon id={ICON_IDS.users} size={20} className="text-blue-400" />} subtitle="8 Added this month" />
+        <StatCard title="Total Network Volume" value="17.4M" icon={<Icon id={ICON_IDS.layers} size={20} className="text-purple-400" />} subtitle="Requests across 24h" />
+        <StatCard title="Total Escrowed Collateral" value="3,160.50 XLM" icon={<Icon id={ICON_IDS.creditCard} size={20} className="text-green-400" />} subtitle="Gas tank aggregation" />
+        <StatCard title="System Performance" value="100%" icon={<Icon id={ICON_IDS.checkCircle} size={20} className="text-emerald-400" />} subtitle="0 Failed handshakes" />
       </div>
 
       {/* --- API Gateway & Credentials Panel --- */}
       <div className="bg-[#161b22] border border-gray-800 rounded-xl p-6 mb-8">
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Key size={18} className="text-yellow-400" />
+          <Icon id={ICON_IDS.key} size={18} className="text-yellow-400" />
           Global Gateway Credentials
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -101,13 +101,13 @@ export default function ConsumersPage() {
                   onClick={() => setShowSecret(!showSecret)}
                   className="p-1 text-gray-500 hover:text-gray-300"
                 >
-                  {showSecret ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showSecret ? <Icon id={ICON_IDS.eyeOff} size={16} /> : <Icon id={ICON_IDS.eye} size={16} />}
                 </button>
                 <button 
                   onClick={handleCopy}
                   className="p-1 text-gray-500 hover:text-gray-300 relative"
                 >
-                  <Copy size={16} />
+                  <Icon id={ICON_IDS.copy} size={16} />
                   {copied && <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded">Copied!</span>}
                 </button>
               </div>
@@ -120,7 +120,7 @@ export default function ConsumersPage() {
       <div className="bg-[#161b22] border border-gray-800 rounded-xl overflow-hidden">
         <div className="p-4 border-b border-gray-800 flex flex-col md:flex-row justify-between gap-4">
           <div className="relative w-full md:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+            <Icon id={ICON_IDS.search} size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
             <input 
               type="text" 
               placeholder="Filter consumers by contract or title..." 
@@ -128,7 +128,7 @@ export default function ConsumersPage() {
             />
           </div>
           <button className="p-2 bg-[#0d1117] hover:bg-gray-800 rounded-md border border-gray-700 text-gray-400 self-end md:self-auto">
-            <RefreshCcw size={16} />
+            <Icon id={ICON_IDS.refreshCcw} size={16} />
           </button>
         </div>
 

@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback, memo } from "react";
 import { useRAFInterval } from "@/app/hooks/useRAFInterval";
 import { useInactivityDelay } from "@/app/hooks/useInactivityDelay";
-import { RefreshCw } from "lucide-react";
+import { Icon, ICON_IDS } from "@/components/icons";
 import { useProgressBar } from "./TopLoadingBar";
 import { useDebounce } from "../hooks/useDebounce";
 import { useErrorTimeout } from "../hooks/useErrorTimeout";
@@ -282,7 +282,8 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
             aria-label="Refresh price feed"
             className="flex items-center justify-center w-7 h-7 rounded-full border border-[#1B2A3B] bg-[#0A0F1E] text-gray-500 hover:text-[#39FF14] hover:border-[#39FF14]/40 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <RefreshCw
+            <Icon
+              id={ICON_IDS.refreshCcw}
               size={13}
               className={isRefreshing ? "animate-spin" : ""}
             />
@@ -306,10 +307,10 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
           </p>
         </div>
       ) : (
-        <div className="relative mb-5">
+        <div className="relative mb-5 stat-card-widget">
           {/* Current price */}
           <div
-            className={`text-4xl font-black leading-none tracking-tight ${priceColor}`}
+            className={`text-4xl font-black leading-none tracking-tight numeric-value ${priceColor}`}
           >
             {data && formatPrice(data.price)}
           </div>
@@ -317,12 +318,12 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
           {/* 24h change badge — arrow direction is STRICTLY from 24h_change field */}
           <div className="mt-3 flex items-center gap-2">
             <div
-              className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${trendBg}`}
+              className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold high-frequency-badge ${trendBg}`}
               aria-label={`24-hour change: ${isUp ? "up" : "down"} ${changeAbs}%`}
             >
               {/* Arrow: ▲ when 24h_change >= 0, ▼ when 24h_change < 0 */}
               <span aria-hidden="true">{isUp ? "▲" : "▼"}</span>
-              <span>{changeAbs}%</span>
+              <span className="numeric-value">{changeAbs}%</span>
             </div>
             <span className="text-[10px] text-gray-600 font-medium italic">
               24h change
@@ -335,31 +336,31 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
       {!loading && !error && data && (
         <div className="relative grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-[#1B2A3B] pt-4">
           {/* High */}
-          <div className="min-w-0 flex flex-col gap-0.5">
+          <div className="min-w-0 flex flex-col gap-0.5 node-status-cell">
             <span className="text-[9px] font-semibold uppercase tracking-widest text-gray-600">
               24h High
             </span>
-            <span className="text-xs font-bold text-emerald-400">
+            <span className="text-xs font-bold text-emerald-400 numeric-value">
               {formatPrice(data.high_24h)}
             </span>
           </div>
 
           {/* Low */}
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-0.5 node-status-cell">
             <span className="text-[9px] font-semibold uppercase tracking-widest text-gray-600">
               24h Low
             </span>
-            <span className="text-xs font-bold text-rose-400">
+            <span className="text-xs font-bold text-rose-400 numeric-value">
               {formatPrice(data.low_24h)}
             </span>
           </div>
 
           {/* Volume */}
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-0.5 node-status-cell">
             <span className="text-[9px] font-semibold uppercase tracking-widest text-gray-600">
               Volume
             </span>
-            <span className="text-xs font-bold text-gray-300">
+            <span className="text-xs font-bold text-gray-300 numeric-value">
               {formatVolume(data.volume_24h)}{" "}
               <span className="text-gray-600 font-medium">XLM</span>
             </span>

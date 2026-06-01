@@ -67,11 +67,11 @@ export default function StakingPage() {
         </div>
         <div className="flex gap-3">
           <button className="flex items-center gap-2 bg-[#161b22] border border-gray-800 hover:bg-gray-800 text-gray-300 px-4 py-2 rounded-lg transition-all text-sm">
-            <Percent size={16} className="text-yellow-500" />
+            <Icon id={ICON_IDS.percent} size={16} className="text-yellow-500" />
             Adjust Network APY
           </button>
           <button className="flex items-center gap-2 bg-red-950/40 border border-red-900/50 hover:bg-red-900/30 text-red-400 px-4 py-2 rounded-lg transition-all text-sm font-medium">
-            <Flame size={16} />
+            <Icon id={ICON_IDS.flame} size={16} />
             Execute Manual Slashing
           </button>
         </div>
@@ -79,17 +79,17 @@ export default function StakingPage() {
 
       {/* --- Pool High-Level Metrics --- */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <StatCard title="Total Value Locked (TVL)" value="270,000 XLM" icon={<Coins className="text-blue-400" />} subtitle="Crypto economic security" />
-        <StatCard title="Network Reward Pool" value="8,726.45 XLM" icon={<TrendingUp className="text-green-400" />} subtitle="Fees ready to distribute" />
-        <StatCard title="Active Bonded Nodes" value="4 / 4 Online" icon={<ShieldCheck className="text-emerald-400" />} subtitle="100% network validation coverage" />
-        <StatCard title="Active Slashing Rules" value="2 Penalties" icon={<AlertTriangle className="text-red-400" />} subtitle="Downtime & faulty feeds protected" />
+        <StatCard title="Total Value Locked (TVL)" value="270,000 XLM" icon={<Icon id={ICON_IDS.coins} size={20} className="text-blue-400" />} subtitle="Crypto economic security" />
+        <StatCard title="Network Reward Pool" value="8,726.45 XLM" icon={<Icon id={ICON_IDS.trendingUp} size={20} className="text-green-400" />} subtitle="Fees ready to distribute" />
+        <StatCard title="Active Bonded Nodes" value="4 / 4 Online" icon={<Icon id={ICON_IDS.shieldCheck} size={20} className="text-emerald-400" />} subtitle="100% network validation coverage" />
+        <StatCard title="Active Slashing Rules" value="2 Penalties" icon={<Icon id={ICON_IDS.alertTriangle} size={20} className="text-red-400" />} subtitle="Downtime & faulty feeds protected" />
       </div>
 
       {/* --- Node Performance and Collateral Roster --- */}
       <div className="bg-[#161b22] border border-gray-800 rounded-xl overflow-hidden">
         <div className="p-4 border-b border-gray-800 flex flex-col md:flex-row justify-between gap-4">
           <div className="relative w-full md:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+            <Icon id={ICON_IDS.search} size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
             <input 
               type="text" 
               placeholder="Search active stakers by node name or identity..." 
@@ -98,7 +98,7 @@ export default function StakingPage() {
             />
           </div>
           <button className="p-2 bg-[#0d1117] hover:bg-gray-800 rounded-md border border-gray-700 text-gray-400 self-end md:self-auto">
-            <RefreshCw size={16} />
+            <Icon id={ICON_IDS.refresh} size={16} />
           </button>
         </div>
 
@@ -128,19 +128,19 @@ export default function StakingPage() {
                   <td className="px-6 py-4 text-sm font-mono text-emerald-400">
                     +{node.accruedRewardsXLM.toLocaleString()} XLM
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
+                  <td className="px-6 py-4 node-status-cell">
+                    <div className="flex items-center gap-2 metric-indicator">
                       <div className="w-16 bg-gray-700 h-1.5 rounded-full overflow-hidden">
                         <div 
-                          className={`h-full ${getHealthBarColor(node.healthFactor)}`} 
-                          style={{ width: '100%', transform: `scaleX(${node.healthFactor/100})`, transformOrigin: 'left', willChange: 'transform' }} 
+                          className={`h-full dynamic-scale-x ${getHealthBarColor(node.healthFactor)}`} 
+                          style={{ '--scale-x': node.healthFactor/100 } as React.CSSProperties}
                         />
                       </div>
-                      <span className="text-xs font-semibold">{node.healthFactor}%</span>
+                      <span className="text-xs font-semibold numeric-value">{node.healthFactor}%</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-0.5 rounded text-xs font-mono font-bold ${
+                  <td className="px-6 py-4 node-status-cell">
+                    <span className={`px-2 py-0.5 rounded text-xs font-mono font-bold high-frequency-badge ${
                       node.totalSlashingEvents === 0 
                         ? STAKER_SLASHING_NO_EVENTS 
                         : STAKER_SLASHING_WITH_EVENTS
@@ -151,7 +151,7 @@ export default function StakingPage() {
                   <td className="px-6 py-4 text-right">
                     <button className="text-blue-400 hover:text-blue-300 inline-flex items-center gap-1 text-xs font-medium">
                       <span>Manage Node</span>
-                      <ArrowUpRight size={12} />
+                      <Icon id={ICON_IDS.arrowUpRight} size={12} />
                     </button>
                   </td>
                 </tr>
@@ -163,7 +163,7 @@ export default function StakingPage() {
 
       {/* --- Slashing Invariants Warning Section --- */}
       <div className="mt-6 p-4 bg-yellow-950/20 border border-yellow-900/30 rounded-xl flex gap-4 items-start">
-        <Gavel className="text-yellow-500 shrink-0 mt-0.5" size={20} />
+        <Icon id={ICON_IDS.gavel} size={20} className="text-yellow-500 shrink-0 mt-0.5" />
         <div>
           <h4 className="text-sm font-semibold text-yellow-500">Oracle Slashing Rule Enforcement active</h4>
           <p className="text-xs text-gray-400 mt-1 leading-relaxed">

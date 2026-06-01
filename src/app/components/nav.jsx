@@ -4,7 +4,7 @@ import React, { memo, useCallback } from "react";
 import OptimizedImage from "./OptimizedImage";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { Wallet, Bell, CircleUser, LogOut } from "lucide-react";
+import { Icon, ICON_IDS } from "@/components/icons";
 import { useProgressBar } from "./TopLoadingBar";
 
 const Nav = memo(() => {
@@ -50,7 +50,7 @@ const Nav = memo(() => {
             onClick={handleConnectWallet}
             className="wallet-btn group flex min-w-0 items-center gap-2 px-3 sm:gap-2.5 sm:px-4 py-2 rounded-2xl font-semibold text-sm sm:text-base transition-all duration-300 hover:shadow-xl active:scale-95 whitespace-nowrap"
           >
-            <Wallet className="w-5 h-5 transition-transform group-hover:rotate-12" />
+            <Icon id={ICON_IDS.wallet} size={18} className="transition-transform group-hover:rotate-12" />
             <span className="truncate">
               Connect <span className="hidden md:inline">Wallet</span>
             </span>
@@ -58,12 +58,12 @@ const Nav = memo(() => {
 
           <button
             aria-label="System anomaly alerts"
-            className="relative p-2 rounded-xl hover:bg-zinc-800 transition-colors"
+            className="relative p-2 rounded-xl hover:bg-zinc-800 transition-colors high-frequency-badge"
             onClick={() =>
               alert("View current system anomalies (implement dashboard logic)")
             }
           >
-            <Bell className="w-6 h-6 text-slate-200" />
+            <Icon id={ICON_IDS.bell} size={20} className="text-slate-200" />
             {hasAnomaly && (
               <span className="absolute -top-1 -right-1 inline-flex h-3 w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
@@ -86,7 +86,7 @@ const Nav = memo(() => {
             aria-label="Admin settings"
             className="p-2 rounded-xl hover:bg-zinc-800 transition-colors"
           >
-            <CircleUser className="w-6 h-6 text-slate-200" />
+            <Icon id={ICON_IDS.user} size={20} className="text-slate-200" />
           </Link>
 
           <button
@@ -94,7 +94,7 @@ const Nav = memo(() => {
             className="p-2 rounded-xl hover:bg-zinc-800 transition-colors"
             onClick={() => alert("Sign out (implement)")}
           >
-            <LogOut className="w-6 h-6 text-slate-200" />
+            <Icon id={ICON_IDS.logOut} size={20} className="text-slate-200" />
           </button>
         </div>
       </div>

@@ -8,6 +8,7 @@ import { UserProvider } from "./components/providers/UserProvider";
 import { QueryProvider } from "./components/providers/QueryProvider";
 import Script from "next/script";
 import {SocketProvider} from "./components/providers/SocketProvider";
+import { SvgSprite } from "@/components/icons";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -79,6 +80,8 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {/* Single global SVG symbol sheet — all icon <use> refs resolve here */}
+        <SvgSprite />
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
