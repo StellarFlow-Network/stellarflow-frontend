@@ -1,7 +1,7 @@
 "use client";
 
 import "leaflet/dist/leaflet.css";
-import React, { useEffect, useState, memo } from "react";
+import React, { useEffect, useState, useMemo, useCallback, memo } from "react";
 import dynamic from "next/dynamic";
 import { useErrorTimeout } from "../hooks/useErrorTimeout";
 
@@ -24,7 +24,6 @@ function Map() {
   useEffect(() => {
     const loadMapData = async () => {
       try {
-        // Load the simplified Africa network data
         const response = await fetch("/africa-network-simplified.geojson");
         if (!response.ok) {
           throw new Error(`Failed to load map data: ${response.status}`);
@@ -39,19 +38,31 @@ function Map() {
     };
 
     loadMapData();
-  }, []);
+  }, [setError]);
 
-  // Custom style for network regions
-  const networkStyle = (feature: any) => {
-    const status = feature.properties.network;
-    const nodeCount = feature.properties.nodes;
-    
-    // Color intensity based on node count
+  const geoJsonPayload = useMemo(() => {
+    if (!geoData) return null;
+
+    return {
+      ...geoData,
+      features: Array.isArray(geoData.features)
+        ? geoData.features.map((feature: any) => ({
+            ...feature,
+            properties: { ...feature.properties },
+          }))
+        : [],
+    };
+  }, [geoData]);
+
+  const networkStyle = useCallback((feature: any) => {
+    const status = feature.properties?.network;
+    const nodeCount = feature.properties?.nodes ?? 0;
+
     let opacity = 0.3;
     if (nodeCount > 200) opacity = 0.8;
     else if (nodeCount > 150) opacity = 0.6;
     else if (nodeCount > 100) opacity = 0.4;
-    
+
     return {
       fillColor: status === "active" ? "#A7C957" : "#64748b",
       weight: 2,
@@ -59,21 +70,33 @@ function Map() {
       color: "#D9F99D",
       fillOpacity: opacity,
     };
-  };
+  }, []);
 
-  // Popup content for each region
-  const onEachFeature = (feature: any, layer: any) => {
-    if (feature.properties) {
-      const popupContent = `
-        <div class="p-2">
-          <h3 class="font-bold text-green-400">${feature.properties.name}</h3>
-          <p class="text-sm">Status: <span class="text-green-300">${feature.properties.network}</span></p>
-          <p class="text-sm">Nodes: <span class="text-blue-300">${feature.properties.nodes}</span></p>
-        </div>
-      `;
-      layer.bindPopup(popupContent);
-    }
-  };
+  const onEachFeature = useCallback((feature: any, layer: any) => {
+    if (!feature.properties) return;
+
+    const popupContent = `
+      <div class="p-2">
+        <h3 class="font-bold text-green-400">${feature.properties.name}</h3>
+        <p class="text-sm">Status: <span class="text-green-300">${feature.properties.network}</span></p>
+        <p class="text-sm">Nodes: <span class="text-blue-300">${feature.properties.nodes}</span></p>
+      </div>
+    `;
+
+    layer.bindPopup(popupContent);
+  }, []);
+
+  const geoJsonLayer = useMemo(() => {
+    if (!geoJsonPayload) return null;
+
+    return (
+      <GeoJSON
+        data={geoJsonPayload}
+        style={networkStyle}
+        onEachFeature={onEachFeature}
+      />
+    );
+  }, [geoJsonPayload, networkStyle, onEachFeature]);
 
   if (loading) {
     return (
@@ -122,7 +145,7 @@ function Map() {
       <div className="relative h-full min-h-[280px] rounded-[24px] border border-white/10 overflow-hidden">
         <div className="w-full h-full">
           <MapContainer
-            center={[0, 20]} // Center on Africa
+            center={[0, 20]}
             zoom={3}
             style={{ height: "280px", width: "100%" }}
             className="z-0"
@@ -131,13 +154,7 @@ function Map() {
               url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
             />
-            {geoData && (
-              <GeoJSON
-                data={geoData}
-                style={networkStyle}
-                onEachFeature={onEachFeature}
-              />
-            )}
+            {geoJsonLayer}
           </MapContainer>
         </div>
         <div className="absolute top-4 left-4 bg-black/50 backdrop-blur-sm rounded-lg p-2">
@@ -149,4 +166,25 @@ function Map() {
   );
 }
 
-export default memo(Map);
+function deepEqual(value: unknown, other: unknown): boolean {
+  if (value === other) return true;
+  if (typeof value !== typeof other || value === null || other === null) return false;
+  if (Array.isArray(value) && Array.isArray(other)) {
+    return value.length === other.length && value.every((item, index) => deepEqual(item, other[index]));
+  }
+  if (typeof value === "object" && typeof other === "object") {
+    const valueKeys = Object.keys(value as object);
+    const otherKeys = Object.keys(other as object);
+    if (valueKeys.length !== otherKeys.length) return false;
+    return valueKeys.every(
+      (key) => otherKeys.includes(key) && deepEqual((value as any)[key], (other as any)[key])
+    );
+  }
+  return false;
+}
+
+function areEqualProps(prevProps: Record<string, unknown>, nextProps: Record<string, unknown>) {
+  return deepEqual(prevProps, nextProps);
+}
+
+export default memo(Map, areEqualProps);
