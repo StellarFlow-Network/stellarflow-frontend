@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback, memo } from "react";
 import { useRAFInterval } from "@/app/hooks/useRAFInterval";
+import { useInactivityDelay } from "@/app/hooks/useInactivityDelay";
 import { RefreshCw } from "lucide-react";
 import { useProgressBar } from "./TopLoadingBar";
 import { useDebounce } from "../hooks/useDebounce";
@@ -113,6 +114,13 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   const { isConnected, error: wsError } = useSocketConnection();
   const { lastUpdate: wsUpdate } = useSocketData();
 
+  // Adaptive poll delay — extends the polling interval when the user has been
+  // inactive for more than 3 minutes, reducing unnecessary network RPC load.
+  const { delayMultiplier } = useInactivityDelay({
+    inactivityThreshold: 3 * 60 * 1000,
+    inactiveMultiplier: 5,
+  });
+
   const load = useCallback(
     async (manual = false) => {
       if (manual) {
@@ -180,7 +188,10 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
     if (pollingActive) load();
   }, [pollingActive, load]);
 
-  useRAFInterval(load, refreshInterval, pollingActive);
+  // Scale the polling interval by the inactivity multiplier so that background
+  // tabs AND idle sessions both reduce network RPC pressure.
+  const effectiveInterval = refreshInterval * delayMultiplier;
+  useRAFInterval(load, effectiveInterval, pollingActive);
 
   // ── Guardrail: Up/Down arrow is STRICTLY driven by the 24h_change field ──
   const isUp = data !== null && data.change_24h >= 0;
