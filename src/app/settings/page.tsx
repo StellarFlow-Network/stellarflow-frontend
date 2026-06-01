@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icon, ICON_IDS } from '@/components/icons';
 import { useDebounce } from '../hooks/useDebounce';
+import { useRafThrottle } from '../hooks/useRafThrottle';
 
 interface Settings {
   emailReports: boolean;
@@ -39,6 +40,8 @@ export default function SettingsPage() {
   const debouncedSettings = useDebounce(settings, 500);
   const isSaving = Date.now() - lastSaveTime < 500;
   const hasChanges = JSON.stringify(settings) !== JSON.stringify(savedSettings);
+
+  const throttledSetSessionTimeout = useRafThrottle((v: string) => setSettings(prev => ({ ...prev, sessionTimeout: v })));
 
   useEffect(() => {
     if (hasChanges && !isPending) {
@@ -173,7 +176,7 @@ export default function SettingsPage() {
               <select 
                 className="bg-[#0d1117] border border-gray-700 rounded py-1 px-2 text-xs"
                 value={settings.sessionTimeout}
-                onChange={(e) => setSettings(prev => ({ ...prev, sessionTimeout: e.target.value }))}
+                onChange={(e) => throttledSetSessionTimeout(e.target.value)}
               >
                 <option>15 Minutes</option>
                 <option>1 Hour</option>

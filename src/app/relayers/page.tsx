@@ -1,5 +1,20 @@
 "use client";
 
+import React, { useState, useMemo } from 'react';
+import { useDebounce } from '../hooks/useDebounce';
+import { useRafThrottle } from '../hooks/useRafThrottle';
+import { useTransformedCustomAddressField } from '@/app/hooks/useTransformedData';
+import {
+  Activity,
+  Plus,
+  Search,
+  MoreVertical,
+  RefreshCw,
+  ShieldCheck,
+  Clock,
+  Signal,
+} from 'lucide-react';
+import { RELAYERS_PAGE_STATUS_VARIANTS } from '@/lib/classNameVariants';
 import React, { useState, useMemo } from "react";
 import { useDebounce } from "../hooks/useDebounce";
 import { Icon, ICON_IDS } from "@/components/icons";
@@ -45,6 +60,7 @@ const MOCK_RELAYERS: Relayer[] = [
 export default function RelayersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearch = useDebounce(searchTerm, 250);
+  const throttledSetSearchTerm = useRafThrottle((v: string) => setSearchTerm(v));
 
   const displayedRelayers = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
@@ -104,7 +120,7 @@ export default function RelayersPage() {
               type="text"
               placeholder="Search by name or address..."
               className="w-full bg-[#0d1117] border border-gray-700 rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-blue-500 transition-colors"
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => throttledSetSearchTerm(e.target.value)}
             />
           </div>
           <div className="flex gap-2">

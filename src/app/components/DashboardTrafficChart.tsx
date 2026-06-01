@@ -12,6 +12,7 @@ import {
   Tooltip,
   type ChartConfiguration,
 } from "chart.js";
+import { useRafThrottle } from "../hooks/useRafThrottle";
 
 Chart.register(
   LineController,
@@ -30,12 +31,46 @@ interface DashboardTrafficChartProps {
   values?: number[];
 }
 
+interface PointerPosition {
+  clientX: number;
+  clientY: number;
+  offsetX: number;
+  offsetY: number;
+}
+
 export default function DashboardTrafficChart({
   labels = ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"],
   values = [120, 180, 260, 240, 310, 390],
 }: DashboardTrafficChartProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chartRef = useRef<Chart<"line"> | null>(null);
+
+  const processPointerMove = useRafThrottle((position: PointerPosition) => {
+    const chart = chartRef.current;
+    if (!chart) return;
+
+    const event = {
+      clientX: position.clientX,
+      clientY: position.clientY,
+      offsetX: position.offsetX,
+      offsetY: position.offsetY,
+      type: "pointermove",
+    } as unknown as Event;
+
+    const activeElements = chart.getElementsAtEventForMode(
+      event,
+      "nearest",
+      { intersect: false },
+      false,
+    );
+
+    chart.tooltip.setActiveElements(activeElements, {
+      x: position.clientX,
+      y: position.clientY,
+    });
+
+    chart.update("none");
+  });
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -68,6 +103,7 @@ export default function DashboardTrafficChart({
         responsive: true,
         maintainAspectRatio: false,
         animation: false,
+        events: [],
         plugins: {
           tooltip: {
             enabled: true,
@@ -99,11 +135,37 @@ export default function DashboardTrafficChart({
 
     chartRef.current = new Chart(canvasRef.current, config);
 
+    const handlePointerMove = (event: PointerEvent) => {
+      processPointerMove({
+        clientX: event.clientX,
+        clientY: event.clientY,
+        offsetX: event.offsetX,
+        offsetY: event.offsetY,
+      });
+    };
+
+    const hideTooltip = () => {
+      const chart = chartRef.current;
+      if (!chart) return;
+      chart.tooltip.setActiveElements([], { x: 0, y: 0 });
+      chart.update("none");
+    };
+
+    const canvas = canvasRef.current;
+    canvas.addEventListener("pointermove", handlePointerMove);
+    canvas.addEventListener("pointerleave", hideTooltip);
+    canvas.addEventListener("pointerout", hideTooltip);
+    canvas.addEventListener("pointercancel", hideTooltip);
+
     return () => {
+      canvas.removeEventListener("pointermove", handlePointerMove);
+      canvas.removeEventListener("pointerleave", hideTooltip);
+      canvas.removeEventListener("pointerout", hideTooltip);
+      canvas.removeEventListener("pointercancel", hideTooltip);
       chartRef.current?.destroy();
       chartRef.current = null;
     };
-  }, [labels, values]);
+  }, [labels, values, processPointerMove]);
 
   return (
     <div className="h-[280px] w-full">

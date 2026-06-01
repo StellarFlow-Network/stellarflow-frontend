@@ -12,6 +12,7 @@ import { useInactivityDelay } from "@/app/hooks/useInactivityDelay";
 import { Icon, ICON_IDS } from "@/components/icons";
 import { useProgressBar } from "./TopLoadingBar";
 import { useDebounce } from "../hooks/useDebounce";
+import { useRafThrottle } from "../hooks/useRafThrottle";
 import { useErrorTimeout } from "../hooks/useErrorTimeout";
 import { useSocketConnection, useSocketData } from "./providers/SocketProvider";
 import { PriceFeedCardSkeleton, Shimmer } from "@/components/skeletons";
@@ -140,6 +141,7 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [filterInput, setFilterInput] = useState("");
   const debouncedFilter = useDebounce(filterInput, 250);
+  const throttledSetFilterInput = useRafThrottle((value: string) => setFilterInput(value));
   const { start, done } = useProgressBar();
 
   // Granular context subscriptions — each hook only re-renders this component
@@ -410,7 +412,7 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
         <input
           type="text"
           value={filterInput}
-          onChange={(e) => setFilterInput(e.target.value)}
+          onChange={(e) => throttledSetFilterInput(e.target.value)}
           placeholder="Filter pair…"
           aria-label="Filter price feed pair"
           className="w-full rounded-lg border border-[#1B2A3B] bg-[#0A0F1E] px-3 py-1.5 text-xs text-white/70 placeholder-gray-600 outline-none focus:border-[#39FF14]/40 focus:ring-0 transition-colors"
