@@ -1,17 +1,12 @@
 import type { NextConfig } from "next";
 import withBundleAnalyzer from "@next/bundle-analyzer";
+import withPWA from "next-pwa";
 
 const withBundleAnalyzerConfig = withBundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
 });
 
-// 1. Initialize the Bundle Analyzer plugin
-const withBundleAnalyzer = require("@next/bundle-analyzer")({
-  enabled: process.env.ANALYZE === "true",
-});
-
-// 2. Initialize the PWA plugin with its production-ready caching rules
-const withPWA = require("next-pwa")({
+const withPwaConfig = withPWA({
   dest: "public",
   register: true,
   skipWaiting: true,
@@ -24,7 +19,7 @@ const withPWA = require("next-pwa")({
         cacheName: "page-shells",
         expiration: {
           maxEntries: 50,
-          maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+          maxAgeSeconds: 30 * 24 * 60 * 60,
         },
       },
     },
@@ -35,7 +30,7 @@ const withPWA = require("next-pwa")({
         cacheName: "offlineCache",
         expiration: {
           maxEntries: 200,
-          maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          maxAgeSeconds: 24 * 60 * 60,
         },
         networkTimeoutSeconds: 10,
       },
@@ -43,30 +38,19 @@ const withPWA = require("next-pwa")({
   ],
 });
 
-// 3. Your optimized Next.js base configurations
 const nextConfig: NextConfig = {
   reactCompiler: false,
-  swcMinify: true,
   compress: true,
   productionBrowserSourceMaps: false,
-  optimizeFonts: true,
-  optimizePackageImports: [
-    "lucide-react",
-    "react-icons",
-  ],
-};
-
-export default withBundleAnalyzerConfig(nextConfig);
   turbopack: {},
   images: {
-    formats: ['image/avif', 'image/webp'],
+    formats: ["image/avif", "image/webp"],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256],
   },
   experimental: {
-    optimizePackageImports: ['lucide-react'],
+    optimizePackageImports: ["lucide-react", "react-icons"],
   },
 };
 
-// 4. Chain both plugins together sequentially to export the final configuration
-export default withPWA(withBundleAnalyzer(nextConfig));
+export default withBundleAnalyzerConfig(withPwaConfig(nextConfig));

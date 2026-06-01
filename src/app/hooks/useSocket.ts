@@ -322,29 +322,6 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
     };
   }, [connect]);
 
-  // Periodic flush of buffered WebSocket messages every 300ms
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (bufferRef.current.length > 0) {
-        bufferRef.current.forEach((message) => {
-          if (message.type === "price_update" || message.type === "delta_update") {
-            if (message.type === "delta_update" && message.assetId) {
-              setLastUpdate((prev: PriceData | null) =>
-                prev
-                  ? { ...prev, ...(message.data as PriceData) }
-                  : (message.data as PriceData),
-              );
-            } else {
-              setLastUpdate(message.data as PriceData);
-            }
-          }
-        });
-        // Clear buffer after processing
-        bufferRef.current = [];
-      }
-    }, 300);
-    return () => clearInterval(interval);
-  }, []);
   return {
     isConnected,
     lastUpdate,

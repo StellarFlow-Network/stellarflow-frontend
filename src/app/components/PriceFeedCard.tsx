@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, memo } from "react";
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  memo,
+  useSyncExternalStore,
+} from "react";
 import { useRAFInterval } from "@/app/hooks/useRAFInterval";
 import { useInactivityDelay } from "@/app/hooks/useInactivityDelay";
 import { Icon, ICON_IDS } from "@/components/icons";
@@ -8,7 +14,8 @@ import { useProgressBar } from "./TopLoadingBar";
 import { useDebounce } from "../hooks/useDebounce";
 import { useErrorTimeout } from "../hooks/useErrorTimeout";
 import { useSocketConnection, useSocketData } from "./providers/SocketProvider";
-import { Shimmer } from "@/components/skeletons/Shimmer";
+import { PriceFeedCardSkeleton, Shimmer } from "@/components/skeletons";
+import { useMounted } from "@/app/hooks/useMounted";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -31,6 +38,31 @@ interface PriceFeedCardProps {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function usePageVisibility(): boolean {
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      if (typeof document === "undefined") return () => {};
+
+      const handleVisibilityChange = () => {
+        onStoreChange();
+      };
+
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+      return () => {
+        document.removeEventListener(
+          "visibilitychange",
+          handleVisibilityChange,
+        );
+      };
+    },
+    () =>
+      typeof document === "undefined"
+        ? false
+        : document.visibilityState === "visible",
+    () => false,
+  );
+}
 
 /**
  * Fetches the NGN/XLM price feed from the StellarFlow oracle API.
@@ -100,6 +132,7 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   refreshInterval = 30_000,
   enableWebSocket = true,
 }) => {
+  const mounted = useMounted();
   const [data, setData] = useState<PriceFeedData | null>(null);
   const [loading, setLoading] = useState(true);
   const { error, setError } = useErrorTimeout({ timeoutMs: 5000 });
@@ -113,6 +146,8 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   // when its specific slice changes, not on every unrelated socket event.
   const { isConnected, error: wsError } = useSocketConnection();
   const { lastUpdate: wsUpdate } = useSocketData();
+
+  const isPageVisible = usePageVisibility();
 
   // Adaptive poll delay — extends the polling interval when the user has been
   // inactive for more than 3 minutes, reducing unnecessary network RPC load.
@@ -143,7 +178,7 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
         if (manual) done();
       }
     },
-    [start, done],
+    [start, done, setError],
   );
 
   // Merge WebSocket delta updates into local state.
@@ -151,42 +186,55 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   // instead of closing over `data` — so `data` is NOT a dependency and the
   // effect does not re-run after every state write, breaking the render cycle.
   useEffect(() => {
+    if (!mounted) return;
+
     if (!wsUpdate || !enableWebSocket || !isPageVisible) return;
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setData((prev: PriceFeedData | null) => ({
-      price: wsUpdate.price || prev?.price || 0,
-      // Reset 24 h change indicator when a fresh price arrives.
-      change_24h: wsUpdate.price ? 0 : prev?.change_24h || 0,
-      high_24h: wsUpdate.price
-        ? Math.max(wsUpdate.price, prev?.high_24h || 0)
-        : prev?.high_24h || 0,
-      low_24h: wsUpdate.price
-        ? Math.min(wsUpdate.price, prev?.low_24h || Infinity)
-        : prev?.low_24h || 0,
-      volume_24h: prev?.volume_24h || 0, // volume comes from REST, not WS
-      last_updated: wsUpdate.timestamp
-        ? new Date(wsUpdate.timestamp).toISOString()
-        : prev?.last_updated || new Date().toISOString(),
-    }));
-    setLastRefresh(new Date());
-    setLoading(false);
-    setError(null);
-  }, [wsUpdate, enableWebSocket]); // `data` intentionally omitted — accessed via functional updater
+    const frameId = window.requestAnimationFrame(() => {
+      setData((prev: PriceFeedData | null) => ({
+        price: wsUpdate.price || prev?.price || 0,
+        // Reset 24 h change indicator when a fresh price arrives.
+        change_24h: wsUpdate.price ? 0 : prev?.change_24h || 0,
+        high_24h: wsUpdate.price
+          ? Math.max(wsUpdate.price, prev?.high_24h || 0)
+          : prev?.high_24h || 0,
+        low_24h: wsUpdate.price
+          ? Math.min(wsUpdate.price, prev?.low_24h || Infinity)
+          : prev?.low_24h || 0,
+        volume_24h: prev?.volume_24h || 0, // volume comes from REST, not WS
+        last_updated: wsUpdate.timestamp
+          ? new Date(wsUpdate.timestamp).toISOString()
+          : prev?.last_updated || new Date().toISOString(),
+      }));
+      setLastRefresh(new Date());
+      setLoading(false);
+      setError(null);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [wsUpdate, enableWebSocket, isPageVisible, mounted, setError]); // `data` intentionally omitted — accessed via functional updater
 
   // Handle WebSocket errors
   useEffect(() => {
+    if (!mounted) return;
+
     if (wsError && enableWebSocket) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError(`WebSocket error: ${wsError}`);
     }
-  }, [wsError, enableWebSocket]);
+  }, [wsError, enableWebSocket, mounted, setError]);
 
   // Initial fetch + fallback polling (only when WebSocket is disabled or disconnected)
-  const pollingActive = isPageVisible && (!enableWebSocket || !isConnected);
+  const pollingActive = mounted && isPageVisible && (!enableWebSocket || !isConnected);
   useEffect(() => {
-    if (pollingActive) load();
-  }, [pollingActive, load]);
+    if (!mounted) return;
+    if (!pollingActive) return;
+
+    const id = window.setTimeout(() => {
+      void load();
+    }, 0);
+
+    return () => window.clearTimeout(id);
+  }, [pollingActive, load, mounted]);
 
   // Scale the polling interval by the inactivity multiplier so that background
   // tabs AND idle sessions both reduce network RPC pressure.
@@ -207,22 +255,11 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
     : "shadow-[0_0_18px_rgba(244,63,94,0.18)]";
 
   const priceColor = isUp ? "text-emerald-400" : "text-rose-400";
-  const [isPageVisible, setIsPageVisible] = useState(() => {
-    if (typeof document === "undefined") return true;
-    return document.visibilityState === "visible";
-  });
 
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      setIsPageVisible(document.visibilityState === "visible");
-    };
+  if (!mounted) {
+    return <PriceFeedCardSkeleton />;
+  }
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, []);
   return (
     <div
       style={{ contain: "paint layout" }}
