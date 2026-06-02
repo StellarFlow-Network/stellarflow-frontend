@@ -4,3 +4,5 @@ export { MapSkeleton } from './MapSkeleton';
 export { RateSparklineSkeleton } from './RateSparklineSkeleton';
 export { PriceFeedCardSkeleton } from './PriceFeedCardSkeleton';
 export { DashboardTrafficChartSkeleton } from './DashboardTrafficChartSkeleton';
+export { StatsSkeleton } from './StatsSkeleton';
+export { AdminStatsSkeleton } from './AdminStatsSkeleton';
