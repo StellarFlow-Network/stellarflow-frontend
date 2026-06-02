@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { PriceData } from "@/types";
 import { useErrorTimeout } from "./useErrorTimeout";
+import { usePageVisibility } from "./usePageVisibility";
 
 interface SocketMessage {
   type: "price_update" | "delta_update";
@@ -54,7 +55,8 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
     null,
   );
   const manuallyDisconnectedRef = useRef(false);
-  const pageVisibleRef = useRef(true);
+  const isVisible = usePageVisibility();
+  const pageVisibleRef = useRef(isVisible);
   
   // Batching refs for high-frequency updates
   const pendingUpdatesRef = useRef<(PriceData | Partial<PriceData>)[]>([]);
@@ -280,47 +282,38 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
     };
   }, [flushPendingUpdates]);
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      const isVisible = document.visibilityState === "visible";
-      pageVisibleRef.current = isVisible;
+    pageVisibleRef.current = isVisible;
 
-      if (!isVisible) {
-        if (reconnectTimeoutRef.current) {
-          clearTimeout(reconnectTimeoutRef.current);
-          reconnectTimeoutRef.current = null;
-        }
-
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-          wsRef.current.send(
-            JSON.stringify({
-              type: "unsubscribe",
-              assetIds: Array.from(subscribedAssetsRef.current),
-            }),
-          );
-        }
-
-        if (wsRef.current) {
-          wsRef.current.close(1000, "Page hidden");
-          wsRef.current = null;
-        }
-
-        setIsConnected(false);
-        return;
+    if (!isVisible) {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
       }
 
-      if (!manuallyDisconnectedRef.current) {
-        reconnectAttemptsRef.current = 0;
-        setReconnectAttempts(0);
-        connect();
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(
+          JSON.stringify({
+            type: "unsubscribe",
+            assetIds: Array.from(subscribedAssetsRef.current),
+          }),
+        );
       }
-    };
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+      if (wsRef.current) {
+        wsRef.current.close(1000, "Page hidden");
+        wsRef.current = null;
+      }
 
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [connect]);
+      setIsConnected(false);
+      return;
+    }
+
+    if (!manuallyDisconnectedRef.current) {
+      reconnectAttemptsRef.current = 0;
+      setReconnectAttempts(0);
+      connect();
+    }
+  }, [isVisible, connect]);
 
   return {
     isConnected,
