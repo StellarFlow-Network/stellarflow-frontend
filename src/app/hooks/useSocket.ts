@@ -75,7 +75,7 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
     }
 
     try {
-      const protocol = process.env.NODE_ENV === 'production' ? 'wss:' : 'ws:'
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
       const wsUrl = `${protocol}//${window.location.host}/ws`
 
       wsRef.current = new WebSocket(wsUrl)
