@@ -1,14 +1,21 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, memo } from "react";
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  memo,
+} from "react";
 import { useRAFInterval } from "@/app/hooks/useRAFInterval";
-import { RefreshCw } from "lucide-react";
+import { useInactivityDelay } from "@/app/hooks/useInactivityDelay";
+import { Icon, ICON_IDS } from "@/components/icons";
 import { useProgressBar } from "./TopLoadingBar";
 import { useDebounce } from "../hooks/useDebounce";
+import { useRafThrottle } from "../hooks/useRafThrottle";
 import { useErrorTimeout } from "../hooks/useErrorTimeout";
-import { useSocketConnection } from "./providers/SocketProvider";
-import { useAssetPrice } from "../hooks/useAssetPrice";
-import { Shimmer } from "@/components/skeletons/Shimmer";
+import { useSocketConnection, useSocketData } from "./providers/SocketProvider";
+import { PriceFeedCardSkeleton, Shimmer } from "@/components/skeletons";
+import { useMounted } from "@/app/hooks/useMounted";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -31,6 +38,8 @@ interface PriceFeedCardProps {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+import { usePageVisibility } from "../hooks/usePageVisibility";
 
 /**
  * Fetches the NGN/XLM price feed from the StellarFlow oracle API.
@@ -101,6 +110,7 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   enableWebSocket = true,
   assetId,
 }) => {
+  const mounted = useMounted();
   const [data, setData] = useState<PriceFeedData | null>(null);
   const [loading, setLoading] = useState(true);
   const { error, setError } = useErrorTimeout({ timeoutMs: 5000 });
@@ -108,11 +118,21 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [filterInput, setFilterInput] = useState("");
   const debouncedFilter = useDebounce(filterInput, 250);
+  const throttledSetFilterInput = useRafThrottle((value: string) => setFilterInput(value));
   const { start, done } = useProgressBar();
 
   // Granular context subscriptions — each hook only re-renders this component
   // when its specific slice changes, not on every unrelated socket event.
   const { isConnected, error: wsError } = useSocketConnection();
+
+  const isPageVisible = usePageVisibility();
+
+  // Adaptive poll delay — extends the polling interval when the user has been
+  // inactive for more than 3 minutes, reducing unnecessary network RPC load.
+  const { delayMultiplier } = useInactivityDelay({
+    inactivityThreshold: 3 * 60 * 1000,
+    inactiveMultiplier: 5,
+  });
 
   const load = useCallback(
     async (manual = false) => {
@@ -136,52 +156,68 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
         if (manual) done();
       }
     },
-    [start, done],
+    [start, done, setError],
   );
 
-  // The live price display is isolated into a memoized leaf (`PriceValue`)
-  // which subscribes to the WS for the specific `assetId`. That leaf handles
-  // frequent price ticks itself so the parent `PriceFeedCard` does not re-
-  // render on every tick.
+  // Merge WebSocket delta updates into local state.
+  // Using a functional setData updater means we read `prev` (current state)
+  // instead of closing over `data` — so `data` is NOT a dependency and the
+  // effect does not re-run after every state write, breaking the render cycle.
+  useEffect(() => {
+    if (!mounted) return;
 
-  const assetToSubscribe = "NGN-XLM";
+    if (!wsUpdate || !enableWebSocket || !isPageVisible) return;
 
-  const PriceValue: React.FC<{
-    assetId: string
-    fallback?: number
-    className?: string
-  }> = React.memo(function PriceValue({ assetId, fallback, className }) {
-    const { price } = useAssetPrice(assetId)
+    const frameId = window.requestAnimationFrame(() => {
+      setData((prev: PriceFeedData | null) => ({
+        price: wsUpdate.price || prev?.price || 0,
+        // Reset 24 h change indicator when a fresh price arrives.
+        change_24h: wsUpdate.price ? 0 : prev?.change_24h || 0,
+        high_24h: wsUpdate.price
+          ? Math.max(wsUpdate.price, prev?.high_24h || 0)
+          : prev?.high_24h || 0,
+        low_24h: wsUpdate.price
+          ? Math.min(wsUpdate.price, prev?.low_24h || Infinity)
+          : prev?.low_24h || 0,
+        volume_24h: prev?.volume_24h || 0, // volume comes from REST, not WS
+        last_updated: wsUpdate.timestamp
+          ? new Date(wsUpdate.timestamp).toISOString()
+          : prev?.last_updated || new Date().toISOString(),
+      }));
+      setLastRefresh(new Date());
+      setLoading(false);
+      setError(null);
+    });
 
-    const display = price ?? fallback ?? 0
-
-    return (
-      <div className={`text-4xl font-black leading-none tracking-tight ${className ?? ""}`}>
-        {display ? formatPrice(display) : "—"}
-      </div>
-    )
-  })
+    return () => window.cancelAnimationFrame(frameId);
+  }, [wsUpdate, enableWebSocket, isPageVisible, mounted, setError]); // `data` intentionally omitted — accessed via functional updater
 
   // Handle WebSocket errors
   useEffect(() => {
+    if (!mounted) return;
+
     if (wsError && enableWebSocket) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError(`WebSocket error: ${wsError}`);
     }
-  }, [wsError, enableWebSocket]);
+  }, [wsError, enableWebSocket, mounted, setError]);
 
   // Initial fetch + fallback polling (only when WebSocket is disabled or disconnected)
-  const [isPageVisible, setIsPageVisible] = useState(() => {
-    if (typeof document === "undefined") return true;
-    return document.visibilityState === "visible";
-  });
-
-  const pollingActive = isPageVisible && (!enableWebSocket || !isConnected);
+  const pollingActive = mounted && isPageVisible && (!enableWebSocket || !isConnected);
   useEffect(() => {
-    if (pollingActive) load();
-  }, [pollingActive, load]);
+    if (!mounted) return;
+    if (!pollingActive) return;
 
-  useRAFInterval(load, refreshInterval, pollingActive);
+    const id = window.setTimeout(() => {
+      void load();
+    }, 0);
+
+    return () => window.clearTimeout(id);
+  }, [pollingActive, load, mounted]);
+
+  // Scale the polling interval by the inactivity multiplier so that background
+  // tabs AND idle sessions both reduce network RPC pressure.
+  const effectiveInterval = refreshInterval * delayMultiplier;
+  useRAFInterval(load, effectiveInterval, pollingActive);
 
   // ── Guardrail: Up/Down arrow is STRICTLY driven by the 24h_change field ──
   const isUp = data !== null && data.change_24h >= 0;
@@ -198,17 +234,10 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
 
   const priceColor = isUp ? "text-emerald-400" : "text-rose-400";
 
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      setIsPageVisible(document.visibilityState === "visible");
-    };
+  if (!mounted) {
+    return <PriceFeedCardSkeleton />;
+  }
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, []);
   return (
     <div
       style={{ contain: "paint layout" }}
@@ -268,7 +297,8 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
             aria-label="Refresh price feed"
             className="flex items-center justify-center w-7 h-7 rounded-full border border-[#1B2A3B] bg-[#0A0F1E] text-gray-500 hover:text-[#39FF14] hover:border-[#39FF14]/40 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <RefreshCw
+            <Icon
+              id={ICON_IDS.refreshCcw}
               size={13}
               className={isRefreshing ? "animate-spin" : ""}
             />
@@ -292,19 +322,23 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
           </p>
         </div>
       ) : (
-        <div className="relative mb-5">
+        <div className="relative mb-5 stat-card-widget">
           {/* Current price */}
-          <PriceValue assetId={assetId ?? assetToSubscribe} fallback={data?.price} className={priceColor} />
+          <div
+            className={`text-4xl font-black leading-none tracking-tight numeric-value ${priceColor}`}
+          >
+            {data && formatPrice(data.price)}
+          </div>
 
           {/* 24h change badge — arrow direction is STRICTLY from 24h_change field */}
           <div className="mt-3 flex items-center gap-2">
             <div
-              className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${trendBg}`}
+              className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold high-frequency-badge ${trendBg}`}
               aria-label={`24-hour change: ${isUp ? "up" : "down"} ${changeAbs}%`}
             >
               {/* Arrow: ▲ when 24h_change >= 0, ▼ when 24h_change < 0 */}
               <span aria-hidden="true">{isUp ? "▲" : "▼"}</span>
-              <span>{changeAbs}%</span>
+              <span className="numeric-value">{changeAbs}%</span>
             </div>
             <span className="text-[10px] text-gray-600 font-medium italic">
               24h change
@@ -317,31 +351,31 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
       {!loading && !error && data && (
         <div className="relative grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-[#1B2A3B] pt-4">
           {/* High */}
-          <div className="min-w-0 flex flex-col gap-0.5">
+          <div className="min-w-0 flex flex-col gap-0.5 node-status-cell">
             <span className="text-[9px] font-semibold uppercase tracking-widest text-gray-600">
               24h High
             </span>
-            <span className="text-xs font-bold text-emerald-400">
+            <span className="text-xs font-bold text-emerald-400 numeric-value">
               {formatPrice(data.high_24h)}
             </span>
           </div>
 
           {/* Low */}
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-0.5 node-status-cell">
             <span className="text-[9px] font-semibold uppercase tracking-widest text-gray-600">
               24h Low
             </span>
-            <span className="text-xs font-bold text-rose-400">
+            <span className="text-xs font-bold text-rose-400 numeric-value">
               {formatPrice(data.low_24h)}
             </span>
           </div>
 
           {/* Volume */}
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-0.5 node-status-cell">
             <span className="text-[9px] font-semibold uppercase tracking-widest text-gray-600">
               Volume
             </span>
-            <span className="text-xs font-bold text-gray-300">
+            <span className="text-xs font-bold text-gray-300 numeric-value">
               {formatVolume(data.volume_24h)}{" "}
               <span className="text-gray-600 font-medium">XLM</span>
             </span>
@@ -354,7 +388,7 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
         <input
           type="text"
           value={filterInput}
-          onChange={(e) => setFilterInput(e.target.value)}
+          onChange={(e) => throttledSetFilterInput(e.target.value)}
           placeholder="Filter pair…"
           aria-label="Filter price feed pair"
           className="w-full rounded-lg border border-[#1B2A3B] bg-[#0A0F1E] px-3 py-1.5 text-xs text-white/70 placeholder-gray-600 outline-none focus:border-[#39FF14]/40 focus:ring-0 transition-colors"

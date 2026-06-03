@@ -4,23 +4,50 @@ import React, { memo } from "react"
 import { useAssetPrice } from "../../hooks/useAssetPrice"
 import { useSocketConnection } from "../providers/SocketProvider"
 
-interface PriceRowProps {
-  assetId: string
+const CHART_HISTORY_LIMIT = 150;
+
+interface PriceData {
+  symbol: string
+  price: number
+  timestamp: number
 }
 
-const PriceRow: React.FC<PriceRowProps> = memo(function PriceRow({ assetId }) {
-  const { price } = useAssetPrice(assetId)
+function LivePrices({ initialData }: any) {
+  const [data, setData] = useState<PriceData[]>(initialData || [])
+  
+  // Subscribe to multiple asset updates
+  const { isConnected, lastUpdate, error } = useSocket({
+    assetIds: ['NGN-XLM', 'USD-XLM', 'EUR-XLM'],
+    enableDeltaUpdates: true,
+  })
 
-  return (
-    <div className="flex items-center justify-between py-1" aria-live="polite">
-      <span className="text-xs font-medium text-gray-400">{assetId}</span>
-      <span className="text-sm font-semibold text-white">{price ?? "—"}</span>
-    </div>
-  )
-})
-
-function LivePrices({ initialAssets = ["NGN-XLM", "USD-XLM", "EUR-XLM"] }: any) {
-  const { isConnected, error } = useSocketConnection()
+  useEffect(() => {
+    if (lastUpdate) {
+      setData(prevData => {
+        const index = prevData.findIndex(p => p.symbol === lastUpdate.assetPair)
+        let next: PriceData[]
+        if (index !== -1) {
+          next = [...prevData]
+          next[index] = {
+            ...next[index],
+            price: lastUpdate.price,
+            timestamp: lastUpdate.timestamp,
+          }
+        } else {
+          next = [...prevData, {
+            symbol: lastUpdate.assetPair,
+            price: lastUpdate.price,
+            timestamp: lastUpdate.timestamp,
+          }]
+        }
+        // Cap to the last CHART_HISTORY_LIMIT entries and null-prune trailing
+        // slots to release memory registers back to the browser GC.
+        const windowed = next.slice(-CHART_HISTORY_LIMIT)
+        windowed.length = windowed.length
+        return windowed
+      })
+    }
+  }, [lastUpdate])
 
   return (
     <div>
