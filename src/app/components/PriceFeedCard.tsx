@@ -168,28 +168,24 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
 
     if (!wsUpdate || !enableWebSocket || !isPageVisible) return;
 
-    const frameId = window.requestAnimationFrame(() => {
-      setData((prev: PriceFeedData | null) => ({
-        price: wsUpdate.price || prev?.price || 0,
-        // Reset 24 h change indicator when a fresh price arrives.
-        change_24h: wsUpdate.price ? 0 : prev?.change_24h || 0,
-        high_24h: wsUpdate.price
-          ? Math.max(wsUpdate.price, prev?.high_24h || 0)
-          : prev?.high_24h || 0,
-        low_24h: wsUpdate.price
-          ? Math.min(wsUpdate.price, prev?.low_24h || Infinity)
-          : prev?.low_24h || 0,
-        volume_24h: prev?.volume_24h || 0, // volume comes from REST, not WS
-        last_updated: wsUpdate.timestamp
-          ? new Date(wsUpdate.timestamp).toISOString()
-          : prev?.last_updated || new Date().toISOString(),
-      }));
-      setLastRefresh(new Date());
-      setLoading(false);
-      setError(null);
-    });
-
-    return () => window.cancelAnimationFrame(frameId);
+    setData((prev: PriceFeedData | null) => ({
+      price: wsUpdate.price || prev?.price || 0,
+      // Reset 24 h change indicator when a fresh price arrives.
+      change_24h: wsUpdate.price ? 0 : prev?.change_24h || 0,
+      high_24h: wsUpdate.price
+        ? Math.max(wsUpdate.price, prev?.high_24h || 0)
+        : prev?.high_24h || 0,
+      low_24h: wsUpdate.price
+        ? Math.min(wsUpdate.price, prev?.low_24h || Infinity)
+        : prev?.low_24h || 0,
+      volume_24h: prev?.volume_24h || 0, // volume comes from REST, not WS
+      last_updated: wsUpdate.timestamp
+        ? new Date(wsUpdate.timestamp).toISOString()
+        : prev?.last_updated || new Date().toISOString(),
+    }));
+    setLastRefresh(new Date());
+    setLoading(false);
+    setError(null);
   }, [wsUpdate, enableWebSocket, isPageVisible, mounted, setError]); // `data` intentionally omitted — accessed via functional updater
 
   // Handle WebSocket errors

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { PriceData } from "@/types";
 import { useErrorTimeout } from "./useErrorTimeout";
 import { usePageVisibility } from "./usePageVisibility";
+import { useRAFInterval } from "./useRAFInterval";
 
 interface SocketMessage {
   type: "price_update" | "delta_update";
@@ -60,7 +61,6 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
   
   // Batching refs for high-frequency updates
   const pendingUpdatesRef = useRef<(PriceData | Partial<PriceData>)[]>([]);
-  const flushIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Refs keep options fresh inside callbacks without triggering re-renders or
   // causing `connect` to be recreated on every tick.
@@ -125,9 +125,6 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
         reconnectAttemptsRef.current = 0;
         setReconnectAttempts(0);
 
-        // Start the flush interval when connected
-        flushIntervalRef.current = setInterval(flushPendingUpdates, 350);
-
         if (subscribedAssetsRef.current.size > 0) {
           wsRef.current?.send(
             JSON.stringify({
@@ -159,12 +156,6 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
       wsRef.current.onclose = (event: CloseEvent) => {
         setIsConnected(false);
 
-        // Clean up flush interval on close
-        if (flushIntervalRef.current) {
-          clearInterval(flushIntervalRef.current);
-          flushIntervalRef.current = null;
-        }
-
         // Flush any remaining pending updates
         flushPendingUpdates();
 
@@ -195,12 +186,6 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
 
   const disconnect = useCallback(() => {
     manuallyDisconnectedRef.current = true;
-
-    // Clean up flush interval
-    if (flushIntervalRef.current) {
-      clearInterval(flushIntervalRef.current);
-      flushIntervalRef.current = null;
-    }
 
     // Flush any remaining pending updates
     flushPendingUpdates();
@@ -263,11 +248,6 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
   // effect above runs in strict-mode double-invocation.
   useEffect(() => {
     return () => {
-      // Clean up flush interval on unmount
-      if (flushIntervalRef.current) {
-        clearInterval(flushIntervalRef.current);
-        flushIntervalRef.current = null;
-      }
 
       // Flush any remaining pending updates
       flushPendingUpdates();
@@ -314,6 +294,14 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
       connect();
     }
   }, [isVisible, connect]);
+
+  // Master layout clock batching: flushes updates inline with the single RAF loop
+  // every 350ms whenever the connection is alive and there are pending packets.
+  useRAFInterval(
+    flushPendingUpdates,
+    350,
+    isConnected
+  );
 
   return {
     isConnected,
