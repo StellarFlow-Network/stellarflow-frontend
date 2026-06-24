@@ -1,48 +1,17 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
-
-// Strict interface types for strict compile checks
-interface CorridorMetrics {
-  pair: string;
-  source: string;
-  rate: number;
-  spread: number;
-  volume24h: number;
-  latencyMs: number;
-  status: "optimal" | "degraded" | "critical";
-}
-
-interface OrderBookEntry {
-  price: number;
-  amount: number;
-  total: number;
-}
+import React, { useState, useMemo } from "react";
+import {
+  useCorridorMetricsWithFallback,
+  type OrderBookEntry,
+} from "../../hooks/useCorridorMetrics";
 
 export default function CorridorMonitorPage() {
-  // Mock initialization states matching expected real-time socket streams
-  const [metrics, setMetrics] = useState<CorridorMetrics[]>([
-    { pair: "USD / NGN", source: "Binance / Local B2C", rate: 1485.50, spread: 0.12, volume24h: 4250000, latencyMs: 45, status: "optimal" },
-    { pair: "XLM / KES", source: "Stellar DEX / Luno", rate: 16.40, spread: 0.25, volume24h: 1850000, latencyMs: 120, status: "optimal" },
-    { pair: "NGN / GHS", source: "Cross-Corridor Implied", rate: 0.092, spread: 0.68, volume24h: 920000, latencyMs: 240, status: "degraded" },
-  ]);
+  const { data, isFetching } = useCorridorMetricsWithFallback();
+  const { metrics, bids, asks } = data;
 
   const [activePair, setActivePair] = useState<string>("USD / NGN");
 
-  // Mock static data layout for order book matching exact asset scaling
-  const bids: OrderBookEntry[] = [
-    { price: 1485.10, amount: 2500, total: 2500 },
-    { price: 1484.80, amount: 4800, total: 7300 },
-    { price: 1484.20, amount: 12500, total: 19800 },
-  ];
-
-  const asks: OrderBookEntry[] = [
-    { price: 1485.90, amount: 3100, total: 3100 },
-    { price: 1486.30, amount: 6200, total: 9300 },
-    { price: 1487.00, amount: 15000, total: 24300 },
-  ];
-
-  // Dynamic performance optimization: Memoize totals calculation
   const maxVolume = useMemo(() => {
     const allEntries = [...bids, ...asks];
     return Math.max(...allEntries.map((e) => e.total), 1);
@@ -61,8 +30,16 @@ export default function CorridorMonitorPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 bg-neutral-900 border border-neutral-800 rounded-lg p-1">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ml-2" />
-          <span className="text-xs font-mono text-neutral-400 pr-2">LIVE INGESTION MATRIX ACTIVE</span>
+          <span
+            className={`w-2 h-2 rounded-full ml-2 ${
+              isFetching
+                ? "bg-amber-500 animate-pulse"
+                : "bg-emerald-500"
+            }`}
+          />
+          <span className="text-xs font-mono text-neutral-400 pr-2">
+            {isFetching ? "SYNCING FRESH METRICS" : "LIVE INGESTION MATRIX ACTIVE"}
+          </span>
         </div>
       </div>
 

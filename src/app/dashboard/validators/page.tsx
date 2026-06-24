@@ -1,25 +1,11 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-
-interface ValidatorNode {
-  id: string;
-  name: string;
-  address: string;
-  uptime: number;
-  missedBlocks: number;
-  slashingEvents: number;
-  stakedXlm: number;
-  status: "active" | "jailed" | "offline";
-}
+import { useValidatorAudit } from "../../hooks/useValidatorAudit";
 
 export default function ValidatorAuditPage() {
-  const [validators, setValidators] = useState<ValidatorNode[]>([
-    { id: "val-01", name: "Kaduna Nexus Core", address: "GAA...42K", uptime: 99.94, missedBlocks: 2, slashingEvents: 0, stakedXlm: 50000, status: "active" },
-    { id: "val-02", name: "Mombasa Relay Edge", address: "GBC...97X", uptime: 94.21, missedBlocks: 14, slashingEvents: 1, stakedXlm: 45000, status: "active" },
-    { id: "val-03", name: "Accra Liquidity Node", address: "GDH...11W", uptime: 78.45, missedBlocks: 89, slashingEvents: 3, stakedXlm: 12000, status: "jailed" },
-    { id: "val-04", name: "Lagos Ingestion Hub", address: "GDK...88P", uptime: 0.00, missedBlocks: 450, slashingEvents: 5, stakedXlm: 0, status: "offline" }
-  ]);
+  const { data } = useValidatorAudit();
+  const { validators } = data;
 
   const [filter, setFilter] = useState<"all" | "active" | "jailed">("all");
 
