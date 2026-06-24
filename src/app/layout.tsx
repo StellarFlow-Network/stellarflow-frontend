@@ -14,6 +14,7 @@ const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
   display: "swap",
+  // Variable font - no need to specify weights
   weight: ["400", "700"]
 });
 
@@ -21,6 +22,7 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
   display: "swap",
+  // Variable font - no need to specify weights
   weight: ["400", "700"]
 });
 
