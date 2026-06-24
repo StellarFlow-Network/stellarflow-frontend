@@ -1,7 +1,7 @@
-import { Keypair, TransactionBuilder, Networks, Server, Transaction, Asset } from "@stellar/stellar-sdk";
-import { signTransaction, isConnected, getPublicKey } from "@stellar/freighter-api";
+import { Keypair, TransactionBuilder, Networks, Horizon, Transaction, Asset } from "@stellar/stellar-sdk";
+import { signTransaction, isConnected, getAddress } from "@stellar/freighter-api";
 
-const server = new Server("https://horizon-testnet.stellar.org");
+const server = new Horizon.Server("https://horizon-testnet.stellar.org");
 
 /**
  * Heavy transaction operations module.
@@ -35,7 +35,10 @@ export async function submitTransaction(payload: Record<string, number>): Promis
     throw new Error("Freighter wallet is not connected. Please connect your wallet first.");
   }
 
-  const publicKey = await getPublicKey();
+  const { address: publicKey } = await getAddress();
+  if (!publicKey) {
+    throw new Error("Could not retrieve public key from Freighter.");
+  }
   
   // Load account from Horizon to get the current sequence number
   const account = await server.loadAccount(publicKey);
@@ -54,10 +57,13 @@ export async function submitTransaction(payload: Record<string, number>): Promis
   const tx = txBuilder.build();
 
   // Request the user's signature via the Freighter extension
-  const signedTxXdr = await signTransaction(tx.toXDR(), {
-    network: "TESTNET",
+  const { signedTxXdr, error } = await signTransaction(tx.toXDR(), {
     networkPassphrase: Networks.TESTNET,
   });
+
+  if (error || !signedTxXdr) {
+    throw new Error(`Transaction signing failed or was canceled.`);
+  }
 
   // Reconstruct the transaction from the signed XDR
   const signedTx = TransactionBuilder.fromXDR(signedTxXdr, Networks.TESTNET) as Transaction;
