@@ -21,13 +21,15 @@ export interface RelayerStatusTableProps {
 // ---------------------------------------------------------------------------
 const StatusBadge = React.memo(
   function StatusBadge({ status }: { status: Relayer['status'] }) {
+    const isOnline = status === 'Online';
+    
     return (
       <span
-        style={{ contain: 'layout', willChange: 'opacity, transform' }}
+        style={{ contain: 'layout' }}
         className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium ${RELAYER_STATUS_BADGE_VARIANTS[status]}`}
       >
         <span
-          className={`h-1.5 w-1.5 rounded-full ${RELAYER_STATUS_DOT_VARIANTS[status]}`}
+          className={`h-1.5 w-1.5 rounded-full ${RELAYER_STATUS_DOT_VARIANTS[status]} ${isOnline ? 'animate-status-pulse gpu-layer' : ''}`}
         />
         {status}
       </span>

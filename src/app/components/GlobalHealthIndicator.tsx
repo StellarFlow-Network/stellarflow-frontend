@@ -29,9 +29,10 @@ const statusConfig: Record<HealthStatus, { label: string; textColor: string; dot
 
 const GlobalHealthIndicator = ({ status = "ACTIVE" }: GlobalHealthIndicatorProps) => {
   const config = statusConfig[status];
+  const isActive = status === "ACTIVE";
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2" style={{ contain: "layout paint" }}>
       {/* Label */}
       <span className={`text-sm font-bold font-mono tracking-widest ${config.textColor}`}>
         Global Health:
@@ -44,10 +45,12 @@ const GlobalHealthIndicator = ({ status = "ACTIVE" }: GlobalHealthIndicatorProps
 
       {/* Glowing orb */}
       <div className="relative flex items-center justify-center w-4 h-4 ml-1">
-        {/* Ping ring */}
-        <div className={`absolute w-4 h-4 rounded-full ${config.dotColor} animate-ping opacity-30`} />
-        {/* Core dot */}
-        <div className={`relative w-3 h-3 rounded-full ${config.dotColor} animate-pulse ${config.dotGlow}`} />
+        {/* Ping ring — only for ACTIVE */}
+        {isActive && (
+          <div className={`absolute w-4 h-4 rounded-full ${config.dotColor} animate-status-ping opacity-30 gpu-layer`} />
+        )}
+        {/* Core dot — animate only for ACTIVE */}
+        <div className={`relative w-3 h-3 rounded-full ${config.dotColor} ${config.dotGlow} ${isActive ? "animate-status-pulse gpu-layer" : ""}`} />
       </div>
     </div>
   );
