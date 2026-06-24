@@ -170,7 +170,9 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
           reconnectAttemptsRef.current += 1;
           setReconnectAttempts(reconnectAttemptsRef.current);
           reconnectTimeoutRef.current = setTimeout(() => {
-            doConnect();
+            if (subscribedAssetsRef.current.size > 0) {
+              doConnect();
+            }
           }, reconnectIntervalRef.current);
         }
       };
@@ -209,7 +211,19 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
     manuallyDisconnectedRef.current = false;
     reconnectAttemptsRef.current = 0;
     setReconnectAttempts(0);
-    setTimeout(connect, 100);
+    
+    // Clear any existing reconnect timeout
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+    }
+    
+    // Set new reconnect timeout and track it
+    reconnectTimeoutRef.current = setTimeout(() => {
+      reconnectTimeoutRef.current = null;
+      if (subscribedAssetsRef.current.size > 0) {
+        connect();
+      }
+    }, 100);
   }, [disconnect, connect]);
 
   const subscribeToAsset = useCallback((assetId: string) => {
@@ -220,9 +234,11 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
         wsRef.current.send(
           JSON.stringify({ type: "subscribe", assetIds: [assetId] }),
         );
+      } else if (!wsRef.current) {
+        connect();
       }
     }
-  }, []);
+  }, [connect]);
 
   const unsubscribeFromAsset = useCallback((assetId: string) => {
     if (subscribedAssetsRef.current.has(assetId)) {
@@ -233,13 +249,19 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
           JSON.stringify({ type: "unsubscribe", assetIds: [assetId] }),
         );
       }
+
+      if (subscribedAssetsRef.current.size === 0) {
+        disconnect();
+      }
     }
-  }, []);
+  }, [disconnect]);
 
   // Both `connect` and `disconnect` are now stable (empty dep arrays), so this
   // effect only runs once on mount and once on unmount — never on data ticks.
   useEffect(() => {
-    connect();
+    if (subscribedAssetsRef.current.size > 0) {
+      connect();
+    }
     return () => {
       disconnect();
     };
@@ -292,7 +314,9 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
     if (!manuallyDisconnectedRef.current) {
       reconnectAttemptsRef.current = 0;
       setReconnectAttempts(0);
-      connect();
+      if (subscribedAssetsRef.current.size > 0) {
+        connect();
+      }
     }
   }, [isVisible, connect]);
 

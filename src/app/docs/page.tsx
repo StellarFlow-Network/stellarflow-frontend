@@ -23,6 +23,15 @@ export default function DocsPage() {
   const [invoking, setInvoking] = useState(false);
   const [invokeResult, setInvokeResult] = useState<string | null>(null);
 
+  const timeoutsRef = React.useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+
+  useEffect(() => {
+    return () => {
+      timeoutsRef.current.forEach(clearTimeout);
+      timeoutsRef.current.clear();
+    };
+  }, []);
+
   useEffect(() => {
     // ensure runtime cache is populated once (fast path avoids repeated parsing)
     if (typeof window !== 'undefined') {
@@ -38,7 +47,11 @@ export default function DocsPage() {
     try {
       navigator.clipboard.writeText(text);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      const timer = setTimeout(() => {
+        setCopied(false);
+        timeoutsRef.current.delete(timer);
+      }, 2000);
+      timeoutsRef.current.add(timer);
     } catch (e) {
       // noop
     }
@@ -47,7 +60,7 @@ export default function DocsPage() {
   const handleTestInvoke = () => {
     setInvoking(true);
     setInvokeResult(null);
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       setInvoking(false);
       setInvokeResult(
         JSON.stringify({
@@ -62,7 +75,9 @@ export default function DocsPage() {
           }
         }, null, 2)
       );
+      timeoutsRef.current.delete(timer);
     }, 1200);
+    timeoutsRef.current.add(timer);
   };
 
   return (
