@@ -177,10 +177,10 @@ export default function DashboardTrafficChart({
     };
 
     const canvas = canvasRef.current;
-    canvas.addEventListener("pointermove", handlePointerMove);
-    canvas.addEventListener("pointerleave", hideTooltip);
-    canvas.addEventListener("pointerout", hideTooltip);
-    canvas.addEventListener("pointercancel", hideTooltip);
+    canvas.addEventListener("pointermove", handlePointerMove, { passive: true });
+    canvas.addEventListener("pointerleave", hideTooltip, { passive: true });
+    canvas.addEventListener("pointerout", hideTooltip, { passive: true });
+    canvas.addEventListener("pointercancel", hideTooltip, { passive: true });
 
     return () => {
       canvas.removeEventListener("pointermove", handlePointerMove);
