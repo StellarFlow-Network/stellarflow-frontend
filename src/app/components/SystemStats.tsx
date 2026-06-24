@@ -1,6 +1,11 @@
-import React from "react";
-import Breadcrumb from "./Breadcrumb";
+"use client";
+import React, { useEffect, useState } from "react";
 import GlobalHealthIndicator from "./GlobalHealthIndicator";
+import {
+  FALLBACK_NETWORK_HEALTH,
+  fetchNetworkHealth,
+  type NetworkHealth,
+} from "@/lib/network-health";
 
 interface StatsCardProps {
   label: string;
@@ -30,6 +35,30 @@ const StatsCard = ({ label, value, showDot = false }: StatsCardProps) => {
 };
 
 const SystemStats = () => {
+  const [networkHealth, setNetworkHealth] = useState<NetworkHealth>(
+    FALLBACK_NETWORK_HEALTH,
+  );
+
+  useEffect(() => {
+    let mounted = true;
+
+    fetchNetworkHealth()
+      .then((health) => {
+        if (mounted) {
+          setNetworkHealth(health);
+        }
+      })
+      .catch(() => {
+        if (mounted) {
+          setNetworkHealth(FALLBACK_NETWORK_HEALTH);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
     <section className="w-full max-w-7xl mx-auto px-4 sm:px-6">
       {/* Section label */}
@@ -39,10 +68,9 @@ const SystemStats = () => {
 
       {/* Main card */}
       <div className="bg-[#0A0F1E] border border-[#1B2A3B] border-t-2 border-t-[#39FF14] rounded-lg overflow-hidden shadow-2xl">
-
         {/* Global Health row */}
         <div className="px-6 py-4">
-          <GlobalHealthIndicator status="ACTIVE" />
+          <GlobalHealthIndicator status={networkHealth.status} />
         </div>
 
         {/* Green separator */}
@@ -50,9 +78,19 @@ const SystemStats = () => {
 
         {/* Stats grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-4 px-6 py-8">
-          <StatsCard label="Global Health:" value="0" showDot={true} />
-          <StatsCard label="Active Contracts" value="4" />
-          <StatsCard label="Whitelisted Relayers:" value="3" />
+          <StatsCard
+            label="Global Health:"
+            value={networkHealth.globalHealth}
+            showDot={networkHealth.status === "ACTIVE"}
+          />
+          <StatsCard
+            label="Active Contracts"
+            value={networkHealth.activeContracts}
+          />
+          <StatsCard
+            label="Whitelisted Relayers:"
+            value={networkHealth.whitelistedRelayers}
+          />
         </div>
 
         {/* Bottom separator */}
