@@ -3,7 +3,14 @@
 import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shimmer, MapSkeleton, RateSparklineSkeleton } from "@/components/skeletons";
+import {
+  Shimmer,
+  MapSkeleton,
+  RateSparklineSkeleton,
+  PriceFeedCardSkeleton,
+  DashboardTrafficChartSkeleton,
+} from "@/components/skeletons";
+import { useMounted } from "@/app/hooks/useMounted";
 import WebSocketTest from "./components/test/WebSocketTest";
 
 const LiveNetworkMap = dynamic(() => import("@/app/components/Map"), {
@@ -21,18 +28,14 @@ const RateSparklineCard = dynamic(
 
 const PriceFeedCard = dynamic(() => import("./components/PriceFeedCard"), {
   ssr: false,
-  loading: () => (
-    <div className="h-full w-full rounded-[28px] border border-[#A7C957]/30 bg-[#0B1324] p-6 shadow-[0_24px_80px_rgba(2,8,23,0.6)]">
-      <Shimmer className="h-full w-full rounded-2xl" />
-    </div>
-  ),
+  loading: () => <PriceFeedCardSkeleton />,
 });
 
 const DashboardTrafficChart = dynamic(
   () => import("./components/DashboardTrafficChart"),
   {
     ssr: false,
-    loading: () => <MapSkeleton />,
+    loading: () => <DashboardTrafficChartSkeleton />,
   },
 );
 
@@ -43,17 +46,99 @@ interface RateCard {
   sparklineData: number[];
 }
 
+function DashboardSkeleton() {
+  return (
+    <>
+      <section className="min-w-0 grid grid-cols-1 sm:grid-cols-3 gap-6" aria-busy="true">
+        <RateSparklineSkeleton />
+        <RateSparklineSkeleton />
+        <RateSparklineSkeleton />
+      </section>
+
+      <section className="min-w-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="min-w-0 w-full max-w-full aspect-auto sm:aspect-4/3 min-h-[260px] sm:min-h-[320px] overflow-hidden">
+          <div className="flex h-full min-h-[320px] flex-col rounded-[28px] border border-[#A7C957]/30 bg-[#0A121E] p-6 shadow-[0_24px_80px_rgba(2,8,23,0.42)]">
+            <div className="mb-4 space-y-2">
+              <Shimmer className="h-3 w-24 rounded-md" />
+              <Shimmer className="h-8 w-44 rounded-md" />
+            </div>
+            <Shimmer className="h-full w-full rounded-[24px]" />
+          </div>
+        </div>
+      </section>
+
+      <section className="min-w-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="min-w-0 w-full max-w-full aspect-auto sm:aspect-4/3 min-h-[260px] sm:min-h-[320px] overflow-hidden">
+          <PriceFeedCardSkeleton />
+        </div>
+      </section>
+
+      <section
+        className="content-visibility-auto space-y-4"
+        style={{ "--content-visibility-fallback": "1px 520px" } as React.CSSProperties}
+      >
+        <h2 className="text-xl font-semibold text-white uppercase tracking-wider mb-4">
+          Live Network Map
+        </h2>
+        <MapSkeleton />
+      </section>
+
+      <section
+        className="content-visibility-auto grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]"
+        style={{ "--content-visibility-fallback": "1px 620px" } as React.CSSProperties}
+      >
+        <DashboardTrafficChartSkeleton />
+
+        <div className="rounded-[32px] border border-[#A7C957]/30 bg-[#0A1020] p-5 shadow-[0_24px_80px_rgba(2,8,23,0.42)]">
+          <div className="mb-5 border-b border-white/10 pb-4">
+            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-[#D9F99D]/85">
+              Raw source data
+            </p>
+            <h3 className="mt-1 text-xl font-semibold text-white">
+              Incoming oracle table
+            </h3>
+          </div>
+
+          <div className="space-y-3 rounded-[24px] border border-white/8 bg-[#0F172A] p-4">
+            <div className="flex items-center justify-between text-sm text-slate-300">
+              <span>Provider feed</span>
+              <span>Status</span>
+            </div>
+            <div className="h-px bg-white/8" />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between rounded-2xl bg-white/4 px-4 py-3 text-sm">
+                <span className="text-[#D9F99D]">Preparing rows</span>
+                <Shimmer className="h-4 w-12" />
+              </div>
+              <div className="flex items-center justify-between rounded-2xl bg-white/4 px-4 py-3 text-sm">
+                <span className="text-[#D9F99D]">Verifying sync</span>
+                <span className="text-slate-400">Pending</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}
+
 export default function DashboardInteractive({
   rateCards,
 }: {
   rateCards: RateCard[];
 }) {
+  const mounted = useMounted();
   const [cardsReady, setCardsReady] = useState(false);
 
   useEffect(() => {
+    if (!mounted) return;
     const id = requestAnimationFrame(() => setCardsReady(true));
     return () => cancelAnimationFrame(id);
-  }, []);
+  }, [mounted]);
+
+  if (!mounted) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <>

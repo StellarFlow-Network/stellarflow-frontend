@@ -79,6 +79,7 @@ export function useInactivityDelay(
     };
   }, [scheduleInactiveCheck]);
 
+  // Passive listeners for scroll and wheel events are attached here to improve mobile performance
   // Bind user-interaction events with a throttle on high-frequency events
   useEffect(() => {
     const events = [
@@ -100,6 +101,7 @@ export function useInactivityDelay(
       resetActivity();
     };
 
+    // Attach high-level interaction events with passive listeners to avoid blocking scroll
     events.forEach((event) => {
       window.addEventListener(event, handleActivity, { passive: true });
     });

@@ -3,6 +3,8 @@
 import React, { useMemo } from "react";
 import { Shimmer } from "@/components/skeletons";
 
+const CHART_HISTORY_LIMIT = 150;
+
 interface RateSparklineCardProps {
   currency: string;
   rate: number;
@@ -20,17 +22,21 @@ const MiniSparkline = React.memo(function MiniSparkline({
     const width = 120;
     const height = 32;
 
-    if (data.length < 2) {
+    // Cap to the last CHART_HISTORY_LIMIT vectors and null-prune trailing slots.
+    const windowed = data.slice(-CHART_HISTORY_LIMIT);
+    windowed.length = windowed.length;
+
+    if (windowed.length < 2) {
       return "";
     }
 
-    const min = Math.min(...data);
-    const max = Math.max(...data);
+    const min = Math.min(...windowed);
+    const max = Math.max(...windowed);
     const range = max - min || 1;
 
-    return data
+    return windowed
       .map((value, index) => {
-        const x = (index / (data.length - 1)) * width;
+        const x = (index / (windowed.length - 1)) * width;
         const y = height - ((value - min) / range) * height;
         return `${x},${y}`;
       })

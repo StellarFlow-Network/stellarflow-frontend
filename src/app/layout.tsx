@@ -5,9 +5,10 @@ import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { ProgressBarProvider } from "./components/TopLoadingBar";
 import { UserProvider } from "./components/providers/UserProvider";
+import { WalletProvider } from "./components/providers/WalletProvider";
 import { QueryProvider } from "./components/providers/QueryProvider";
 import Script from "next/script";
-import {SocketProvider} from "./components/providers/SocketProvider";
+import { SvgSprite } from "@/components/icons";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -79,6 +80,8 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {/* Single global SVG symbol sheet — all icon <use> refs resolve here */}
+        <SvgSprite />
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
@@ -86,11 +89,17 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <UserProvider>
-            <QueryProvider>
-              <ProgressBarProvider>
-                {children}
-              </ProgressBarProvider>
-            </QueryProvider>
+            {/* SocketProvider wraps the full app so any route can consume
+                live WebSocket data without re-mounting on navigation. */}
+            <SocketProvider>
+              <WalletProvider>
+                <QueryProvider>
+                  <ProgressBarProvider>
+                    {children}
+                  </ProgressBarProvider>
+                </QueryProvider>
+              </WalletProvider>
+            </SocketProvider>
           </UserProvider>
         </ThemeProvider>
       </body>

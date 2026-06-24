@@ -13,8 +13,9 @@ import {
   ChevronRight, 
   Wallet 
 } from 'lucide-react';
-import { useTransformedCustomAddressField } from '@/app/hooks/useTransformedData';
+import { withShortenedAddressField } from '@/utils/addressUtils';
 import { useRAFInterval } from '@/app/hooks/useRAFInterval';
+import { useWalletState } from '@/app/hooks/useWalletState';
 
 // --- Types ---
 interface Proposal {
@@ -38,11 +39,18 @@ const MOCK_PROPOSALS: Proposal[] = [
 
 export default function GovernancePage() {
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'archived'>('all');
+  const { wallet, isChecking, refreshWalletState } = useWalletState();
+
+  const walletStatus = wallet?.connected
+    ? wallet.publicKey
+      ? `${wallet.publicKey.slice(0, 4)}...${wallet.publicKey.slice(-4)}`
+      : 'Connected'
+    : 'No wallet connected';
 
   // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
   const transformedProposals = useMemo(
-    () => useTransformedCustomAddressField(MOCK_PROPOSALS, 'proposer'),
-    []
+    () => withShortenedAddressField(MOCK_PROPOSALS, 'proposer'),
+    [MOCK_PROPOSALS],
   );
 
   // Live ledger countdown — one shared RAF tick every ~5 s (Stellar avg ledger time)
@@ -69,24 +77,35 @@ export default function GovernancePage() {
           <p className="text-sm text-gray-500 mb-1">Admin / Consensus</p>
           <h1 className="text-3xl font-bold tracking-tight">Governance & Proposals</h1>
         </div>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={() => refreshWalletState()}
+            disabled={isChecking}
+            className="flex items-center gap-2 bg-[#161b22] border border-gray-800 hover:bg-gray-800 text-gray-300 px-4 py-2 rounded-lg transition-all text-sm font-medium"
+          >
+            <Wallet size={16} className="text-purple-400" />
+            {wallet?.connected ? walletStatus : 'Connect Freighter Wallet'}
         <div className="flex gap-3">
           <button className="flex items-center gap-2 bg-[#161b22] border border-gray-800 hover:bg-gray-800 text-gray-300 px-4 py-2 rounded-lg transition-all text-sm font-medium">
-            <Wallet size={16} className="text-purple-400" />
+            <Icon id={ICON_IDS.wallet} size={16} className="text-purple-400" />
             Connect Freighter Wallet
           </button>
           <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all text-sm font-medium">
-            <FilePlus size={16} />
+            <Icon id={ICON_IDS.filePlus} size={16} />
             Submit New Proposal
           </button>
         </div>
       </div>
 
+      <div className="mb-3 text-sm text-gray-400">
+        Active wallet status: <span className="text-white">{walletStatus}</span>
+      </div>
       {/* --- Consensus Statistics Rows --- */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <StatCard title="Total Staking Power" value="2.85M SF" icon={<Vote className="text-blue-400" />} subtitle="Active voting weights" />
-        <StatCard title="Active Ballots" value="2 Proposals" icon={<Clock className="text-yellow-500" />} subtitle="Awaiting validation signatures" />
-        <StatCard title="Voter Turnout Avg" value="74.2%" icon={<Users className="text-green-400" />} subtitle="High network coordinator interest" />
-        <StatCard title="Passing Invariants" value="100%" icon={<CheckCircle className="text-emerald-400" />} subtitle="All parameters safe" />
+        <StatCard title="Total Staking Power" value="2.85M SF" icon={<Icon id={ICON_IDS.vote} size={20} className="text-blue-400" />} subtitle="Active voting weights" />
+        <StatCard title="Active Ballots" value="2 Proposals" icon={<Icon id={ICON_IDS.clock} size={20} className="text-yellow-500" />} subtitle="Awaiting validation signatures" />
+        <StatCard title="Voter Turnout Avg" value="74.2%" icon={<Icon id={ICON_IDS.users} size={20} className="text-green-400" />} subtitle="High network coordinator interest" />
+        <StatCard title="Passing Invariants" value="100%" icon={<Icon id={ICON_IDS.checkCircle} size={20} className="text-emerald-400" />} subtitle="All parameters safe" />
       </div>
 
       {/* --- Filtering Tabs --- */}
@@ -119,7 +138,7 @@ export default function GovernancePage() {
                     </span>
                     {proposal.status === 'Active' && (
                       <span className="text-xs text-gray-500 flex items-center gap-1 font-mono">
-                        <Clock size={12} /> ~{(ledgerCounts[proposal.id] ?? 0).toLocaleString()} ledgers remaining
+                        <Icon id={ICON_IDS.clock} size={12} /> ~{(ledgerCounts[proposal.id] ?? 0).toLocaleString()} ledgers remaining
                       </span>
                     )}
                   </div>
@@ -130,22 +149,22 @@ export default function GovernancePage() {
 
                 {/* Progress Indicators and Actions */}
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-6 lg:min-w-[320px]">
-                  <div className="w-full space-y-1.5">
+                  <div className="w-full space-y-1.5 voting-ratio-indicator">
                     <div className="flex justify-between text-xs font-mono">
-                      <span className="text-emerald-400 font-bold">For: {forPercentage.toFixed(1)}%</span>
-                      <span className="text-red-400 font-bold">Against: {(100 - forPercentage).toFixed(1)}%</span>
+                      <span className="text-emerald-400 font-bold numeric-value">For: {forPercentage.toFixed(1)}%</span>
+                      <span className="text-red-400 font-bold numeric-value">Against: {(100 - forPercentage).toFixed(1)}%</span>
                     </div>
                     {/* Voting Ratio Track Bar */}
                     <div className="w-full bg-red-950/40 h-2 rounded-full overflow-hidden flex border border-gray-800">
-                      <div className="bg-emerald-500 h-full w-full" style={{ transform: `scaleX(${forPercentage/100})`, transformOrigin: 'left', willChange: 'transform' }} />
+                      <div className="bg-emerald-500 h-full w-full dynamic-scale-x" style={{ '--scale-x': forPercentage/100 } as React.CSSProperties} />
                     </div>
-                    <div className="text-[10px] text-gray-500 font-mono text-right">
+                    <div className="text-[10px] text-gray-500 font-mono text-right numeric-value">
                       Quorum Target Required: {proposal.quorumThreshold}%
                     </div>
                   </div>
 
                   <button className="p-2 bg-[#0d1117] group-hover:bg-gray-800 border border-gray-700 text-gray-400 rounded-lg shrink-0 self-end md:self-auto transition-colors">
-                    <ChevronRight size={18} />
+                    <Icon id={ICON_IDS.chevronRight} size={18} />
                   </button>
                 </div>
 

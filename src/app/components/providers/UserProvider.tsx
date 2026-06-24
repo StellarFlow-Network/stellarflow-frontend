@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { useMounted } from "@/app/hooks/useMounted";
 
 export interface UserAttributes {
   id: string;
@@ -18,11 +19,14 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
+  const mounted = useMounted();
   const [user, setUser] = useState<UserAttributes | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!mounted) return;
+    
     // Fetching user validation details once at the root level
     // This prevents redundant network requests across independent dashboard modules
     const fetchUserValidation = async () => {
@@ -51,7 +55,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
     };
 
     fetchUserValidation();
-  }, []);
+  }, [mounted]);
+
+  // Serve static placeholder during SSR to prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <UserContext.Provider value={{ user: null, isLoading: true, error: null }}>
+        {children}
+      </UserContext.Provider>
+    );
+  }
 
   return (
     <UserContext.Provider value={{ user, isLoading, error }}>

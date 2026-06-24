@@ -4,13 +4,17 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && node scripts/check-bundle-size.js",
+    "build:analyze": "ANALYZE=true next build",
+    "build:strict": "next build && node scripts/check-bundle-size.js --strict",
     "start": "next start",
     "lint": "eslint",
+    "test": "node scripts/test-lang-cache.js",
     "analyze": "cross-env ANALYZE=true npm run build"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.100.5",
+    "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.24",
     "@types/leaflet": "^1.9.21",
     "@types/ws": "^8.18.1",
