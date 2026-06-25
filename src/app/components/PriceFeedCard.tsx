@@ -8,6 +8,7 @@ import { useDebounce } from "../hooks/useDebounce";
 import { useErrorTimeout } from "../hooks/useErrorTimeout";
 import { useSocketConnection, useSocketData } from "./providers/SocketProvider";
 import { Shimmer } from "@/components/skeletons/Shimmer";
+import { getCachedHistory, getCachedHistorySync, setCachedHistory } from "../lib/historySync";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -99,7 +100,9 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   refreshInterval = 30_000,
   enableWebSocket = true,
 }) => {
-  const [data, setData] = useState<PriceFeedData | null>(null);
+  const [data, setData] = useState<PriceFeedData | null>(() => {
+    return getCachedHistorySync<PriceFeedData>("price-feed:ngn-xlm");
+  });
   const [loading, setLoading] = useState(true);
   const { error, setError } = useErrorTimeout({ timeoutMs: 5000 });
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
@@ -122,7 +125,16 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
       setError(null);
 
       try {
+        const historyKey = "price-feed:ngn-xlm";
+        const cached = await getCachedHistory<PriceFeedData>(historyKey);
+        if (cached && !manual) {
+          setData(cached);
+          setLastRefresh(new Date(cached.last_updated));
+          setLoading(false);
+        }
+
         const feed = await fetchNgnXlmFeed();
+        await setCachedHistory(historyKey, feed);
         setData(feed);
         setLastRefresh(new Date());
       } catch (err) {
@@ -135,13 +147,18 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
         if (manual) done();
       }
     },
-    [start, done],
+    [start, done, setError],
   );
 
   // Merge WebSocket delta updates into local state.
   // Using a functional setData updater means we read `prev` (current state)
   // instead of closing over `data` — so `data` is NOT a dependency and the
   // effect does not re-run after every state write, breaking the render cycle.
+  const [isPageVisible, setIsPageVisible] = useState(() => {
+    if (typeof document === "undefined") return true;
+    return document.visibilityState === "visible";
+  });
+
   useEffect(() => {
     if (!wsUpdate || !enableWebSocket || !isPageVisible) return;
 
@@ -164,20 +181,25 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
     setLastRefresh(new Date());
     setLoading(false);
     setError(null);
-  }, [wsUpdate, enableWebSocket]); // `data` intentionally omitted — accessed via functional updater
+  }, [wsUpdate, enableWebSocket, isPageVisible, setError]); // `data` intentionally omitted — accessed via functional updater
 
   // Handle WebSocket errors
   useEffect(() => {
     if (wsError && enableWebSocket) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError(`WebSocket error: ${wsError}`);
     }
-  }, [wsError, enableWebSocket]);
+  }, [wsError, enableWebSocket, setError]);
 
   // Initial fetch + fallback polling (only when WebSocket is disabled or disconnected)
   const pollingActive = isPageVisible && (!enableWebSocket || !isConnected);
   useEffect(() => {
-    if (pollingActive) load();
+    if (!pollingActive) return;
+
+    const timer = window.setTimeout(() => {
+      void load();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [pollingActive, load]);
 
   useRAFInterval(load, refreshInterval, pollingActive);
@@ -196,10 +218,6 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
     : "shadow-[0_0_18px_rgba(244,63,94,0.18)]";
 
   const priceColor = isUp ? "text-emerald-400" : "text-rose-400";
-  const [isPageVisible, setIsPageVisible] = useState(() => {
-    if (typeof document === "undefined") return true;
-    return document.visibilityState === "visible";
-  });
 
   useEffect(() => {
     const handleVisibilityChange = () => {
