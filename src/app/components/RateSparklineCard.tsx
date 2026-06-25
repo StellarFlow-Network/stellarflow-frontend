@@ -1,7 +1,14 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Shimmer } from "@/components/skeletons";
+import { useChartWorker } from "../charts/useChartWorker";
+import {
+  computeSparklinePoints,
+  CHART_HISTORY_LIMIT,
+} from "../charts/chartCalculations";
+
+const SPARKLINE_GEOMETRY = { width: 120, height: 32, limit: CHART_HISTORY_LIMIT };
 
 interface RateSparklineCardProps {
   currency: string;
@@ -16,26 +23,31 @@ const MiniSparkline = React.memo(function MiniSparkline({
 }: {
   data: number[];
 }) {
-  const points = useMemo(() => {
-    const width = 120;
-    const height = 32;
+  const { computeSparkline } = useChartWorker();
+  const id = React.useId();
 
-    if (data.length < 2) {
-      return "";
-    }
+  // Seed synchronously from the shared module so the line is correct on first
+  // paint, then offload recomputation to the worker as the data stream updates.
+  const seed = useMemo(
+    () => computeSparklinePoints(data, SPARKLINE_GEOMETRY),
+    [data],
+  );
+  const [points, setPoints] = useState(seed);
 
-    const min = Math.min(...data);
-    const max = Math.max(...data);
-    const range = max - min || 1;
-
-    return data
-      .map((value, index) => {
-        const x = (index / (data.length - 1)) * width;
-        const y = height - ((value - min) / range) * height;
-        return `${x},${y}`;
+  useEffect(() => {
+    let cancelled = false;
+    setPoints(seed);
+    computeSparkline(id, data, SPARKLINE_GEOMETRY)
+      .then((next) => {
+        if (!cancelled) setPoints(next);
       })
-      .join(" ");
-  }, [data]);
+      .catch(() => {
+        // Keep the synchronous seed if the worker is unavailable.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [data, id, seed, computeSparkline]);
 
   return (
     <svg

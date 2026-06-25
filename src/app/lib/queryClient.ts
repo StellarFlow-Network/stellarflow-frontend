@@ -1,12 +1,17 @@
 import { QueryClient } from '@tanstack/react-query'
+import { getCacheOptions } from '@/config/cacheConfig'
+
+// Use SHORT_INTERVAL as default to balance freshness with request reduction.
+// This enforces a minimum 10-second cache to prevent backend flooding.
+const defaultCacheConfig = getCacheOptions('SHORT_INTERVAL')
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 15 * 1000,          // 15s → data considered fresh
-      gcTime: 5 * 60 * 1000,         // cache persists 5 mins
-      refetchOnWindowFocus: false,   // 🔥 your requirement
-      refetchOnReconnect: true,
+      staleTime: defaultCacheConfig.staleTime,
+      gcTime: defaultCacheConfig.gcTime,
+      refetchOnWindowFocus: false,   // Prevent refetch on window focus
+      refetchOnReconnect: true,      // Refetch when reconnecting after network loss
       retry: 2,
     },
   },

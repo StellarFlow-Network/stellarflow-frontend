@@ -1,5 +1,6 @@
 import { useQuery, UseQueryResult } from '@tanstack/react-query';
 import { getCachedHistory, getCachedHistorySync, setCachedHistory } from '../lib/historySync';
+import { getCacheOptions } from '@/config/cacheConfig';
 
 /**
  * Type representing the validator metric payload returned by the backend.
@@ -16,6 +17,7 @@ export interface ValidatorMetric {
 
 /**
  * React Query hook that batches validator address lookups into a single network request.
+ * Implements minimum 10-second cache intervals to prevent backend flooding.
  *
  * @param addresses - Array of validator account addresses to fetch.
  * @returns Query result containing an array of {@link ValidatorMetric} objects.
@@ -40,6 +42,15 @@ export function useValidatorBatch(
       }
 
       const url = `/api/validators?ids=${normalizedAddresses.map(encodeURIComponent).join(',')}`;
+  // Use SHORT_INTERVAL (10s) to prevent excessive validator metric lookups
+  // while keeping data reasonably fresh for status monitoring.
+  const cacheConfig = getCacheOptions('SHORT_INTERVAL');
+
+  return useQuery<ValidatorMetric[], Error>({
+    queryKey,
+    queryFn: async () => {
+      if (addresses.length === 0) return [];
+      const url = `/api/validators?ids=${addresses.map(encodeURIComponent).join(',')}`;
       const res = await fetch(url, {
         method: 'GET',
         cache: 'no-store',
@@ -59,5 +70,9 @@ export function useValidatorBatch(
     keepPreviousData: true,
     // Stale time can be tuned; using 30 seconds as a sensible default.
     staleTime: 30_000,
+    refetchOnWindowFocus: false,
+    placeholderData: (previousData) => previousData,
+    staleTime: cacheConfig.staleTime,
+    gcTime: cacheConfig.gcTime,
   });
 }

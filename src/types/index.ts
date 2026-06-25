@@ -2,6 +2,8 @@
  * Global TypeScript Interfaces for StellarFlow
  */
 
+import type { AssetSymbol } from '@/config/assetSymbols'
+
 export interface Relayer {
   readonly id: string;
   readonly address: string;
@@ -26,7 +28,8 @@ export interface Contract {
 
 export interface PriceData {
   readonly id: string;
-  assetPair: string; // e.g., "NGN/XLM"
+  /** Interned asset pair symbol, e.g. "NGN-XLM". Use AssetSymbol constants for comparisons. */
+  assetPair: AssetSymbol;
   price: number;
   decimals: number;
   source: string;

@@ -1,4 +1,9 @@
-export type XdrWorkerMessageType = 'DECODE_XDR' | 'BATCH_DECODE';
+// ─── Worker Message Types ────────────────────────────────────────────────────
+
+export type XdrWorkerInboundType = 'DECODE_XDR' | 'BATCH_DECODE';
+export type XdrWorkerOutboundType = 'DECODED_XDR' | 'BATCH_RESULT' | 'XDR_ERROR';
+
+// ─── Payloads (Inbound) ──────────────────────────────────────────────────────
 
 export interface DecodeXdrPayload {
   id: string;
@@ -10,10 +15,14 @@ export interface BatchDecodePayload {
   items: DecodeXdrPayload[];
 }
 
+export type InboundPayload = DecodeXdrPayload | BatchDecodePayload;
+
 export interface InboundMessage {
-  type: XdrWorkerMessageType;
-  payload: DecodeXdrPayload | BatchDecodePayload;
+  type: XdrWorkerInboundType;
+  payload: InboundPayload;
 }
+
+// ─── Parsed XDR Fields ──────────────────────────────────────────────────────
 
 export interface XdrFields {
   byteLength: number;
@@ -31,9 +40,26 @@ export interface DecodedResult {
   error?: string;
 }
 
+export interface BatchDecodeResult {
+  id: string;
+  status: 'SUCCESS' | 'ERROR';
+  decoded_payload?: XdrFields;
+  error?: string;
+}
+
+// ─── Outbound Message Types ──────────────────────────────────────────────────
+
 export interface XdrDecodedMessage {
   type: 'DECODED_XDR';
   payload: DecodedResult;
+}
+
+export interface BatchResultMessage {
+  type: 'BATCH_RESULT';
+  payload: {
+    batchId: string;
+    results: DecodedResult[];
+  };
 }
 
 export interface XdrErrorMessage {
@@ -44,10 +70,12 @@ export interface XdrErrorMessage {
   };
 }
 
-export type XdrWorkerOutboundMessage = XdrDecodedMessage | XdrErrorMessage;
+export type XdrWorkerOutboundMessage = XdrDecodedMessage | BatchResultMessage | XdrErrorMessage;
+
+// ─── Deprecated/Compatibility Types ─────────────────────────────────────────
 
 export interface XdrWorkerMessage {
-  type: XdrWorkerMessageType;
+  type: XdrWorkerInboundType;
   payload: XdrWorkerPayload;
 }
 

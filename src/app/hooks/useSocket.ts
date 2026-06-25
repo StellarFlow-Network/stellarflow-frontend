@@ -3,24 +3,16 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { PriceData } from "@/types";
 import { useErrorTimeout } from "./useErrorTimeout";
-
-interface SocketMessage {
-  type: "price_update" | "delta_update";
-  assetId?: string;
-  data: PriceData | Partial<PriceData>;
-  timestamp: number;
-}
+import { usePageVisibility } from "./usePageVisibility";
+import { useRAFInterval } from "./useRAFInterval";
+import type { AssetSymbol } from "@/config/assetSymbols";
+import { WebSocketManager } from "@/utils/WebSocketManager";
 
 export interface UseSocketOptions {
-  assetIds?: string[];
+  assetIds?: AssetSymbol[];
   enableDeltaUpdates?: boolean;
   reconnectInterval?: number;
   maxReconnectAttempts?: number;
-  /**
-   * Timeout in milliseconds before automatically clearing WebSocket errors.
-   * Set to 0 to disable auto-clear. Defaults to 5000ms.
-   * @default 5000
-   */
   errorTimeoutMs?: number;
 }
 
@@ -38,249 +30,111 @@ interface UseSocketReturn {
 export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
   const {
     assetIds = [],
-    reconnectInterval = 3000,
-    maxReconnectAttempts = 5,
     errorTimeoutMs = 5000,
   } = options;
 
   const [isConnected, setIsConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<PriceData | null>(null);
   const { error, setError } = useErrorTimeout({ timeoutMs: errorTimeoutMs });
-  const [reconnectAttempts, setReconnectAttempts] = useState(0);
-
-  const wsRef = useRef<WebSocket | null>(null);
+  
+  // Local tracking of subscribed assets for this component lifecycle context
   const subscribedAssetsRef = useRef<Set<string>>(new Set(assetIds));
-  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
-  const manuallyDisconnectedRef = useRef(false);
-  const pageVisibleRef = useRef(true);
+  const isVisible = usePageVisibility();
+  const pendingUpdatesRef = useRef<(PriceData | Partial<PriceData>)[]>([]);
 
-  // Refs keep options fresh inside callbacks without triggering re-renders or
-  // causing `connect` to be recreated on every tick.
-  const reconnectAttemptsRef = useRef(0);
-  const maxReconnectAttemptsRef = useRef(maxReconnectAttempts);
-  const reconnectIntervalRef = useRef(reconnectInterval);
+  const wsManager = WebSocketManager.getInstance();
 
-  // Sync option refs after render so in-flight callbacks always see the
-  // latest values without making `connect` depend on them directly.
-  // (Assigning to .current during render is forbidden by the React Compiler.)
-  useEffect(() => {
-    maxReconnectAttemptsRef.current = maxReconnectAttempts;
-    reconnectIntervalRef.current = reconnectInterval;
-  }, [maxReconnectAttempts, reconnectInterval]);
-
-  // `connect` has an empty dependency array because every value it needs is
-  // accessed through a ref.  This breaks the cycle where a WS message would
-  // update `lastUpdate` → recreate `connect` → effect fires → socket torn down.
-  const connect = useCallback(function doConnect() {
-    if (
-      typeof document !== "undefined" &&
-      document.visibilityState === "hidden"
-    ) {
-      return;
-    }
-
-    pageVisibleRef.current = true;
-    manuallyDisconnectedRef.current = false;
-
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      return;
-    }
-    try {
-      const protocol = process.env.NODE_ENV === "production" ? "wss:" : "ws:";
-      const wsUrl = `${protocol}//${window.location.host}/ws`;
-
-      wsRef.current = new WebSocket(wsUrl);
-
-      wsRef.current.onopen = () => {
-        setIsConnected(true);
-        setError(null);
-        reconnectAttemptsRef.current = 0;
-        setReconnectAttempts(0);
-
-        if (subscribedAssetsRef.current.size > 0) {
-          wsRef.current?.send(
-            JSON.stringify({
-              type: "subscribe",
-              assetIds: Array.from(subscribedAssetsRef.current),
-            }),
-          );
-        }
-      };
-
-      wsRef.current.onmessage = (event: MessageEvent) => {
-        if (!pageVisibleRef.current) return;
-
-        try {
-          const message: SocketMessage = JSON.parse(event.data as string);
-
-          if (
-            message.type === "price_update" ||
-            message.type === "delta_update"
-          ) {
-            if (message.type === "delta_update" && message.assetId) {
-              // Functional updater — reads current state without it becoming a
-              // dependency of this callback.
-              setLastUpdate((prev: PriceData | null) =>
-                prev
-                  ? { ...prev, ...(message.data as PriceData) }
-                  : (message.data as PriceData),
-              );
-            } else {
-              setLastUpdate(message.data as PriceData);
-            }
-          }
-        } catch (err) {
-          console.error("Failed to parse WebSocket message:", err);
-        }
-      };
-
-      wsRef.current.onclose = (event: CloseEvent) => {
-        setIsConnected(false);
-
-        // Use ref for reconnect counter — avoids stale closure.
-        if (
-          !event.wasClean &&
-          !manuallyDisconnectedRef.current &&
-          pageVisibleRef.current &&
-          reconnectAttemptsRef.current < maxReconnectAttemptsRef.current
-        ) {
-          reconnectAttemptsRef.current += 1;
-          setReconnectAttempts(reconnectAttemptsRef.current);
-          reconnectTimeoutRef.current = setTimeout(() => {
-            doConnect();
-          }, reconnectIntervalRef.current);
-        }
-      };
-
-      wsRef.current.onerror = (event: Event) => {
-        setError("WebSocket connection error");
-        console.error("WebSocket error:", event);
-      };
-    } catch (err) {
-      setError("Failed to establish WebSocket connection");
-      console.error("Connection error:", err);
-    }
-  }, []); // ← intentionally empty; all mutable values go through refs
-
-  const disconnect = useCallback(() => {
-    manuallyDisconnectedRef.current = true;
-
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
-
-    if (wsRef.current) {
-      wsRef.current.close(1000, "Manual disconnect");
-      wsRef.current = null;
-    }
-
-    setIsConnected(false);
+  const flushPendingUpdates = useCallback(() => {
+    if (pendingUpdatesRef.current.length === 0) return;
+    
+    const updates = [...pendingUpdatesRef.current];
+    pendingUpdatesRef.current.length = 0;
+    
+    setLastUpdate((prev: PriceData | null) => {
+      let current = prev;
+      for (const update of updates) {
+        current = current
+          ? { ...current, ...(update as PriceData) }
+          : (update as PriceData);
+      }
+      return current;
+    });
   }, []);
 
-  const reconnect = useCallback(() => {
-    disconnect();
-    manuallyDisconnectedRef.current = false;
-    reconnectAttemptsRef.current = 0;
-    setReconnectAttempts(0);
-    setTimeout(connect, 100);
-  }, [disconnect, connect]);
+  // Set up the centralized connection channel observers
+  useEffect(() => {
+    // Connect the manager if it's not already connected
+    wsManager.connect();
+
+    // Listeners track updates globally from the single network resource channel
+    const handleIncomingData = (data: any) => {
+      if (!isVisible) return;
+      // Only process the message if the local hook instance is interested in this specific asset update
+      if (data.assetId && subscribedAssetsRef.current.has(data.assetId)) {
+        pendingUpdatesRef.current.push(data);
+      } else if (!data.assetId) {
+        // Fallback for global packets
+        pendingUpdatesRef.current.push(data);
+      }
+    };
+
+    const handleStatusChange = (status: boolean) => {
+      setIsConnected(status);
+    };
+
+    wsManager.subscribeToMessages(handleIncomingData);
+    wsManager.subscribeToStatus(handleStatusChange);
+
+    // Initial asset registrations
+    if (subscribedAssetsRef.current.size > 0) {
+      wsManager.subscribeToAssets(Array.from(subscribedAssetsRef.current));
+    }
+
+    return () => {
+      wsManager.unsubscribeFromMessages(handleIncomingData);
+      wsManager.unsubscribeFromStatus(handleStatusChange);
+      flushPendingUpdates();
+    };
+  }, [wsManager, isVisible, flushPendingUpdates]);
 
   const subscribeToAsset = useCallback((assetId: string) => {
     if (!subscribedAssetsRef.current.has(assetId)) {
       subscribedAssetsRef.current.add(assetId);
-
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(
-          JSON.stringify({ type: "subscribe", assetIds: [assetId] }),
-        );
-      }
+      wsManager.subscribeToAssets([assetId]);
     }
-  }, []);
+  }, [wsManager]);
 
   const unsubscribeFromAsset = useCallback((assetId: string) => {
     if (subscribedAssetsRef.current.has(assetId)) {
       subscribedAssetsRef.current.delete(assetId);
-
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(
-          JSON.stringify({ type: "unsubscribe", assetIds: [assetId] }),
-        );
-      }
+      wsManager.unsubscribeFromAssets([assetId]);
     }
-  }, []);
+  }, [wsManager]);
 
-  // Both `connect` and `disconnect` are now stable (empty dep arrays), so this
-  // effect only runs once on mount and once on unmount — never on data ticks.
-  useEffect(() => {
-    connect();
-    return () => {
-      disconnect();
-    };
-  }, [connect, disconnect]);
+  const disconnect = useCallback(() => {
+    // Manual local disconnection can simply clear local contextual tracking assets
+    if (subscribedAssetsRef.current.size > 0) {
+      wsManager.unsubscribeFromAssets(Array.from(subscribedAssetsRef.current));
+    }
+    setIsConnected(false);
+  }, [wsManager]);
 
-  // Dedicated cleanup guard to ensure refs are released on unmount even if the
-  // effect above runs in strict-mode double-invocation.
-  useEffect(() => {
-    return () => {
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-      if (wsRef.current) {
-        wsRef.current.close(1000, "Component unmount");
-        wsRef.current = null;
-      }
-    };
-  }, []);
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      const isVisible = document.visibilityState === "visible";
-      pageVisibleRef.current = isVisible;
+  const reconnect = useCallback(() => {
+    wsManager.connect();
+  }, [wsManager]);
 
-      if (!isVisible) {
-        if (reconnectTimeoutRef.current) {
-          clearTimeout(reconnectTimeoutRef.current);
-          reconnectTimeoutRef.current = null;
-        }
+  // Master layout clock batching matches performance guidelines
+  useRAFInterval(
+    flushPendingUpdates,
+    350,
+    isConnected
+  );
 
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-          wsRef.current.send(
-            JSON.stringify({
-              type: "unsubscribe",
-              assetIds: Array.from(subscribedAssetsRef.current),
-            }),
-          );
-        }
-
-        if (wsRef.current) {
-          wsRef.current.close(1000, "Page hidden");
-          wsRef.current = null;
-        }
-
-        setIsConnected(false);
-        return;
-      }
-
-      if (!manuallyDisconnectedRef.current) {
-        reconnectAttemptsRef.current = 0;
-        setReconnectAttempts(0);
-        connect();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [connect]);
   return {
     isConnected,
     lastUpdate,
     error,
-    reconnectAttempts,
+    reconnectAttempts: 0, // Handled automatically at network class layer now
     subscribeToAsset,
     unsubscribeFromAsset,
     disconnect,

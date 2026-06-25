@@ -1,18 +1,47 @@
 /**
  * xdr-worker.ts
  *
- * Dedicated Web Worker for off-thread Soroban / Stellar XDR decoding.
- * Runs completely isolated from the main UI thread so frame rendering
- * is never blocked during large historical batch inspections.
+ * ─────────────────────────────────────────────────────────────────────────────
+ * THREAD ISOLATION: Heavy XDR Payload Parsing
+ * ─────────────────────────────────────────────────────────────────────────────
  *
- * Supported message types (inbound):
- *   DECODE_XDR   – decode a single base64 XDR payload
- *   BATCH_DECODE – decode an array of base64 XDR payloads in one shot
+ * This dedicated Web Worker runs on an independent background thread, completely
+ * isolated from the primary UI layout thread. All heavy XDR decoding and binary
+ * reconstruction operations execute here, ensuring that audit dashboard frames
+ * render smoothly without stutters or layout thrashing.
  *
- * Response message types (outbound):
- *   DECODED_XDR  – success result for DECODE_XDR
- *   BATCH_RESULT – success result for BATCH_DECODE  (one item per input)
- *   XDR_ERROR    – decoding failure with reason string
+ * ──────────────────────────────────────────────────────────────────────────────
+ * Message Protocol (inbound from main thread)
+ * ──────────────────────────────────────────────────────────────────────────────
+ *
+ *   DECODE_XDR
+ *     { type: 'DECODE_XDR', payload: { id: string, xdr: string } }
+ *     ⟹ Decode a single base64 XDR payload in isolation
+ *
+ *   BATCH_DECODE
+ *     { type: 'BATCH_DECODE', payload: { batchId: string, items: [...] } }
+ *     ⟹ Decode multiple XDR payloads without blocking main thread
+ *
+ * ──────────────────────────────────────────────────────────────────────────────
+ * Message Protocol (outbound to main thread)
+ * ──────────────────────────────────────────────────────────────────────────────
+ *
+ *   DECODED_XDR (success for DECODE_XDR)
+ *     { type: 'DECODED_XDR', payload: { id, status: 'SUCCESS', decoded_payload } }
+ *
+ *   BATCH_RESULT (success for BATCH_DECODE)
+ *     { type: 'BATCH_RESULT', payload: { batchId, results: [...] } }
+ *
+ *   XDR_ERROR (failure)
+ *     { type: 'XDR_ERROR', payload: { id, error: string } }
+ *
+ * ──────────────────────────────────────────────────────────────────────────────
+ * Stellar XDR Specification References
+ * ──────────────────────────────────────────────────────────────────────────────
+ *
+ *   • TransactionEnvelope discriminant: stellar-xdr/core/xdr_types.go §4.2
+ *   • Base64 encoding per RFC 4648 (standard alphabet, no padding required)
+ *   • Envelope type mapping: https://developers.stellar.org/docs/learn/building-blocks/transactions
  */
 
 // ─── Type definitions ────────────────────────────────────────────────────────

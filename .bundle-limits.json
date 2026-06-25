@@ -1,0 +1,6 @@
+{
+  "maxMainBundle": 250,
+  "maxPageBundle": 100,
+  "maxTotalGzipped": 500,
+  "maxIndividualGzipped": 150
+}
