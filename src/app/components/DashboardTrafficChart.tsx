@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   Chart,
   LineController,
@@ -12,7 +12,6 @@ import {
   Tooltip,
   type ChartConfiguration,
 } from "chart.js";
-import { useRafThrottle } from "../hooks/useRafThrottle";
 import { useChartWorker } from "../charts/useChartWorker";
 import {
   windowSeries,
@@ -50,40 +49,52 @@ export default function DashboardTrafficChart({
   const chartRef = useRef<Chart<"line"> | null>(null);
   const { computeSeries } = useChartWorker();
 
+  // Track pointer state for RAF loop
+  const pointerPositionRef = useRef<PointerPosition | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const isHoveringRef = useRef(false);
+
   // Seed synchronously from the shared module so the first paint is correct;
   // the worker then re-windows off the main thread when inputs change.
   const [series, setSeries] = useState<SeriesWindow>(() =>
     windowSeries(labels, values, CHART_HISTORY_LIMIT),
   );
 
-  const processPointerMove = useRafThrottle((position: PointerPosition) => {
+  // Rigid 60 FPS animation loop to update tooltip
+  const updateTooltip = useCallback(() => {
     const chart = chartRef.current;
+    const position = pointerPositionRef.current;
+
     if (!chart) return;
 
-    const event = {
-      clientX: position.clientX,
-      clientY: position.clientY,
-      offsetX: position.offsetX,
-      offsetY: position.offsetY,
-      type: "pointermove",
-    } as unknown as Event;
+    if (isHoveringRef.current && position) {
+      const event = {
+        clientX: position.clientX,
+        clientY: position.clientY,
+        offsetX: position.offsetX,
+        offsetY: position.offsetY,
+        type: "pointermove",
+      } as unknown as Event;
 
-    const activeElements = chart.getElementsAtEventForMode(
-      event,
-      "nearest",
-      { intersect: false },
-      false,
-    );
+      const activeElements = chart.getElementsAtEventForMode(
+        event,
+        "nearest",
+        { intersect: false },
+        false,
+      );
 
-    if (chart.tooltip) {
-      chart.tooltip.setActiveElements(activeElements, {
-        x: position.clientX,
-        y: position.clientY,
-      });
+      if (chart.tooltip) {
+        chart.tooltip.setActiveElements(activeElements, {
+          x: position.clientX,
+          y: position.clientY,
+        });
+      }
+
+      chart.update("none");
     }
 
-    chart.update("none");
-  });
+    rafRef.current = requestAnimationFrame(updateTooltip);
+  }, []);
 
   // Offload the data sorting / windowing / aggregation to the chart worker so
   // it stays out of the critical interaction lane during active chart changes.
@@ -159,15 +170,18 @@ export default function DashboardTrafficChart({
     chartRef.current = new Chart(canvasRef.current, config);
 
     const handlePointerMove = (event: PointerEvent) => {
-      processPointerMove({
+      isHoveringRef.current = true;
+      pointerPositionRef.current = {
         clientX: event.clientX,
         clientY: event.clientY,
         offsetX: event.offsetX,
         offsetY: event.offsetY,
-      });
+      };
     };
 
     const hideTooltip = () => {
+      isHoveringRef.current = false;
+      pointerPositionRef.current = null;
       const chart = chartRef.current;
       if (!chart) return;
       if (chart.tooltip) {
@@ -182,15 +196,21 @@ export default function DashboardTrafficChart({
     canvas.addEventListener("pointerout", hideTooltip, { passive: true });
     canvas.addEventListener("pointercancel", hideTooltip, { passive: true });
 
+    // Start the 60 FPS RAF loop
+    rafRef.current = requestAnimationFrame(updateTooltip);
+
     return () => {
       canvas.removeEventListener("pointermove", handlePointerMove);
       canvas.removeEventListener("pointerleave", hideTooltip);
       canvas.removeEventListener("pointerout", hideTooltip);
       canvas.removeEventListener("pointercancel", hideTooltip);
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current);
+      }
       chartRef.current?.destroy();
       chartRef.current = null;
     };
-  }, [series, processPointerMove]);
+  }, [series, updateTooltip]);
 
   return (
     <div className="aspect-[16/9] min-h-[280px] w-full">
