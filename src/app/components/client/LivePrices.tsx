@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState, memo } from 'react'
 import { useSocket } from '../../hooks/useSocket'
+import { ASSET_SYMBOL_LIST } from '@/config/assetSymbols'
+import { CHART_HISTORY_LIMIT } from '../../charts/chartCalculations'
 
 interface PriceData {
   symbol: string
@@ -14,31 +16,34 @@ function LivePrices({ initialData }: any) {
   
   // Subscribe to multiple asset updates
   const { isConnected, lastUpdate, error } = useSocket({
-    assetIds: ['NGN-XLM', 'USD-XLM', 'EUR-XLM'],
+    assetIds: [...ASSET_SYMBOL_LIST],
     enableDeltaUpdates: true,
   })
 
   useEffect(() => {
     if (lastUpdate) {
-      // Update the specific asset in the data array
       setData(prevData => {
         const index = prevData.findIndex(p => p.symbol === lastUpdate.assetPair)
+        let next: PriceData[]
         if (index !== -1) {
-          const newData = [...prevData]
-          newData[index] = {
-            ...newData[index],
+          next = [...prevData]
+          next[index] = {
+            ...next[index],
             price: lastUpdate.price,
             timestamp: lastUpdate.timestamp,
           }
-          return newData
         } else {
-          // Add new asset if not found
-          return [...prevData, {
+          next = [...prevData, {
             symbol: lastUpdate.assetPair,
             price: lastUpdate.price,
             timestamp: lastUpdate.timestamp,
           }]
         }
+        // Cap to the last CHART_HISTORY_LIMIT entries and null-prune trailing
+        // slots to release memory registers back to the browser GC.
+        const windowed = next.slice(-CHART_HISTORY_LIMIT)
+        windowed.length = windowed.length
+        return windowed
       })
     }
   }, [lastUpdate])

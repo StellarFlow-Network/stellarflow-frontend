@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Chart,
   LineController,
@@ -12,6 +12,13 @@ import {
   Tooltip,
   type ChartConfiguration,
 } from "chart.js";
+import { useRafThrottle } from "../hooks/useRafThrottle";
+import { useChartWorker } from "../charts/useChartWorker";
+import {
+  windowSeries,
+  CHART_HISTORY_LIMIT,
+  type SeriesWindow,
+} from "../charts/chartCalculations";
 
 Chart.register(
   LineController,
@@ -28,24 +35,85 @@ interface DashboardTrafficChartProps {
   values?: number[];
 }
 
+interface PointerPosition {
+  clientX: number;
+  clientY: number;
+  offsetX: number;
+  offsetY: number;
+}
+
 export default function DashboardTrafficChart({
   labels = ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"],
   values = [120, 180, 260, 240, 310, 390],
 }: DashboardTrafficChartProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chartRef = useRef<Chart<"line"> | null>(null);
+  const { computeSeries } = useChartWorker();
+
+  // Seed synchronously from the shared module so the first paint is correct;
+  // the worker then re-windows off the main thread when inputs change.
+  const [series, setSeries] = useState<SeriesWindow>(() =>
+    windowSeries(labels, values, CHART_HISTORY_LIMIT),
+  );
+
+  const processPointerMove = useRafThrottle((position: PointerPosition) => {
+    const chart = chartRef.current;
+    if (!chart) return;
+
+    const event = {
+      clientX: position.clientX,
+      clientY: position.clientY,
+      offsetX: position.offsetX,
+      offsetY: position.offsetY,
+      type: "pointermove",
+    } as unknown as Event;
+
+    const activeElements = chart.getElementsAtEventForMode(
+      event,
+      "nearest",
+      { intersect: false },
+      false,
+    );
+
+    if (chart.tooltip) {
+      chart.tooltip.setActiveElements(activeElements, {
+        x: position.clientX,
+        y: position.clientY,
+      });
+    }
+
+    chart.update("none");
+  });
+
+  // Offload the data sorting / windowing / aggregation to the chart worker so
+  // it stays out of the critical interaction lane during active chart changes.
+  useEffect(() => {
+    let cancelled = false;
+    computeSeries("dashboard-traffic", labels, values, CHART_HISTORY_LIMIT)
+      .then(({ window }) => {
+        if (!cancelled) setSeries(window);
+      })
+      .catch(() => {
+        // Worker failed unexpectedly — keep the last good (synchronous) window.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [labels, values, computeSeries]);
 
   useEffect(() => {
     if (!canvasRef.current) return;
 
+    const { labels: windowedLabels, values: windowedValues } = series;
+
     const config: ChartConfiguration<"line"> = {
       type: "line",
       data: {
-        labels,
+        labels: windowedLabels,
         datasets: [
           {
             label: "NGN/XLM traffic",
-            data: values,
+            data: windowedValues,
             borderColor: "#D9F99D",
             backgroundColor: "rgba(217, 249, 157, 0.12)",
             fill: true,
@@ -58,6 +126,7 @@ export default function DashboardTrafficChart({
         responsive: true,
         maintainAspectRatio: false,
         animation: false,
+        events: [],
         plugins: {
           tooltip: {
             enabled: true,
@@ -89,15 +158,43 @@ export default function DashboardTrafficChart({
 
     chartRef.current = new Chart(canvasRef.current, config);
 
+    const handlePointerMove = (event: PointerEvent) => {
+      processPointerMove({
+        clientX: event.clientX,
+        clientY: event.clientY,
+        offsetX: event.offsetX,
+        offsetY: event.offsetY,
+      });
+    };
+
+    const hideTooltip = () => {
+      const chart = chartRef.current;
+      if (!chart) return;
+      if (chart.tooltip) {
+        chart.tooltip.setActiveElements([], { x: 0, y: 0 });
+      }
+      chart.update("none");
+    };
+
+    const canvas = canvasRef.current;
+    canvas.addEventListener("pointermove", handlePointerMove, { passive: true });
+    canvas.addEventListener("pointerleave", hideTooltip, { passive: true });
+    canvas.addEventListener("pointerout", hideTooltip, { passive: true });
+    canvas.addEventListener("pointercancel", hideTooltip, { passive: true });
+
     return () => {
+      canvas.removeEventListener("pointermove", handlePointerMove);
+      canvas.removeEventListener("pointerleave", hideTooltip);
+      canvas.removeEventListener("pointerout", hideTooltip);
+      canvas.removeEventListener("pointercancel", hideTooltip);
       chartRef.current?.destroy();
       chartRef.current = null;
     };
-  }, [labels, values]);
+  }, [series, processPointerMove]);
 
   return (
-    <div className="h-[280px] w-full">
-      <canvas ref={canvasRef} aria-label="NGN/XLM traffic chart" />
+    <div className="aspect-[16/9] min-h-[280px] w-full">
+      <canvas ref={canvasRef} className="h-full w-full" aria-label="NGN/XLM traffic chart" />
     </div>
   );
 }

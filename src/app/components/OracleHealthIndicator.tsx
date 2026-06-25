@@ -44,7 +44,7 @@ const OracleHealthIndicator = ({ status = "Online" }: OracleHealthIndicatorProps
   const config = statusConfig[status];
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2" style={{ contain: "layout paint" }}>
       {/* Label */}
       <span className="text-sm font-bold font-mono tracking-widest text-zinc-400">
         Oracle Health:
@@ -60,16 +60,7 @@ const OracleHealthIndicator = ({ status = "Online" }: OracleHealthIndicatorProps
         {/* Ping ring — only for Online */}
         {config.pulse && (
           <div
-            className={`absolute w-4 h-4 rounded-full ${config.dotColor} status-ping opacity-30`}
-          />
-        )}
-        {/* Core dot — animate-pulse only for Online */}
-        <div
-          className={[
-            "relative w-3 h-3 rounded-full",
-            config.dotColor,
-            config.dotGlow,
-            config.pulse ? "status-pulse" : "",
+
           ]
             .filter(Boolean)
             .join(" ")}
