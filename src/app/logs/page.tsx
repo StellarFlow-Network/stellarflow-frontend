@@ -383,7 +383,7 @@ export default function LogsPage() {
           )}
         </AnimatePresence>
 
-        <div className="grid grid-cols-[140px_120px_100px_1fr_150px_120px] border-b border-gray-800 bg-[#0d1117]/80 text-[10px] uppercase tracking-wider text-gray-500 backdrop-blur-md">
+        <div className="grid grid-cols-[140px_120px_100px_1fr_150px_120px] border-b border-gray-800 bg-[#0d1117] text-[10px] uppercase tracking-wider text-gray-500">
           <div className="px-6 py-4 font-medium">Timestamp</div>
           <div className="px-6 py-4 font-medium">Type</div>
           <div className="px-6 py-4 font-medium">Severity</div>

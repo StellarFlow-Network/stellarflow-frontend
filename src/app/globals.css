@@ -48,9 +48,7 @@ body {
 
 .admin-tabbar-wrapper {
   width: 100%;
-  background: rgba(10, 10, 10, 0.65);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: #0a0a0a;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   padding-left: 1.5rem;
   padding-right: 1.5rem;

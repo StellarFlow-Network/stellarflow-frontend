@@ -74,7 +74,7 @@ RelayerRow.displayName = 'RelayerRow';
 // ---------------------------------------------------------------------------
 function RelayerStatusTable({ relayers = [] }: RelayerStatusTableProps) {
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-white/10 bg-black/40 backdrop-blur-md">
+    <div className="w-full overflow-hidden rounded-xl border border-white/10 bg-[#141414]">
       <table className="w-full table-fixed text-left text-sm text-white/80">
         <thead>
           <tr className="border-b border-white/10 bg-white/5 text-white/50">

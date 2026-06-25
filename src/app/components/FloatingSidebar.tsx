@@ -52,9 +52,7 @@ const FloatingSidebar = memo(() => {
       <nav
         className="fixed left-2 top-1/2 z-50 flex h-auto w-14 flex-col items-center justify-start gap-2 rounded-full px-2 py-4 -translate-y-1/2 md:left-4 md:top-1/2 md:w-auto md:max-w-none md:px-2 md:py-4"
         style={{
-          background: "rgba(15, 23, 35, 0.8)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
+          background: "rgb(15, 23, 35)",
           border: "1px solid rgba(255,255,255,0.08)",
           boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
           willChange: "transform",
@@ -85,9 +83,7 @@ const FloatingSidebar = memo(() => {
     <nav
       className="fixed left-2 top-1/2 z-50 flex h-auto w-14 flex-col items-center justify-start gap-2 rounded-full px-2 py-4 -translate-y-1/2 md:left-4 md:top-1/2 md:w-auto md:max-w-none md:px-2 md:py-4"
       style={{
-        background: "rgba(15, 23, 35, 0.8)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
+        background: "rgb(15, 23, 35)",
         border: "1px solid rgba(255,255,255,0.08)",
         boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
         willChange: "transform",
