@@ -6,6 +6,8 @@ import {
   type ValidatorNode,
 } from "../../hooks/useValidatorAudit";
 
+const ROW_HEIGHT = 57; // py-4 (~16px top+bottom) + 1px border + content ≈ 57px
+
 export default function ValidatorAuditPage() {
   const { data } = useValidatorAudit();
   const { validators } = data;
@@ -18,6 +20,20 @@ export default function ValidatorAuditPage() {
     if (filter === "all") return validators;
     return validators.filter((v) => v.status === filter);
   }, [validators, filter]);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const rowVirtualizer = useVirtualizer({
+    count: filteredValidators.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 5,
+  });
+
+  const virtualRows = rowVirtualizer.getVirtualItems();
+  const totalHeight = rowVirtualizer.getTotalSize();
+  const paddingTop = virtualRows.length > 0 ? virtualRows[0].start : 0;
+  const paddingBottom = virtualRows.length > 0 ? totalHeight - virtualRows[virtualRows.length - 1].end : 0;
 
   return (
     <>
@@ -79,9 +95,9 @@ export default function ValidatorAuditPage() {
         <h2 className="text-lg font-semibold mb-4 text-neutral-200 flex items-center gap-2">
           <span>🛡️</span> Security Infrastructure Node Matrix
         </h2>
-        <div className="overflow-x-auto">
+        <div ref={scrollRef} className="overflow-auto max-h-[600px]">
           <table className="w-full text-left border-collapse">
-            <thead>
+            <thead className="sticky top-0 z-10 bg-neutral-900">
               <tr className="border-b border-neutral-800 text-xs text-neutral-400 uppercase font-mono tracking-wider">
                 <th className="py-3 px-4">Validator Identity</th>
                 <th className="py-3 px-4">Stellar Account Handle</th>
@@ -94,41 +110,34 @@ export default function ValidatorAuditPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-800/50 text-sm font-mono">
-              {filteredValidators.map((val) => (
-                <tr key={val.id} className="hover:bg-neutral-800/20 transition-colors">
-                  <td className="py-4 px-4 font-bold text-neutral-200 font-sans">{val.name}</td>
-                  <td className="py-4 px-4 text-xs text-neutral-500 font-mono select-all">{val.address}</td>
-                  <td className={`py-4 px-4 text-right font-bold ${val.uptime > 95 ? "text-emerald-400" : val.uptime > 80 ? "text-amber-500" : "text-red-500"}`}>
-                    {val.uptime.toFixed(2)}%
-                  </td>
-                  <td className="py-4 px-4 text-right text-neutral-300">{val.missedBlocks}</td>
-                  <td className={`py-4 px-4 text-right font-bold ${val.slashingEvents > 0 ? "text-red-400" : "text-neutral-500"}`}>
-                    {val.slashingEvents}
-                  </td>
-                  <td className="py-4 px-4 text-right text-neutral-100">{val.stakedXlm.toLocaleString()} XLM</td>
-                  <td className="py-4 px-4 text-center">
-                    <span className={`px-2.5 py-1 rounded text-xs uppercase tracking-wider font-sans font-bold ${
-                      val.status === "active" ? "bg-emerald-950/80 text-emerald-400 border border-emerald-800" :
-                      val.status === "jailed" ? "bg-amber-950/80 text-amber-400 border border-amber-800" :
-                      "bg-neutral-950 text-neutral-500 border border-neutral-800"
-                    }`}>
-                      {val.status}
-                    </span>
-                  </td>
-                  <td className="py-4 px-4 text-right">
-                    {val.status === "jailed" && (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedJailedValidator(val)}
-                        className="rounded-md border border-amber-800/70 bg-amber-950/40 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-amber-300 transition-colors hover:border-amber-500 hover:text-amber-100"
-                        aria-haspopup="dialog"
-                      >
-                        Inspect
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {paddingTop > 0 && <tr><td colSpan={7} style={{ height: paddingTop }} /></tr>}
+              {virtualRows.map((vRow) => {
+                const val = filteredValidators[vRow.index];
+                return (
+                  <tr key={val.id} className="hover:bg-neutral-800/20 transition-colors">
+                    <td className="py-4 px-4 font-bold text-neutral-200 font-sans">{val.name}</td>
+                    <td className="py-4 px-4 text-xs text-neutral-500 font-mono select-all">{val.address}</td>
+                    <td className={`py-4 px-4 text-right font-bold ${val.uptime > 95 ? "text-emerald-400" : val.uptime > 80 ? "text-amber-500" : "text-red-500"}`}>
+                      {val.uptime.toFixed(2)}%
+                    </td>
+                    <td className="py-4 px-4 text-right text-neutral-300">{val.missedBlocks}</td>
+                    <td className={`py-4 px-4 text-right font-bold ${val.slashingEvents > 0 ? "text-red-400" : "text-neutral-500"}`}>
+                      {val.slashingEvents}
+                    </td>
+                    <td className="py-4 px-4 text-right text-neutral-100">{val.stakedXlm.toLocaleString()} XLM</td>
+                    <td className="py-4 px-4 text-center">
+                      <span className={`px-2.5 py-1 rounded text-xs uppercase tracking-wider font-sans font-bold ${
+                        val.status === "active" ? "bg-emerald-950/80 text-emerald-400 border border-emerald-800" :
+                        val.status === "jailed" ? "bg-amber-950/80 text-amber-400 border border-amber-800" :
+                        "bg-neutral-950 text-neutral-500 border border-neutral-800"
+                      }`}>
+                        {val.status}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+              {paddingBottom > 0 && <tr><td colSpan={7} style={{ height: paddingBottom }} /></tr>}
             </tbody>
           </table>
         </div>
