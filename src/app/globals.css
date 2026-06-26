@@ -44,6 +44,11 @@ body {
   box-shadow: 0 10px 15px -3px rgb(185 249 124 / 0.4);
 }
 
+.status-ping { animation: status-ping 1s ease-out infinite; transform: translateZ(0); will-change: transform, opacity; }
+.status-pulse { animation: status-pulse 1.2s ease-in-out infinite; transform: translateZ(0); will-change: transform, opacity; }
+@keyframes status-ping { 0% { transform: scale(.8); opacity: .3; } 100% { transform: scale(1.25); opacity: 0; } }
+@keyframes status-pulse { 0%, 100% { transform: scale(.95); opacity: .3; } 50% { transform: scale(1); opacity: 1; } }
+
 /* ─── Admin Tab Bar ──────────────────────────────────────── */
 
 .admin-tabbar-wrapper {

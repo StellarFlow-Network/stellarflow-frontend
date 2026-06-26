@@ -36,7 +36,6 @@ const MiniSparkline = React.memo(function MiniSparkline({
 
   useEffect(() => {
     let cancelled = false;
-    setPoints(seed);
     computeSparkline(id, data, SPARKLINE_GEOMETRY)
       .then((next) => {
         if (!cancelled) setPoints(next);
@@ -47,7 +46,7 @@ const MiniSparkline = React.memo(function MiniSparkline({
     return () => {
       cancelled = true;
     };
-  }, [data, id, seed, computeSparkline]);
+  }, [data, id, computeSparkline, seed]);
 
   return (
     <svg

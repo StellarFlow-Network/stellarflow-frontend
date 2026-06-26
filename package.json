@@ -13,6 +13,8 @@
     "analyze": "cross-env ANALYZE=true npm run build"
   },
   "dependencies": {
+    "@stellar/freighter-api": "^6.0.1",
+    "@stellar/stellar-sdk": "^16.0.1",
     "@tanstack/react-query": "^5.100.5",
     "@tanstack/react-query-persist-client": "^5.100.5",
     "@tanstack/react-table": "^8.21.3",

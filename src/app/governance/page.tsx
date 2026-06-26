@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { subscribe } from '@/workers/masterTimerWorker';
 import { withShortenedAddressField } from '@/utils/addressUtils';
+import { useIsHydrated } from '@/app/hooks/useIsHydrated';
 
 import { useWallet, useWalletStatus, useWalletActions } from '@/app/hooks/useWalletState';
 import { Icon, ICON_IDS } from '@/components/icons';
@@ -82,6 +83,7 @@ const GovernanceWalletControl = React.memo(function GovernanceWalletControl() {
 
 export default function GovernancePage() {
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'archived'>('all');
+  const isHydrated = useIsHydrated();
 
   // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
   const transformedProposals = useMemo(
@@ -90,12 +92,16 @@ export default function GovernancePage() {
   );
 
   // Live ledger countdown — one shared RAF tick every ~5 s (Stellar avg ledger time)
+  // Initialize with static values on SSR, then update via effects after hydration
   const [ledgerCounts, setLedgerCounts] = useState<Record<string, number>>(
     () => Object.fromEntries(MOCK_PROPOSALS.map(p => [p.id, p.endsInLedgers]))
   );
 
   // Subscribe to the central master timer (via requestAnimationFrame) to decrement ledger counts.
+  // Only activate after hydration to ensure server and client match initially.
   useEffect(() => {
+    if (!isHydrated) return;
+    
     const unsubscribe = subscribe(() => {
       setLedgerCounts(prev => {
         const next = { ...prev };
@@ -106,7 +112,7 @@ export default function GovernancePage() {
       });
     });
     return () => unsubscribe();
-  }, []);
+  }, [isHydrated]);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
@@ -150,9 +156,15 @@ export default function GovernancePage() {
                       {proposal.status}
                     </span>
                     {proposal.status === 'Active' && (
-                      <span className="text-xs text-gray-500 flex items-center gap-1 font-mono">
-                        <Icon id={ICON_IDS.clock} size={12} /> ~{(ledgerCounts[proposal.id] ?? 0).toLocaleString()} ledgers remaining
-                      </span>
+                      isHydrated ? (
+                        <span className="text-xs text-gray-500 flex items-center gap-1 font-mono">
+                          <Icon id={ICON_IDS.clock} size={12} /> ~{(ledgerCounts[proposal.id] ?? 0).toLocaleString()} ledgers remaining
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-500 flex items-center gap-1 font-mono">
+                          <Icon id={ICON_IDS.clock} size={12} /> ~{proposal.endsInLedgers.toLocaleString()} ledgers remaining
+                        </span>
+                      )
                     )}
                   </div>
                   <h3 className="text-lg font-semibold text-gray-100 group-hover:text-blue-400 transition-colors">{proposal.title}</h3>

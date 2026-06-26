@@ -6,6 +6,21 @@ import { CONTRACT_HEALTH_ICON_VARIANTS } from '@/lib/classNameVariants';
 
 export default function ContractsPage() {
   const [isHalted, setIsHalted] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+
+  const handleVerify = async () => {
+    setIsVerifying(true);
+    try {
+      const { verifyOnLedger } = await import('@/lib/transactionOps');
+      await verifyOnLedger('8f2a...7e1b9c4d');
+      alert('Verification successful on ledger!');
+    } catch (err) {
+      console.error("Verification failed:", err);
+      alert('Verification failed');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
@@ -46,8 +61,12 @@ export default function ContractsPage() {
                 <p className="text-xs text-gray-500 uppercase font-bold">Current WASM Hash</p>
                 <p className="text-sm font-mono text-gray-300">8f2a...7e1b9c4d</p>
               </div>
-              <button className="text-xs bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded border border-gray-700 transition-all">
-                Verify on Ledger
+              <button 
+                onClick={handleVerify}
+                disabled={isVerifying}
+                className="text-xs bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded border border-gray-700 transition-all disabled:opacity-50"
+              >
+                {isVerifying ? "Loading..." : "Verify on Ledger"}
               </button>
             </div>
           </div>

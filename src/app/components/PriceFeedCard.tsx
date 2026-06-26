@@ -14,8 +14,11 @@ import { useDebounce } from "../hooks/useDebounce";
 import { useRafThrottle } from "../hooks/useRafThrottle";
 import { useErrorTimeout } from "../hooks/useErrorTimeout";
 import { useSocketConnection, useSocketData } from "./providers/SocketProvider";
+import { Shimmer } from "@/components/skeletons/Shimmer";
+import { getCachedHistory, getCachedHistorySync, setCachedHistory } from "../lib/historySync";
 import { PriceFeedCardSkeleton, Shimmer } from "@/components/skeletons";
 import { useMounted } from "@/app/hooks/useMounted";
+import { POLLING_INTERVALS, INACTIVITY_CONFIG } from "@/config/cacheConfig";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -29,7 +32,11 @@ interface PriceFeedData {
 }
 
 interface PriceFeedCardProps {
-  /** Polling interval in milliseconds. Defaults to 30 000 (30 s). */
+  /**
+   * Polling interval in milliseconds.
+   * Defaults to 30_000 (30s), enforcing minimum 5-second thresholds.
+   * Automatically scaled by 5x multiplier when user is inactive.
+   */
   refreshInterval?: number;
   /** Asset ID for WebSocket delta updates. Defaults to 'NGN-XLM'. */
   assetId?: string;
@@ -106,9 +113,12 @@ function formatTime(iso: string): string {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
-  refreshInterval = 30_000,
+  refreshInterval = POLLING_INTERVALS.MEDIUM_INTERVAL,
   enableWebSocket = true,
 }) => {
+  const [data, setData] = useState<PriceFeedData | null>(() => {
+    return getCachedHistorySync<PriceFeedData>("price-feed:ngn-xlm");
+  });
   const mounted = useMounted();
   const [data, setData] = useState<PriceFeedData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -128,10 +138,11 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   const isPageVisible = usePageVisibility();
 
   // Adaptive poll delay — extends the polling interval when the user has been
-  // inactive for more than 3 minutes, reducing unnecessary network RPC load.
+  // inactive beyond the threshold, reducing unnecessary network RPC load.
+  // Uses centralized inactivity config to ensure consistent behavior across the app.
   const { delayMultiplier } = useInactivityDelay({
-    inactivityThreshold: 3 * 60 * 1000,
-    inactiveMultiplier: 5,
+    inactivityThreshold: INACTIVITY_CONFIG.threshold,
+    inactiveMultiplier: INACTIVITY_CONFIG.inactiveMultiplier,
   });
 
   const load = useCallback(
@@ -143,7 +154,16 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
       setError(null);
 
       try {
+        const historyKey = "price-feed:ngn-xlm";
+        const cached = await getCachedHistory<PriceFeedData>(historyKey);
+        if (cached && !manual) {
+          setData(cached);
+          setLastRefresh(new Date(cached.last_updated));
+          setLoading(false);
+        }
+
         const feed = await fetchNgnXlmFeed();
+        await setCachedHistory(historyKey, feed);
         setData(feed);
         setLastRefresh(new Date());
       } catch (err) {
@@ -163,11 +183,13 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   // Using a functional setData updater means we read `prev` (current state)
   // instead of closing over `data` — so `data` is NOT a dependency and the
   // effect does not re-run after every state write, breaking the render cycle.
+  
   useEffect(() => {
     if (!mounted) return;
 
     if (!wsUpdate || !enableWebSocket || !isPageVisible) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Necessary to sync WebSocket data with local state
     setData((prev: PriceFeedData | null) => ({
       price: wsUpdate.price || prev?.price || 0,
       // Reset 24 h change indicator when a fresh price arrives.
@@ -186,6 +208,7 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
     setLastRefresh(new Date());
     setLoading(false);
     setError(null);
+  }, [wsUpdate, enableWebSocket, isPageVisible, setError]); // `data` intentionally omitted — accessed via functional updater
   }, [wsUpdate, enableWebSocket, isPageVisible, mounted, setError]); // `data` intentionally omitted — accessed via functional updater
 
   // Handle WebSocket errors
@@ -195,11 +218,20 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
     if (wsError && enableWebSocket) {
       setError(`WebSocket error: ${wsError}`);
     }
+  }, [wsError, enableWebSocket, setError]);
   }, [wsError, enableWebSocket, mounted, setError]);
 
   // Initial fetch + fallback polling (only when WebSocket is disabled or disconnected)
   const pollingActive = mounted && isPageVisible && (!enableWebSocket || !isConnected);
   useEffect(() => {
+    if (!pollingActive) return;
+
+    const timer = window.setTimeout(() => {
+      void load();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [pollingActive, load]);
     if (!mounted) return;
     if (!pollingActive) return;
 

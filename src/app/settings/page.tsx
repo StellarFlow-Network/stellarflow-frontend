@@ -35,13 +35,13 @@ export default function SettingsPage() {
   });
   const [savedSettings, setSavedSettings] = useState<Settings>({ ...settings });
   const [isPending, setIsPending] = useState(false);
-  const [lastSaveTime, setLastSaveTime] = useState<number>(0);
 
   const debouncedSettings = useDebounce(settings, 500);
-  const isSaving = Date.now() - lastSaveTime < 500;
-  const hasChanges = JSON.stringify(debouncedSettings) !== JSON.stringify(savedSettings);
 
   const throttledSetSessionTimeout = useRafThrottle((v: string) => setSettings(prev => ({ ...prev, sessionTimeout: v })));
+
+  // Compute hasChanges at render time to be used in the render and effect
+  const hasChanges = JSON.stringify(debouncedSettings) !== JSON.stringify(savedSettings);
 
   useEffect(() => {
     if (hasChanges && !isPending) {
@@ -50,7 +50,6 @@ export default function SettingsPage() {
         console.log('Saving settings:', debouncedSettings);
         await new Promise(r => setTimeout(r, 300));
         setSavedSettings({ ...debouncedSettings });
-        setLastSaveTime(Date.now());
         setIsPending(false);
       }, 500);
       return () => clearTimeout(timer);

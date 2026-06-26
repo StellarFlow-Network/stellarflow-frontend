@@ -3,6 +3,29 @@ import type { ProposalVote } from '@/types/voting';
 
 const columnHelper = createColumnHelper<ProposalVote>();
 
+/**
+ * Hydration-safe date cell renderer.
+ * Formats date using toLocaleDateString() which is locale-dependent.
+ * Since this component is only rendered client-side via ssr: false,
+ * locale formatting is safe and consistent.
+ */
+function DateCell({ timestamp }: { timestamp: string }) {
+  try {
+    return new Date(timestamp).toLocaleDateString();
+  } catch {
+    return timestamp;
+  }
+}
+
+/**
+ * Hydration-safe voting power renderer.
+ * Uses toLocaleString() for number formatting which is locale-dependent.
+ * Safe on client-side only component.
+ */
+function VotingPowerCell({ power }: { power: number }) {
+  return power.toLocaleString();
+}
+
 export const columns = [
   columnHelper.accessor('voter', {
     header: 'Voter',
@@ -29,11 +52,11 @@ export const columns = [
   }),
   columnHelper.accessor('votingPower', {
     header: 'Voting Power',
-    cell: (info) => info.getValue().toLocaleString(),
+    cell: (info) => <VotingPowerCell power={info.getValue()} />,
   }),
   columnHelper.accessor('timestamp', {
     header: 'Date',
-    cell: (info) => new Date(info.getValue()).toLocaleDateString(),
+    cell: (info) => <DateCell timestamp={info.getValue()} />,
   }),
   columnHelper.accessor('transactionHash', {
     header: 'Tx Hash',

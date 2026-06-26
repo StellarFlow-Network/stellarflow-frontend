@@ -45,12 +45,7 @@ const GlobalHealthIndicator = ({ status = "ACTIVE" }: GlobalHealthIndicatorProps
 
       {/* Glowing orb */}
       <div className="relative flex items-center justify-center w-4 h-4 ml-1">
-        {/* Ping ring — only for ACTIVE */}
-        {isActive && (
-          <div className={`absolute w-4 h-4 rounded-full ${config.dotColor} animate-status-ping opacity-30 gpu-layer`} />
-        )}
-        {/* Core dot — animate only for ACTIVE */}
-        <div className={`relative w-3 h-3 rounded-full ${config.dotColor} ${config.dotGlow} ${isActive ? "animate-status-pulse gpu-layer" : ""}`} />
+
       </div>
     </div>
   );
