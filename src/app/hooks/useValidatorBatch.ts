@@ -1,4 +1,5 @@
 import { useQuery, UseQueryResult } from '@tanstack/react-query';
+import { getCachedHistory, getCachedHistorySync, setCachedHistory } from '../lib/historySync';
 import { getCacheOptions } from '@/config/cacheConfig';
 
 /**
@@ -25,8 +26,22 @@ export function useValidatorBatch(
   addresses: string[],
 ): UseQueryResult<ValidatorMetric[], Error> {
   // Stable query key – addresses array is stringified to ensure proper caching.
-  const queryKey = ['validators', addresses.sort().join(',')];
+  const normalizedAddresses = [...addresses].sort();
+  const queryKey = ['validators', normalizedAddresses.join(',')];
+  const historyKey = `validators:${normalizedAddresses.join(',')}`;
+  const initialData = getCachedHistorySync<ValidatorMetric[]>(historyKey) ?? undefined;
 
+  return useQuery<ValidatorMetric[], Error>({
+    queryKey,
+    queryFn: async () => {
+      if (normalizedAddresses.length === 0) return [];
+
+      const cached = await getCachedHistory<ValidatorMetric[]>(historyKey);
+      if (cached && cached.length > 0) {
+        return cached;
+      }
+
+      const url = `/api/validators?ids=${normalizedAddresses.map(encodeURIComponent).join(',')}`;
   // Use SHORT_INTERVAL (10s) to prevent excessive validator metric lookups
   // while keeping data reasonably fresh for status monitoring.
   const cacheConfig = getCacheOptions('SHORT_INTERVAL');
@@ -45,8 +60,16 @@ export function useValidatorBatch(
         throw new Error(`Failed to fetch validator metrics: ${res.status}`);
       }
       const data: ValidatorMetric[] = await res.json();
+      await setCachedHistory(historyKey, data);
       return data;
     },
+    initialData,
+    // Do not refetch on window focus to keep data stable during rapid UI interactions.
+    refetchOnWindowFocus: false,
+    // Keep previous data while loading new batched results.
+    keepPreviousData: true,
+    // Stale time can be tuned; using 30 seconds as a sensible default.
+    staleTime: 30_000,
     refetchOnWindowFocus: false,
     placeholderData: (previousData) => previousData,
     staleTime: cacheConfig.staleTime,
