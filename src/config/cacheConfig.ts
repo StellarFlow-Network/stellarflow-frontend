@@ -15,7 +15,13 @@ export const CACHE_INTERVALS = {
    */
   REAL_TIME: {
     staleTime: 5_000,        // Data considered fresh for 5 seconds
-    gcTime: 30 * 60 * 1000,  // Cache persists for 30 minutes
+    /**
+     * CACHE-EVICTION POLICY (5-MINUTE BACKGROUND WINDOW):
+     * All dynamic metrics records are bounded to a maximum 5-minute memory lifespan
+     * once they become inactive. This proactively sweeps stale query entries out of RAM,
+     * maintaining a lean cache profile without manual memory management.
+     */
+    gcTime: 5 * 60 * 1000,
   },
 
   /**
@@ -24,7 +30,7 @@ export const CACHE_INTERVALS = {
    */
   SHORT_INTERVAL: {
     staleTime: 10_000,       // Data considered fresh for 10 seconds
-    gcTime: 30 * 60 * 1000,  // Cache persists for 30 minutes
+    gcTime: 5 * 60 * 1000,   // Cache persists for 5 minutes
   },
 
   /**
@@ -33,7 +39,7 @@ export const CACHE_INTERVALS = {
    */
   MEDIUM_INTERVAL: {
     staleTime: 30_000,       // Data considered fresh for 30 seconds
-    gcTime: 60 * 60 * 1000,  // Cache persists for 1 hour
+    gcTime: 5 * 60 * 1000,   // Cache persists for 5 minutes
   },
 
   /**
@@ -42,7 +48,7 @@ export const CACHE_INTERVALS = {
    */
   LONG_INTERVAL: {
     staleTime: 5 * 60 * 1000, // Data considered fresh for 5 minutes
-    gcTime: 24 * 60 * 60 * 1000, // Cache persists for 24 hours
+    gcTime: 5 * 60 * 1000,    // Cache persists for 5 minutes
   },
 
   /**
