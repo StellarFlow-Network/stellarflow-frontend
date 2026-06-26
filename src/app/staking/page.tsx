@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useDebounce } from '../hooks/useDebounce';
 import { useRafThrottle } from '../hooks/useRafThrottle';
 import { useTransformedCustomAddressField } from '@/app/hooks/useTransformedData';
@@ -43,6 +43,15 @@ export default function StakingPage() {
   const [confirmationMsg, setConfirmationMsg] = useState<string | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const timeoutsRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+
+  useEffect(() => {
+    return () => {
+      // Explicitly cleanup trailing timers on unmount
+      timeoutsRef.current.forEach(clearTimeout);
+      timeoutsRef.current.clear();
+    };
+  }, []);
 
   const handleConfirm = useCallback(async (allocations: Record<string, number>) => {
     if (isSubmitting) return;
@@ -53,10 +62,19 @@ export default function StakingPage() {
       setConfirmationMsg('Allocation confirmed. Submitting to network…');
       const txHash = await submitTransaction(allocations);
       setConfirmationMsg(`Transaction successful: ${txHash}`);
-      setTimeout(() => setConfirmationMsg(null), 3000);
+      
+      const timer1 = setTimeout(() => {
+        setConfirmationMsg(null);
+        timeoutsRef.current.delete(timer1);
+      }, 3000);
+      timeoutsRef.current.add(timer1);
     } catch (err) {
       setConfirmationMsg('Transaction failed');
-      setTimeout(() => setConfirmationMsg(null), 2000);
+      const timer2 = setTimeout(() => {
+        setConfirmationMsg(null);
+        timeoutsRef.current.delete(timer2);
+      }, 2000);
+      timeoutsRef.current.add(timer2);
     } finally {
       setIsSubmitting(false);
     }
