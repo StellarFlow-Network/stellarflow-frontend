@@ -377,10 +377,10 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
 
       {/* ── 24h stats row ── */}
       {!loading && !error && data && (
-        <div className="relative grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-[#1B2A3B] pt-4">
+        <div className="relative grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-[#1B2A3B] pt-4 text-left">
           {/* High */}
-          <div className="min-w-0 flex flex-col gap-0.5 node-status-cell">
-            <span className="text-[9px] font-semibold uppercase tracking-widest text-gray-600">
+          <div className="min-w-0 node-status-cell">
+            <span className="block text-[9px] font-semibold uppercase tracking-widest text-gray-600 mb-0.5">
               24h High
             </span>
             <span className="text-xs font-bold text-emerald-400 numeric-value">
@@ -389,8 +389,8 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
           </div>
 
           {/* Low */}
-          <div className="flex flex-col gap-0.5 node-status-cell">
-            <span className="text-[9px] font-semibold uppercase tracking-widest text-gray-600">
+          <div className="node-status-cell">
+            <span className="block text-[9px] font-semibold uppercase tracking-widest text-gray-600 mb-0.5">
               24h Low
             </span>
             <span className="text-xs font-bold text-rose-400 numeric-value">
@@ -399,8 +399,8 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
           </div>
 
           {/* Volume */}
-          <div className="flex flex-col gap-0.5 node-status-cell">
-            <span className="text-[9px] font-semibold uppercase tracking-widest text-gray-600">
+          <div className="node-status-cell">
+            <span className="block text-[9px] font-semibold uppercase tracking-widest text-gray-600 mb-0.5">
               Volume
             </span>
             <span className="text-xs font-bold text-gray-300 numeric-value">
