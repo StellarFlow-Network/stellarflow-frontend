@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { PriceData } from "@/types";
 import { useErrorTimeout } from "./useErrorTimeout";
 import { usePageVisibility } from "./usePageVisibility";
@@ -16,7 +16,7 @@ export interface UseSocketOptions {
   errorTimeoutMs?: number;
 }
 
-interface UseSocketReturn {
+export interface UseSocketReturn {
   isConnected: boolean;
   lastUpdate: PriceData | null;
   error: string | null;
@@ -27,7 +27,11 @@ interface UseSocketReturn {
   reconnect: () => void;
 }
 
-export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
+// ---------------------------------------------------------------------------
+// Internal hook — manages all WebSocket state in one place.
+// ---------------------------------------------------------------------------
+
+function useSocketState(options: UseSocketOptions): UseSocketReturn {
   const {
     assetIds = [],
     errorTimeoutMs = 5000,
@@ -272,4 +276,35 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
     disconnect,
     reconnect,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Public API — selector-based `useSocket`.
+// ---------------------------------------------------------------------------
+
+/**
+ * Subscribe to WebSocket state with an optional selector to pick only the
+ * properties your component needs. When the selector is provided, the hook
+ * returns only the selected value, memoised so child components wrapped in
+ * `React.memo` are not re-rendered by unrelated state changes.
+ *
+ * @example
+ * // Re-renders only when `isConnected` changes.
+ * const isConnected = useSocket(options, (s) => s.isConnected)
+ *
+ * @example
+ * // Re-renders on every tick (same as calling without a selector).
+ * const full = useSocket(options)
+ */
+export function useSocket<Selected = UseSocketReturn>(
+  options?: UseSocketOptions,
+  selector?: (state: UseSocketReturn) => Selected,
+): Selected {
+  const state = useSocketState(options ?? {});
+
+  return useMemo(
+    () => (selector ? selector(state) : (state as unknown as Selected)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selector, state.isConnected, state.lastUpdate, state.error, state.subscribeToAsset, state.unsubscribeFromAsset, state.disconnect, state.reconnect],
+  );
 }
