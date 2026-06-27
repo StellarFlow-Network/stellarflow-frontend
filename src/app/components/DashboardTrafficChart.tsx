@@ -41,7 +41,7 @@ interface PointerPosition {
   offsetY: number;
 }
 
-export default function DashboardTrafficChart({
+const DashboardTrafficChart = React.memo(function DashboardTrafficChart({
   labels = ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"],
   values = [120, 180, 260, 240, 310, 390],
 }: DashboardTrafficChartProps) {
@@ -235,4 +235,6 @@ export default function DashboardTrafficChart({
       <canvas ref={canvasRef} className="h-full w-full" aria-label="NGN/XLM traffic chart" />
     </div>
   );
-}
+});
+
+export default DashboardTrafficChart;

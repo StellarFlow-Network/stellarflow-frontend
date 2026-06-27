@@ -14,12 +14,17 @@ import { useProgressBar } from "./TopLoadingBar";
 import { useDebounce } from "../hooks/useDebounce";
 import { useRafThrottle } from "../hooks/useRafThrottle";
 import { useErrorTimeout } from "../hooks/useErrorTimeout";
-import { useSocketConnection, useSocketData } from "./providers/SocketProvider";
 import { Shimmer } from "@/components/skeletons/Shimmer";
+import { PriceFeedCardSkeleton } from "@/components/skeletons/PriceFeedCardSkeleton";
 import { getCachedHistory, getCachedHistorySync, setCachedHistory } from "../lib/historySync";
 import { PriceFeedCardSkeleton } from "@/components/skeletons/PriceFeedCardSkeleton";
 import { useMounted } from "@/app/hooks/useMounted";
+import { usePageVisibility } from "../hooks/usePageVisibility";
 import { POLLING_INTERVALS, INACTIVITY_CONFIG } from "@/config/cacheConfig";
+import {
+  useCorridorStream,
+  useCorridorConnection,
+} from "@/context/CorridorContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -46,8 +51,6 @@ interface PriceFeedCardProps {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-import { usePageVisibility } from "../hooks/usePageVisibility";
 
 /**
  * Fetches the NGN/XLM price feed from the StellarFlow oracle API.
@@ -130,10 +133,12 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   const throttledSetFilterInput = useRafThrottle((value: string) => setFilterInput(value));
   const { start, done } = useProgressBar();
 
-  // Granular context subscriptions — each hook only re-renders this component
-  // when its specific slice changes, not on every unrelated socket event.
-  const { isConnected, error: wsError } = useSocketConnection();
-  const { lastUpdate: wsUpdate } = useSocketData();
+  // Granular corridor context subscriptions — each hook only re-renders this
+  // component when its specific slice changes. Price ticks update only the
+  // stream slice; connection changes update only the connection slice.
+  // Neither slice cascades into unrelated navigation or layout panels.
+  const { lastUpdate: wsUpdate } = useCorridorStream();
+  const { isConnected, error: wsError } = useCorridorConnection();
 
   const isPageVisible = usePageVisibility();
 
@@ -183,10 +188,8 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   // Using a functional setData updater means we read `prev` (current state)
   // instead of closing over `data` — so `data` is NOT a dependency and the
   // effect does not re-run after every state write, breaking the render cycle.
-  
   useEffect(() => {
     if (!mounted) return;
-
     if (!wsUpdate || !enableWebSocket || !isPageVisible) return;
 
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Necessary to sync WebSocket data with local state
@@ -213,7 +216,6 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   // Handle WebSocket errors
   useEffect(() => {
     if (!mounted) return;
-
     if (wsError && enableWebSocket) {
       setError(`WebSocket error: ${wsError}`);
     }

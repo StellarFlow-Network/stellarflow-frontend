@@ -35,14 +35,12 @@ export interface UseSocketReturn {
 }
 
 // ---------------------------------------------------------------------------
-// Internal hook — manages all WebSocket state in one place.
+// Internal hook — delegates all transport concerns to WebSocketManager so
+// that this hook only manages per-consumer state (lastUpdate, isConnected).
 // ---------------------------------------------------------------------------
 
 function useSocketState(options: UseSocketOptions): UseSocketReturn {
-  const {
-    assetIds = [],
-    errorTimeoutMs = 5000,
-  } = options;
+  const { assetIds = [], errorTimeoutMs = 5000 } = options;
 
   const [isConnected, setIsConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<PriceData | null>(null);
@@ -52,6 +50,9 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
   // Local tracking of subscribed assets for this component lifecycle context
   const subscribedAssetsRef = useRef<Set<string>>(new Set(assetIds));
   const isVisible = usePageVisibility();
+
+  // Batch pending WS message payloads; flushed by the RAF interval below so
+  // we never write state more than once per animation frame.
   const pendingUpdatesRef = useRef<(PriceData | Partial<PriceData>)[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
   const pageVisibleRef = useRef(true);
@@ -61,8 +62,13 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
   const reconnectIntervalRef = useRef(options.reconnectInterval ?? 3000);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Stable singleton transport layer — all consumers share one WS connection.
   const wsManager = WebSocketManager.getInstance();
 
+  // ------------------------------------------------------------------
+  // flushPendingUpdates — collapses all buffered ticks into one setState.
+  // Stable identity (empty dep-array) so the RAF interval never restarts.
+  // ------------------------------------------------------------------
   const flushPendingUpdates = useCallback(() => {
     if (pendingUpdatesRef.current.length === 0) return;
 
@@ -186,10 +192,35 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
     if (subscribedAssetsRef.current.size > 0) {
       wsManager.unsubscribeFromAssets(Array.from(subscribedAssetsRef.current));
     }
-
     setIsConnected(false);
   }, [wsManager]);
 
+  // ------------------------------------------------------------------
+  // subscribeToAsset / unsubscribeFromAsset — delegate to the manager.
+  // ------------------------------------------------------------------
+  const subscribeToAsset = useCallback(
+    (assetId: string) => {
+      if (!subscribedAssetsRef.current.has(assetId)) {
+        subscribedAssetsRef.current.add(assetId);
+        wsManager.subscribeToAssets([assetId]);
+      }
+    },
+    [wsManager],
+  );
+
+  const unsubscribeFromAsset = useCallback(
+    (assetId: string) => {
+      if (subscribedAssetsRef.current.has(assetId)) {
+        subscribedAssetsRef.current.delete(assetId);
+        wsManager.unsubscribeFromAssets([assetId]);
+      }
+    },
+    [wsManager],
+  );
+
+  // ------------------------------------------------------------------
+  // reconnect — tears down and re-connects via the manager.
+  // ------------------------------------------------------------------
   const reconnect = useCallback(() => {
     disconnect();
     manuallyDisconnectedRef.current = false;
@@ -206,54 +237,44 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
     reconnectTimeoutRef.current = setTimeout(() => {
       reconnectTimeoutRef.current = null;
       if (subscribedAssetsRef.current.size > 0) {
-        connect();
+        wsManager.subscribeToAssets(
+          Array.from(subscribedAssetsRef.current),
+        );
       }
     }, 100);
-  }, [disconnect, connect]);
+  }, [disconnect, wsManager]);
 
-  const subscribeToAsset = useCallback((assetId: string) => {
-    if (!subscribedAssetsRef.current.has(assetId)) {
-      subscribedAssetsRef.current.add(assetId);
+  // ------------------------------------------------------------------
+  // Mount effect — register listeners and initial asset subscriptions.
+  // Runs once; all callbacks are stable so this never tears down on ticks.
+  // ------------------------------------------------------------------
+  useEffect(() => {
+    const handleIncomingData = (data: PriceData | Partial<PriceData>) => {
+      if (!isVisible) return;
+      pendingUpdatesRef.current.push(data);
+    };
 
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(
-          JSON.stringify({ type: "subscribe", assetIds: [assetId] }),
-        );
-      } else if (!wsRef.current) {
-        connect();
+    const handleStatusChange = (status: boolean) => {
+      setIsConnected(status);
+      if (!status) {
+        setError("WebSocket disconnected");
+      } else {
+        setError(null);
       }
-    }
-  }, [connect]);
+    };
 
-  const unsubscribeFromAsset = useCallback((assetId: string) => {
-    if (subscribedAssetsRef.current.has(assetId)) {
-      subscribedAssetsRef.current.delete(assetId);
+    wsManager.subscribeToMessages(handleIncomingData);
+    wsManager.subscribeToStatus(handleStatusChange);
 
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(
-          JSON.stringify({ type: "unsubscribe", assetIds: [assetId] }),
-        );
-      }
-
-      if (subscribedAssetsRef.current.size === 0) {
-        disconnect();
-      }
-    }
-  }, [disconnect]);
+    // Ensure the singleton connection is open.
+    wsManager.connect();
 
   // Connect on mount, disconnect on unmount
   useEffect(() => {
     if (subscribedAssetsRef.current.size > 0) {
-      connect();
+      wsManager.subscribeToAssets(Array.from(subscribedAssetsRef.current));
     }
-    return () => {
-      disconnect();
-    };
-  }, [connect, disconnect]);
 
-  // Dedicated cleanup guard to ensure refs are released on unmount even if the
-  // effect above runs in strict-mode double-invocation.
-  useEffect(() => {
     return () => {
       flushPendingUpdates();
     };
@@ -289,12 +310,13 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
     }
   }, [isVisible, connect]);
 
-  // Master layout clock batching matches performance guidelines
-  useRAFInterval(
-    flushPendingUpdates,
-    350,
-    isConnected
-  );
+  // Pause data delivery while the page is hidden — no state needed, handled
+  // inside the message callback via the closure over `isVisible`.
+
+  // Master layout clock — flush buffered price ticks at most once per frame
+  // while the socket is connected, keeping all state writes off the critical
+  // user-interaction lane.
+  useRAFInterval(flushPendingUpdates, 350, isConnected);
 
   return {
     isConnected,
@@ -335,6 +357,15 @@ export function useSocket<Selected = UseSocketReturn>(
   return useMemo(
     () => (selector ? selector(state) : (state as unknown as Selected)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [selector, state.isConnected, state.lastUpdate, state.error, state.subscribeToAsset, state.unsubscribeFromAsset, state.disconnect, state.reconnect],
+    [
+      selector,
+      state.isConnected,
+      state.lastUpdate,
+      state.error,
+      state.subscribeToAsset,
+      state.unsubscribeFromAsset,
+      state.disconnect,
+      state.reconnect,
+    ],
   );
 }
