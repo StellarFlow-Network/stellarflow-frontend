@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
+import Link from 'next/link';
 import { 
   Vote, 
   FilePlus, 
@@ -189,9 +190,9 @@ export default function GovernancePage() {
                     </div>
                   </div>
 
-                  <button className="p-2 bg-[#0d1117] group-hover:bg-gray-800 border border-gray-700 text-gray-400 rounded-lg shrink-0 self-end md:self-auto transition-colors">
+                  <Link href={`/proposals/${proposal.id}/history`} prefetch={false} className="p-2 bg-[#0d1117] group-hover:bg-gray-800 border border-gray-700 text-gray-400 rounded-lg shrink-0 self-end md:self-auto transition-colors">
                     <Icon id={ICON_IDS.chevronRight} size={18} />
-                  </button>
+                  </Link>
                 </div>
 
               </div>

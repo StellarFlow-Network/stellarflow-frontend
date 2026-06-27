@@ -17,7 +17,6 @@ import { useErrorTimeout } from "../hooks/useErrorTimeout";
 import { Shimmer } from "@/components/skeletons/Shimmer";
 import { PriceFeedCardSkeleton } from "@/components/skeletons/PriceFeedCardSkeleton";
 import { getCachedHistory, getCachedHistorySync, setCachedHistory } from "../lib/historySync";
-import { PriceFeedCardSkeleton } from "@/components/skeletons/PriceFeedCardSkeleton";
 import { useMounted } from "@/app/hooks/useMounted";
 import { usePageVisibility } from "../hooks/usePageVisibility";
 import { POLLING_INTERVALS, INACTIVITY_CONFIG } from "@/config/cacheConfig";
