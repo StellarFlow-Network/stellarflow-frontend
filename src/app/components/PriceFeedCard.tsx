@@ -17,7 +17,7 @@ import { useErrorTimeout } from "../hooks/useErrorTimeout";
 import { useSocketConnection, useSocketData } from "./providers/SocketProvider";
 import { Shimmer } from "@/components/skeletons/Shimmer";
 import { getCachedHistory, getCachedHistorySync, setCachedHistory } from "../lib/historySync";
-import { PriceFeedCardSkeleton, Shimmer } from "@/components/skeletons";
+import { PriceFeedCardSkeleton } from "@/components/skeletons/PriceFeedCardSkeleton";
 import { useMounted } from "@/app/hooks/useMounted";
 import { POLLING_INTERVALS, INACTIVITY_CONFIG } from "@/config/cacheConfig";
 
@@ -117,11 +117,10 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   refreshInterval = POLLING_INTERVALS.MEDIUM_INTERVAL,
   enableWebSocket = true,
 }) => {
+  const mounted = useMounted();
   const [data, setData] = useState<PriceFeedData | null>(() => {
     return getCachedHistorySync<PriceFeedData>("price-feed:ngn-xlm");
   });
-  const mounted = useMounted();
-  const [data, setData] = useState<PriceFeedData | null>(null);
   const [loading, setLoading] = useState(true);
   const { error, setError } = useErrorTimeout({ timeoutMs: 5000 });
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
@@ -209,7 +208,6 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
     setLastRefresh(new Date());
     setLoading(false);
     setError(null);
-  }, [wsUpdate, enableWebSocket, isPageVisible, setError]); // `data` intentionally omitted — accessed via functional updater
   }, [wsUpdate, enableWebSocket, isPageVisible, mounted, setError]); // `data` intentionally omitted — accessed via functional updater
 
   // Handle WebSocket errors
@@ -219,20 +217,11 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
     if (wsError && enableWebSocket) {
       setError(`WebSocket error: ${wsError}`);
     }
-  }, [wsError, enableWebSocket, setError]);
   }, [wsError, enableWebSocket, mounted, setError]);
 
   // Initial fetch + fallback polling (only when WebSocket is disabled or disconnected)
   const pollingActive = mounted && isPageVisible && (!enableWebSocket || !isConnected);
   useEffect(() => {
-    if (!pollingActive) return;
-
-    const timer = window.setTimeout(() => {
-      void load();
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-  }, [pollingActive, load]);
     if (!mounted) return;
     if (!pollingActive) return;
 

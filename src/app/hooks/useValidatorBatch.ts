@@ -31,6 +31,10 @@ export function useValidatorBatch(
   const historyKey = `validators:${normalizedAddresses.join(',')}`;
   const initialData = getCachedHistorySync<ValidatorMetric[]>(historyKey) ?? undefined;
 
+  // Use SHORT_INTERVAL (10s) to prevent excessive validator metric lookups
+  // while keeping data reasonably fresh for status monitoring.
+  const cacheConfig = getCacheOptions('SHORT_INTERVAL');
+
   return useQuery<ValidatorMetric[], Error>({
     queryKey,
     queryFn: async () => {
@@ -42,15 +46,6 @@ export function useValidatorBatch(
       }
 
       const url = `/api/validators?ids=${normalizedAddresses.map(encodeURIComponent).join(',')}`;
-  // Use SHORT_INTERVAL (10s) to prevent excessive validator metric lookups
-  // while keeping data reasonably fresh for status monitoring.
-  const cacheConfig = getCacheOptions('SHORT_INTERVAL');
-
-  return useQuery<ValidatorMetric[], Error>({
-    queryKey,
-    queryFn: async () => {
-      if (addresses.length === 0) return [];
-      const url = `/api/validators?ids=${addresses.map(encodeURIComponent).join(',')}`;
       const res = await fetch(url, {
         method: 'GET',
         cache: 'no-store',
@@ -68,10 +63,8 @@ export function useValidatorBatch(
     refetchOnWindowFocus: false,
     // Keep previous data while loading new batched results.
     keepPreviousData: true,
-    // Stale time can be tuned; using 30 seconds as a sensible default.
-    staleTime: 30_000,
-    refetchOnWindowFocus: false,
     placeholderData: (previousData) => previousData,
+    // Cache intervals come from the centralized cache config (SHORT_INTERVAL = 10s).
     staleTime: cacheConfig.staleTime,
     gcTime: cacheConfig.gcTime,
   });
