@@ -61,7 +61,10 @@ export default function CorridorMonitorPage() {
 
           {/* Module 2: Synthetic Analytics / Flow Summary Component */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+            <div
+              style={{ contain: "layout paint" }}
+              className="bg-neutral-900 border border-neutral-800 rounded-xl p-4"
+            >
               <span className="text-xs font-mono text-neutral-400 block mb-1">
                 AGGREGATED 24H FLOW
               </span>
@@ -69,7 +72,10 @@ export default function CorridorMonitorPage() {
                 $7,020,000
               </span>
             </div>
-            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+            <div
+              style={{ contain: "layout paint" }}
+              className="bg-neutral-900 border border-neutral-800 rounded-xl p-4"
+            >
               <span className="text-xs font-mono text-neutral-400 block mb-1">
                 AVERAGE NETWORK SPREAD
               </span>
@@ -77,7 +83,10 @@ export default function CorridorMonitorPage() {
                 0.35%
               </span>
             </div>
-            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+            <div
+              style={{ contain: "layout paint" }}
+              className="bg-neutral-900 border border-neutral-800 rounded-xl p-4"
+            >
               <span className="text-xs font-mono text-neutral-400 block mb-1">
                 GLOBAL INGESTION HEALTH
               </span>
