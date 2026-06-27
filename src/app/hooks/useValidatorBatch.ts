@@ -31,17 +31,6 @@ export function useValidatorBatch(
   const historyKey = `validators:${normalizedAddresses.join(',')}`;
   const initialData = getCachedHistorySync<ValidatorMetric[]>(historyKey) ?? undefined;
 
-  return useQuery<ValidatorMetric[], Error>({
-    queryKey,
-    queryFn: async () => {
-      if (normalizedAddresses.length === 0) return [];
-
-      const cached = await getCachedHistory<ValidatorMetric[]>(historyKey);
-      if (cached && cached.length > 0) {
-        return cached;
-      }
-
-      const url = `/api/validators?ids=${normalizedAddresses.map(encodeURIComponent).join(',')}`;
   // Use SHORT_INTERVAL (10s) to prevent excessive validator metric lookups
   // while keeping data reasonably fresh for status monitoring.
   const cacheConfig = getCacheOptions('SHORT_INTERVAL');
@@ -49,8 +38,14 @@ export function useValidatorBatch(
   return useQuery<ValidatorMetric[], Error>({
     queryKey,
     queryFn: async () => {
-      if (addresses.length === 0) return [];
-      const url = `/api/validators?ids=${addresses.map(encodeURIComponent).join(',')}`;
+      if (normalizedAddresses.length === 0) return [];
+      
+      const cached = await getCachedHistory<ValidatorMetric[]>(historyKey);
+      if (cached && cached.length > 0) {
+        return cached;
+      }
+      
+      const url = `/api/validators?ids=${normalizedAddresses.map(encodeURIComponent).join(',')}`;
       const res = await fetch(url, {
         method: 'GET',
         cache: 'no-store',
@@ -64,14 +59,10 @@ export function useValidatorBatch(
       return data;
     },
     initialData,
+    // Keep previous data while loading new batched results.
+    placeholderData: (previousData) => previousData,
     // Do not refetch on window focus to keep data stable during rapid UI interactions.
     refetchOnWindowFocus: false,
-    // Keep previous data while loading new batched results.
-    keepPreviousData: true,
-    // Stale time can be tuned; using 30 seconds as a sensible default.
-    staleTime: 30_000,
-    refetchOnWindowFocus: false,
-    placeholderData: (previousData) => previousData,
     staleTime: cacheConfig.staleTime,
     gcTime: cacheConfig.gcTime,
   });

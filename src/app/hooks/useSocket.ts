@@ -268,6 +268,11 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
 
     // Ensure the singleton connection is open.
     wsManager.connect();
+    
+    return () => {
+      // Clean up subscriptions
+    };
+  }, [wsManager, isVisible, setError]);
 
   // Connect on mount, disconnect on unmount
   useEffect(() => {
