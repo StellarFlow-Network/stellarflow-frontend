@@ -59,12 +59,16 @@ const OracleHealthIndicator = ({ status = "Online" }: OracleHealthIndicatorProps
       <div className="relative flex items-center justify-center w-4 h-4 ml-1">
         {/* Ping ring — only for Online */}
         {config.pulse && (
-          <div
-
-          ]
-            .filter(Boolean)
-            .join(" ")}
-        />
+          <div className={[
+            "absolute inset-0 rounded-full animate-ping opacity-60",
+            config.dotColor,
+          ].filter(Boolean).join(" ")} />
+        )}
+        <div className={[
+          "relative w-4 h-4 rounded-full",
+          config.dotColor,
+          config.dotGlow,
+        ].filter(Boolean).join(" ")} />
       </div>
     </div>
   );

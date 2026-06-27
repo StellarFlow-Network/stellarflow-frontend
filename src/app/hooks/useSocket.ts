@@ -8,6 +8,13 @@ import { useRAFInterval } from "./useRAFInterval";
 import type { AssetSymbol } from "@/config/assetSymbols";
 import { WebSocketManager } from "@/utils/WebSocketManager";
 
+interface SocketMessage {
+  type: "price_update" | "delta_update";
+  assetId?: string;
+  data: PriceData | Partial<PriceData>;
+  timestamp: number;
+}
+
 export interface UseSocketOptions {
   assetIds?: AssetSymbol[];
   enableDeltaUpdates?: boolean;
@@ -39,21 +46,29 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
 
   const [isConnected, setIsConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<PriceData | null>(null);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
   const { error, setError } = useErrorTimeout({ timeoutMs: errorTimeoutMs });
-  
+
   // Local tracking of subscribed assets for this component lifecycle context
   const subscribedAssetsRef = useRef<Set<string>>(new Set(assetIds));
   const isVisible = usePageVisibility();
   const pendingUpdatesRef = useRef<(PriceData | Partial<PriceData>)[]>([]);
+  const wsRef = useRef<WebSocket | null>(null);
+  const pageVisibleRef = useRef(true);
+  const manuallyDisconnectedRef = useRef(false);
+  const reconnectAttemptsRef = useRef(0);
+  const maxReconnectAttemptsRef = useRef(options.maxReconnectAttempts ?? 5);
+  const reconnectIntervalRef = useRef(options.reconnectInterval ?? 3000);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const wsManager = WebSocketManager.getInstance();
 
   const flushPendingUpdates = useCallback(() => {
     if (pendingUpdatesRef.current.length === 0) return;
-    
+
     const updates = [...pendingUpdatesRef.current];
     pendingUpdatesRef.current.length = 0;
-    
+
     setLastUpdate((prev: PriceData | null) => {
       let current = prev;
       for (const update of updates) {
@@ -67,7 +82,7 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
 
   // `connect` has an empty dependency array because every value it needs is
   // accessed through a ref.  This breaks the cycle where a WS message would
-  // update `lastUpdate` → recreate `connect` → effect fires → socket torn down.
+  // update `lastUpdate` -> recreate `connect` -> effect fires -> socket torn down.
   const connect = useCallback(function doConnect() {
     if (
       typeof document !== "undefined" &&
@@ -145,9 +160,8 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
         }
       };
 
-      wsRef.current.onerror = (event: Event) => {
+      wsRef.current.onerror = () => {
         setError("WebSocket connection error");
-        console.error("WebSocket error:", event);
       };
     } catch (err) {
       setError("Failed to establish WebSocket connection");
@@ -158,32 +172,36 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
   const disconnect = useCallback(() => {
     manuallyDisconnectedRef.current = true;
 
-    const handleStatusChange = (status: boolean) => {
-      setIsConnected(status);
-    };
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
 
-    wsManager.subscribeToMessages(handleIncomingData);
-    wsManager.subscribeToStatus(handleStatusChange);
+    if (wsRef.current) {
+      wsRef.current.onclose = null;
+      wsRef.current.close();
+      wsRef.current = null;
+    }
 
-    // Initial asset registrations
     if (subscribedAssetsRef.current.size > 0) {
-      wsManager.subscribeToAssets(Array.from(subscribedAssetsRef.current));
+      wsManager.unsubscribeFromAssets(Array.from(subscribedAssetsRef.current));
     }
 
     setIsConnected(false);
-  }, [flushPendingUpdates]);
+  }, [wsManager]);
 
   const reconnect = useCallback(() => {
     disconnect();
     manuallyDisconnectedRef.current = false;
     reconnectAttemptsRef.current = 0;
     setReconnectAttempts(0);
-    
+
     // Clear any existing reconnect timeout
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
     }
-    
+
     // Set new reconnect timeout and track it
     reconnectTimeoutRef.current = setTimeout(() => {
       reconnectTimeoutRef.current = null;
@@ -223,8 +241,7 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
     }
   }, [disconnect]);
 
-  // Both `connect` and `disconnect` are now stable (empty dep arrays), so this
-  // effect only runs once on mount and once on unmount — never on data ticks.
+  // Connect on mount, disconnect on unmount
   useEffect(() => {
     if (subscribedAssetsRef.current.size > 0) {
       connect();
@@ -238,23 +255,36 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
   // effect above runs in strict-mode double-invocation.
   useEffect(() => {
     return () => {
-
-      // Flush any remaining pending updates
       flushPendingUpdates();
+    };
+  }, [flushPendingUpdates]);
 
-  const disconnect = useCallback(() => {
-    // Manual local disconnection can simply clear local contextual tracking assets
-    if (subscribedAssetsRef.current.size > 0) {
-      wsManager.unsubscribeFromAssets(Array.from(subscribedAssetsRef.current));
-    }
-    setIsConnected(false);
-  }, [wsManager]);
+  // Freeze message processing when the page is hidden; resume when visible.
+  useEffect(() => {
+    pageVisibleRef.current = isVisible;
 
-    if (!manuallyDisconnectedRef.current) {
-      reconnectAttemptsRef.current = 0;
-      setReconnectAttempts(0);
-      if (subscribedAssetsRef.current.size > 0) {
+    if (isVisible) {
+      if (
+        !manuallyDisconnectedRef.current &&
+        subscribedAssetsRef.current.size > 0
+      ) {
+        reconnectAttemptsRef.current = 0;
+        setReconnectAttempts(0);
         connect();
+      }
+    } else {
+      if (wsRef.current) {
+        manuallyDisconnectedRef.current = true;
+
+        if (reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current);
+          reconnectTimeoutRef.current = null;
+        }
+
+        wsRef.current.onclose = null;
+        wsRef.current.close();
+        wsRef.current = null;
+        setIsConnected(false);
       }
     }
   }, [isVisible, connect]);
@@ -270,7 +300,7 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
     isConnected,
     lastUpdate,
     error,
-    reconnectAttempts: 0, // Handled automatically at network class layer now
+    reconnectAttempts,
     subscribeToAsset,
     unsubscribeFromAsset,
     disconnect,
