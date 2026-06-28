@@ -2,8 +2,9 @@
 
 import React, { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Icon, ICON_IDS } from "@/components/icons";
-import type { IconId } from "@/components/icons";
+import Icon from "@/components/icons/Icon";
+import { ICON_IDS } from "@/components/icons/iconIds";
+import type { IconId } from "@/components/icons/iconIds";
 
 /**
  * ExpandableDetailsCard — Hardware-accelerated expandable content grid.

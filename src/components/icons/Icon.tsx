@@ -4,9 +4,14 @@
  * Renders a single <svg> with a <use href="#icon-*"> reference.
  * Zero inline path data; the browser resolves the symbol from the
  * single sprite mounted in the root layout.
+ *
+ * IconId is imported from `./iconIds` (a plain data module) rather than
+ * from `./SvgSprite` (a React component module) to prevent the bundler
+ * from inadvertently pulling the full sprite sheet into any chunk that
+ * only needs the Icon component.
  */
 import React from "react";
-import type { IconId } from "./SvgSprite";
+import type { IconId } from "./iconIds";
 
 interface IconProps {
   id: IconId;

@@ -140,7 +140,7 @@ function Map() {
             )}
           </MapContainer>
         </div>
-        <div className="absolute top-4 left-4 bg-black/50 backdrop-blur-sm rounded-lg p-2">
+        <div className="absolute top-4 left-4 bg-[#0a0a0a] rounded-lg p-2">
           <p className="text-xs font-semibold text-[#D9F99D]">Africa Network</p>
           <p className="text-xs text-slate-300">6 Regions • 1,134 Nodes</p>
         </div>

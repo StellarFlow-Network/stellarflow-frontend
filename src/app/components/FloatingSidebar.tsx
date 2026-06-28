@@ -1,10 +1,12 @@
 "use client";
 
-import React, { memo, useState, useCallback } from "react";
+import React, { memo, useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Icon, ICON_IDS } from "@/components/icons";
-import type { IconId } from "@/components/icons";
+import Icon from "@/components/icons/Icon";
+import { ICON_IDS } from "@/components/icons/iconIds";
+import type { IconId } from "@/components/icons/iconIds";
+import { useMounted } from "@/app/hooks/useMounted";
 
 const navItems: { iconId: IconId; label: string; href: string }[] = [
   { iconId: ICON_IDS.layoutDashboard, label: "Dashboard",  href: "/" },
@@ -15,10 +17,18 @@ const navItems: { iconId: IconId; label: string; href: string }[] = [
 ];
 
 const FloatingSidebar = memo(() => {
+  const mounted = useMounted();
   const pathname = usePathname();
   const router = useRouter();
   const [active, setActive] = useState(pathname ?? "Dashboard");
   const [hovered, setHovered] = useState<string | null>(null);
+
+  // Sync active state with pathname after mount to avoid hydration mismatch
+  useEffect(() => {
+    if (mounted && pathname) {
+      setActive(pathname);
+    }
+  }, [mounted, pathname]);
 
   const handleSetActive = useCallback((href: string) => {
     setActive(href);
@@ -29,26 +39,52 @@ const FloatingSidebar = memo(() => {
   }, []);
 
   const handlePrefetch = useCallback((href: string) => {
-    if (!href) return;
-    if (href === pathname) return;
-
+    if (!href || href === pathname) return;
     try {
-      // Proactively trigger Next.js route prefetch to start asset compilation
       router.prefetch(href);
     } catch (err) {
-      // Swallow — prefetch is advisory and may throw in some environments
-      // eslint-disable-next-line no-console
       console.debug('Prefetch failed for', href, err);
     }
-  }, [router]);
+  }, [router, pathname]);
+
+  // Serve static placeholder during SSR to prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <nav
+        className="fixed left-2 top-1/2 z-50 flex h-auto w-14 flex-col items-center justify-start gap-2 rounded-full px-2 py-4 -translate-y-1/2 md:left-4 md:top-1/2 md:w-auto md:max-w-none md:px-2 md:py-4"
+        style={{
+          background: "rgb(15, 23, 35)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+          willChange: "transform",
+        }}
+        aria-label="Primary dashboard navigation"
+      >
+        {navItems.map(({ iconId, label, href }) => (
+          <div key={label} className="relative flex items-center">
+            <Link
+              href={href}
+              prefetch={false}
+              className="relative flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200"
+              style={{
+                color: "rgba(255,255,255,0.45)",
+                background: "transparent",
+              }}
+              aria-label={label}
+            >
+              <Icon id={iconId} size={20} strokeWidth={1.8} />
+            </Link>
+          </div>
+        ))}
+      </nav>
+    );
+  }
 
   return (
     <nav
       className="fixed left-2 top-1/2 z-50 flex h-auto w-14 flex-col items-center justify-start gap-2 rounded-full px-2 py-4 -translate-y-1/2 md:left-4 md:top-1/2 md:w-auto md:max-w-none md:px-2 md:py-4"
       style={{
-        background: "rgba(15, 23, 35, 0.8)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
+        background: "rgb(15, 23, 35)",
         border: "1px solid rgba(255,255,255,0.08)",
         boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
         willChange: "transform",

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Vote, 
   FilePlus, 
@@ -13,8 +13,13 @@ import {
   ChevronRight, 
   Wallet 
 } from 'lucide-react';
+import { subscribe } from '@/workers/masterTimerWorker';
 import { withShortenedAddressField } from '@/utils/addressUtils';
-import { useRAFInterval } from '@/app/hooks/useRAFInterval';
+import { useIsHydrated } from '@/app/hooks/useIsHydrated';
+
+import { useWallet, useWalletStatus, useWalletActions } from '@/app/hooks/useWalletState';
+import Icon from '@/components/icons/Icon';
+import { ICON_IDS } from '@/components/icons/iconIds';
 
 // --- Types ---
 interface Proposal {
@@ -36,43 +41,32 @@ const MOCK_PROPOSALS: Proposal[] = [
   { id: 'SFP-09', title: 'Increase Relayer Missed-Heartbeat Penalty Weight by 2%', proposer: 'GCXXVHZLKMNPQRSXYZABCDEFGHIJKLM7766', status: 'Defeated', votesFor: 110000, votesAgainst: 920000, quorumThreshold: 50, endsInLedgers: 0 },
 ];
 
-export default function GovernancePage() {
-  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'archived'>('all');
+const GovernanceWalletControl = React.memo(function GovernanceWalletControl() {
+  const { wallet } = useWallet();
+  const { isChecking } = useWalletStatus();
+  const { refreshWalletState } = useWalletActions();
 
-  // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
-  const transformedProposals = useMemo(
-    () => withShortenedAddressField(MOCK_PROPOSALS, 'proposer'),
-    [MOCK_PROPOSALS],
-  );
-
-  // Live ledger countdown — one shared RAF tick every ~5 s (Stellar avg ledger time)
-  const [ledgerCounts, setLedgerCounts] = useState<Record<string, number>>(
-    () => Object.fromEntries(MOCK_PROPOSALS.map(p => [p.id, p.endsInLedgers]))
-  );
-
-  useRAFInterval(() => {
-    setLedgerCounts(prev => {
-      const next = { ...prev };
-      for (const id in next) {
-        if (next[id] > 0) next[id] -= 1;
-      }
-      return next;
-    });
-  }, 5000);
+  const walletStatus = wallet?.connected
+    ? wallet.publicKey
+      ? `${wallet.publicKey.slice(0, 4)}...${wallet.publicKey.slice(-4)}`
+      : 'Connected'
+    : 'No wallet connected';
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
-      
-      {/* --- Header Section --- */}
+    <div className="flex flex-col gap-3">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <p className="text-sm text-gray-500 mb-1">Admin / Consensus</p>
           <h1 className="text-3xl font-bold tracking-tight">Governance & Proposals</h1>
         </div>
-        <div className="flex gap-3">
-          <button className="flex items-center gap-2 bg-[#161b22] border border-gray-800 hover:bg-gray-800 text-gray-300 px-4 py-2 rounded-lg transition-all text-sm font-medium">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={() => refreshWalletState()}
+            disabled={isChecking}
+            className="flex items-center gap-2 bg-[#161b22] border border-gray-800 hover:bg-gray-800 text-gray-300 px-4 py-2 rounded-lg transition-all text-sm font-medium"
+          >
             <Icon id={ICON_IDS.wallet} size={16} className="text-purple-400" />
-            Connect Freighter Wallet
+            {wallet?.connected ? walletStatus : 'Connect Freighter Wallet'}
           </button>
           <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all text-sm font-medium">
             <Icon id={ICON_IDS.filePlus} size={16} />
@@ -81,6 +75,51 @@ export default function GovernancePage() {
         </div>
       </div>
 
+      <div className="mb-3 text-sm text-gray-400">
+        Active wallet status: <span className="text-white">{walletStatus}</span>
+      </div>
+    </div>
+  );
+});
+
+export default function GovernancePage() {
+  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'archived'>('all');
+  const isHydrated = useIsHydrated();
+
+  // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
+  const transformedProposals = useMemo(
+    () => withShortenedAddressField(MOCK_PROPOSALS, 'proposer'),
+    [MOCK_PROPOSALS],
+  );
+
+  // Live ledger countdown — one shared RAF tick every ~5 s (Stellar avg ledger time)
+  // Initialize with static values on SSR, then update via effects after hydration
+  const [ledgerCounts, setLedgerCounts] = useState<Record<string, number>>(
+    () => Object.fromEntries(MOCK_PROPOSALS.map(p => [p.id, p.endsInLedgers]))
+  );
+
+  // Subscribe to the central master timer (via requestAnimationFrame) to decrement ledger counts.
+  // Only activate after hydration to ensure server and client match initially.
+  useEffect(() => {
+    if (!isHydrated) return;
+    
+    const unsubscribe = subscribe(() => {
+      setLedgerCounts(prev => {
+        const next = { ...prev };
+        for (const id in next) {
+          if (next[id] > 0) next[id] -= 1;
+        }
+        return next;
+      });
+    });
+    return () => unsubscribe();
+  }, [isHydrated]);
+
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
+      
+      {/* --- Header Section --- */}
+      <GovernanceWalletControl />
       {/* --- Consensus Statistics Rows --- */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <StatCard title="Total Staking Power" value="2.85M SF" icon={<Icon id={ICON_IDS.vote} size={20} className="text-blue-400" />} subtitle="Active voting weights" />
@@ -118,9 +157,15 @@ export default function GovernancePage() {
                       {proposal.status}
                     </span>
                     {proposal.status === 'Active' && (
-                      <span className="text-xs text-gray-500 flex items-center gap-1 font-mono">
-                        <Icon id={ICON_IDS.clock} size={12} /> ~{(ledgerCounts[proposal.id] ?? 0).toLocaleString()} ledgers remaining
-                      </span>
+                      isHydrated ? (
+                        <span className="text-xs text-gray-500 flex items-center gap-1 font-mono">
+                          <Icon id={ICON_IDS.clock} size={12} /> ~{(ledgerCounts[proposal.id] ?? 0).toLocaleString()} ledgers remaining
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-500 flex items-center gap-1 font-mono">
+                          <Icon id={ICON_IDS.clock} size={12} /> ~{proposal.endsInLedgers.toLocaleString()} ledgers remaining
+                        </span>
+                      )
                     )}
                   </div>
                   <h3 className="text-lg font-semibold text-gray-100 group-hover:text-blue-400 transition-colors">{proposal.title}</h3>

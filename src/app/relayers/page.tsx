@@ -1,21 +1,29 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { useDebounce } from "../hooks/useDebounce";
-import { buildShortenedAddressMap } from "@/utils/addressUtils";
-import { RELAYERS_PAGE_STATUS_VARIANTS } from "@/lib/classNameVariants";
-import { Icon, ICON_IDS } from "@/components/icons";
+import React, { useState, useMemo } from 'react';
+import { useDebounce } from '../hooks/useDebounce';
+import { useRafThrottle } from '../hooks/useRafThrottle';
+import { useTransformedCustomAddressField } from '@/app/hooks/useTransformedData';
+import {
+  Activity,
+  Plus,
+  Search,
+  MoreVertical,
+  RefreshCw,
+  ShieldCheck,
+  Clock,
+  Signal,
+} from 'lucide-react';
+import { RELAYERS_PAGE_STATUS_VARIANTS } from '@/lib/classNameVariants';
+import Icon from "@/components/icons/Icon";
+import { ICON_IDS } from "@/components/icons/iconIds";
+import {
+  RelayerManagementRow,
+  type RelayerManagementRecord,
+} from "@/app/components/relayers/RelayerManagementRow";
 
 // --- Types ---
-interface Relayer {
-  id: string;
-  name: string;
-  address: string;
-  status: "active" | "lagging" | "offline";
-  uptime: string;
-  latency: number;
-  successRate: number;
-}
+type Relayer = RelayerManagementRecord;
 
 // --- Mock Data ---
 const MOCK_RELAYERS: Relayer[] = [
@@ -51,6 +59,7 @@ const MOCK_RELAYERS: Relayer[] = [
 export default function RelayersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearch = useDebounce(searchTerm, 250);
+  const throttledSetSearchTerm = useRafThrottle((v: string) => setSearchTerm(v));
 
   const displayedRelayers = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
@@ -60,12 +69,6 @@ export default function RelayersPage() {
         r.name.toLowerCase().includes(q) || r.address.toLowerCase().includes(q),
     );
   }, [debouncedSearch]);
-
-  // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
-  const shortenedAddressMap = useMemo<Record<string, string>>(
-    () => buildShortenedAddressMap(MOCK_RELAYERS, 'id', 'address'),
-    [MOCK_RELAYERS],
-  );
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
@@ -116,7 +119,7 @@ export default function RelayersPage() {
               type="text"
               placeholder="Search by name or address..."
               className="w-full bg-[#0d1117] border border-gray-700 rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-blue-500 transition-colors"
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => throttledSetSearchTerm(e.target.value)}
             />
           </div>
           <div className="flex gap-2">
@@ -140,44 +143,7 @@ export default function RelayersPage() {
             </thead>
             <tbody className="divide-y divide-gray-800">
               {displayedRelayers.map((relayer) => (
-                <tr
-                  key={relayer.id}
-                  className="hover:bg-[#1c2128] transition-colors group"
-                >
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-blue-400">{relayer.name}</div>
-                    {/* PERFORMANCE OPTIMIZATION: O(1) map lookup instead of O(n) array scan */}
-                    <div className="text-xs text-gray-500 font-mono">
-                      {shortenedAddressMap[relayer.id]}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 node-status-cell">
-                    <StatusBadge status={relayer.status} />
-                  </td>
-                  <td className="px-6 py-4 text-sm node-status-cell numeric-value">{relayer.uptime}</td>
-                  <td className="px-6 py-4 text-sm font-mono node-status-cell numeric-value">{relayer.latency}ms</td>
-                  <td className="px-6 py-4 metric-indicator">
-                    <div className="w-24 bg-gray-700 h-1.5 rounded-full overflow-hidden">
-                      <div
-                        className="bg-blue-500 h-full dynamic-scale-x"
-                        style={{
-                          width: "100%",
-                          transform: `scaleX(${relayer.successRate / 100})`,
-                          transformOrigin: "left",
-                          willChange: "transform",
-                        }}
-                      />
-                    </div>
-                    <span className="text-[10px] text-gray-500 mt-1 block numeric-value">
-                      {relayer.successRate}% confirmed
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="p-1.5 hover:bg-gray-700 rounded-md text-gray-400">
-                      <Icon id={ICON_IDS.moreVertical} size={18} />
-                    </button>
-                  </td>
-                </tr>
+                <RelayerManagementRow key={relayer.id} relayer={relayer} />
               ))}
             </tbody>
           </table>
@@ -227,19 +193,3 @@ function StatCard({
     </div>
   );
 }
-
-const StatusBadge = React.memo(
-  function StatusBadge({ status }: { status: "active" | "lagging" | "offline" }) {
-    return (
-      <span
-        style={{ contain: "layout", willChange: "opacity, transform" }}
-        className={`px-2 py-1 rounded-full text-[10px] font-bold border uppercase tracking-tighter ${RELAYERS_PAGE_STATUS_VARIANTS[status]}`}
-      >
-        ● {status}
-      </span>
-    );
-  },
-  (prev, next) => prev.status === next.status,
-);
-
-StatusBadge.displayName = "StatusBadge";

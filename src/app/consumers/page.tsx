@@ -1,35 +1,29 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { 
-  Users, 
-  Key, 
-  Layers, 
-  CreditCard, 
-  Plus, 
-  Search, 
-  ExternalLink, 
-  CheckCircle2, 
-  RefreshCcw, 
-  Eye, 
-  EyeOff, 
-  Copy 
+import {
+  Users,
+  Layers,
+  CreditCard,
+  Plus,
+  CheckCircle2,
+  Copy,
 } from 'lucide-react';
+import { useDebounce } from '@/app/hooks/useDebounce';
 import { withShortenedAddressField } from '@/utils/addressUtils';
+import Icon from '@/components/icons/Icon';
+import { ICON_IDS } from '@/components/icons/iconIds';
+import { ConsumerSearchInput } from '@/app/components/ConsumerSearchInput';
+import {
+  ConsumerTableRow,
+  type ConsumerTableRecord,
+} from '@/app/components/consumers/ConsumerTableRow';
 
 // --- Types ---
-interface Consumer {
-  id: string;
-  projectName: string;
-  contractAddress: string;
-  tier: "Enterprise" | "Developer" | "Staging";
-  status: "active" | "expired" | "paused";
-  monthlyRequests: string;
-  balanceXLM: number;
-}
+type ConsumerSource = Omit<ConsumerTableRecord, 'shortenedAddress'>;
 
 // --- Mock Data ---
-const MOCK_CONSUMERS: Consumer[] = [
+const MOCK_CONSUMERS: ConsumerSource[] = [
   {
     id: "C-01",
     projectName: "Zazu Lending Pool",
@@ -78,7 +72,7 @@ export default function ConsumersPage() {
 
   // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
   const transformedConsumers = useMemo(
-    () => useTransformedCustomAddressField(MOCK_CONSUMERS, "contractAddress"),
+    () => withShortenedAddressField(MOCK_CONSUMERS, 'contractAddress'),
     [],
   );
 
@@ -95,9 +89,20 @@ export default function ConsumersPage() {
     );
   }, [debouncedSearch, transformedConsumers]);
 
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
+
   const handleCopy = () => {
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -219,58 +224,7 @@ export default function ConsumersPage() {
             </thead>
             <tbody className="divide-y divide-gray-800">
               {filteredConsumers.map((consumer) => (
-                <tr
-                  key={consumer.id}
-                  className="hover:bg-[#1c2128] transition-colors group"
-                >
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-gray-200">
-                      {consumer.projectName}
-                    </div>
-                    {/* PERFORMANCE OPTIMIZATION: Use pre-computed shortened address instead of runtime string slicing */}
-                    <div className="text-xs text-gray-500 font-mono">
-                      {consumer.shortenedAddress}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`${CONSUMER_TIER_BADGE_CLASS} ${CONSUMER_TIER_VARIANTS[consumer.tier]}`}
-                    >
-                      {consumer.tier}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`flex items-center gap-1.5 text-xs font-medium ${CONSUMER_STATUS_TEXT_VARIANTS[consumer.status]}`}
-                    >
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${CONSUMER_STATUS_DOT_VARIANTS[consumer.status]}`}
-                      />
-                      <span className="capitalize">{consumer.status}</span>
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm font-mono text-gray-300">
-                    {consumer.monthlyRequests}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div
-                      className={`text-sm font-mono ${getBalanceColorClass(consumer.balanceXLM)}`}
-                    >
-                      {consumer.balanceXLM.toFixed(2)} XLM
-                    </div>
-                    {consumer.balanceXLM < 200 && (
-                      <span className="text-[10px] text-yellow-600 block leading-none mt-0.5">
-                        Low Refill Alert
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="text-blue-400 hover:text-blue-300 inline-flex items-center gap-1 text-xs">
-                      <span>View Contract</span>
-                      <ExternalLink size={12} />
-                    </button>
-                  </td>
-                </tr>
+                <ConsumerTableRow key={consumer.id} consumer={consumer} />
               ))}
             </tbody>
           </table>
@@ -302,41 +256,4 @@ function StatCard({
       <div className="text-xs text-gray-500">{subtitle}</div>
     </div>
   );
-}
-
-// --- Style Constants ---
-const CONSUMER_TIER_BADGE_CLASS =
-  "px-3 py-1.5 rounded-full text-xs font-medium inline-block";
-
-const CONSUMER_TIER_VARIANTS: Record<
-  "Enterprise" | "Developer" | "Staging",
-  string
-> = {
-  Enterprise: "bg-blue-900/40 text-blue-300 border border-blue-700/50",
-  Developer: "bg-purple-900/40 text-purple-300 border border-purple-700/50",
-  Staging: "bg-gray-700/40 text-gray-300 border border-gray-600/50",
-};
-
-const CONSUMER_STATUS_TEXT_VARIANTS: Record<
-  "active" | "expired" | "paused",
-  string
-> = {
-  active: "text-green-400",
-  expired: "text-red-400",
-  paused: "text-yellow-400",
-};
-
-const CONSUMER_STATUS_DOT_VARIANTS: Record<
-  "active" | "expired" | "paused",
-  string
-> = {
-  active: "bg-green-500",
-  expired: "bg-red-500",
-  paused: "bg-yellow-500",
-};
-
-function getBalanceColorClass(balance: number): string {
-  if (balance >= 500) return "text-green-400";
-  if (balance >= 200) return "text-yellow-400";
-  return "text-red-400";
 }

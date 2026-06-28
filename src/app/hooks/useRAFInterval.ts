@@ -12,6 +12,11 @@ let rafId: number | null = null
 const subscribers = new Set<Subscriber>()
 
 const tick = (now: number) => {
+  if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+    rafId = null
+    return
+  }
+
   subscribers.forEach((sub) => {
     if (now - sub.lastTick >= sub.intervalMs) {
       sub.lastTick = now
@@ -22,7 +27,7 @@ const tick = (now: number) => {
 }
 
 const startLoop = () => {
-  if (rafId === null) {
+  if (rafId === null && (typeof document === 'undefined' || document.visibilityState === 'visible')) {
     rafId = requestAnimationFrame(tick)
   }
 }
@@ -32,6 +37,16 @@ const stopLoop = () => {
     cancelAnimationFrame(rafId)
     rafId = null
   }
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      startLoop()
+    } else {
+      // The tick function will automatically stop when it detects hidden state
+    }
+  })
 }
 
 export function useRAFInterval(

@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useDebounce } from '../hooks/useDebounce';
+import { useRafThrottle } from '../hooks/useRafThrottle';
+import { useTransformedCustomAddressField } from '@/app/hooks/useTransformedData';
 import { buildShortenedAddressMap } from '@/utils/addressUtils';
 import { 
   ShieldCheck, 
@@ -16,21 +18,15 @@ import {
   ArrowUpRight 
 } from 'lucide-react';
 import {
-  getHealthBarColor,
-  STAKER_SLASHING_NO_EVENTS,
-  STAKER_SLASHING_WITH_EVENTS,
-} from '@/lib/classNameVariants';
+  StakerTableRow,
+  type StakerTableRecord,
+} from '@/app/components/staking/StakerTableRow';
+import { BondAllocationCalculator } from '@/app/components/staking/BondAllocationCalculator';
+import Icon from '@/components/icons/Icon';
+import { ICON_IDS } from '@/components/icons/iconIds';
 
 // --- Types ---
-interface StakerNode {
-  id: string;
-  nodeName: string;
-  operatorAddress: string;
-  stakedAmountXLM: number;
-  accruedRewardsXLM: number;
-  totalSlashingEvents: number;
-  healthFactor: number; // Percentage score
-}
+type StakerNode = StakerTableRecord;
 
 // --- Mock Data ---
 const MOCK_STAKERS: StakerNode[] = [
@@ -43,18 +39,53 @@ const MOCK_STAKERS: StakerNode[] = [
 export default function StakingPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 250);
+  const throttledSetSearchTerm = useRafThrottle((v: string) => setSearchTerm(v));
+
+  const [confirmationMsg, setConfirmationMsg] = useState<string | null>(null);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const timeoutsRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+
+  useEffect(() => {
+    return () => {
+      // Explicitly cleanup trailing timers on unmount
+      timeoutsRef.current.forEach(clearTimeout);
+      timeoutsRef.current.clear();
+    };
+  }, []);
+
+  const handleConfirm = useCallback(async (allocations: Record<string, number>) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setConfirmationMsg('Loading secure environment...');
+    try {
+      const { submitTransaction } = await import('@/lib/transactionOps');
+      setConfirmationMsg('Allocation confirmed. Submitting to network…');
+      const txHash = await submitTransaction(allocations);
+      setConfirmationMsg(`Transaction successful: ${txHash}`);
+      
+      const timer1 = setTimeout(() => {
+        setConfirmationMsg(null);
+        timeoutsRef.current.delete(timer1);
+      }, 3000);
+      timeoutsRef.current.add(timer1);
+    } catch (err) {
+      setConfirmationMsg('Transaction failed');
+      const timer2 = setTimeout(() => {
+        setConfirmationMsg(null);
+        timeoutsRef.current.delete(timer2);
+      }, 2000);
+      timeoutsRef.current.add(timer2);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [isSubmitting]);
 
   const displayedStakers = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
     if (!q) return MOCK_STAKERS;
     return MOCK_STAKERS.filter(s => s.nodeName.toLowerCase().includes(q) || s.operatorAddress.toLowerCase().includes(q));
   }, [debouncedSearch]);
-
-  // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
-  const shortenedAddressMap = useMemo<Record<string, string>>(
-    () => buildShortenedAddressMap(MOCK_STAKERS, 'id', 'operatorAddress'),
-    [MOCK_STAKERS],
-  );
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
@@ -94,7 +125,7 @@ export default function StakingPage() {
               type="text" 
               placeholder="Search active stakers by node name or identity..." 
               className="w-full bg-[#0d1117] border border-gray-700 rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-blue-500 transition-colors"
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => throttledSetSearchTerm(e.target.value)}
             />
           </div>
           <button className="p-2 bg-[#0d1117] hover:bg-gray-800 rounded-md border border-gray-700 text-gray-400 self-end md:self-auto">
@@ -116,45 +147,7 @@ export default function StakingPage() {
             </thead>
             <tbody className="divide-y divide-gray-800">
               {displayedStakers.map((node) => (
-                <tr key={node.id} className="hover:bg-[#1c2128] transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-gray-200">{node.nodeName}</div>
-                    {/* PERFORMANCE OPTIMIZATION: O(1) map lookup instead of O(n) array scan */}
-                    <div className="text-xs text-gray-500 font-mono">{shortenedAddressMap[node.id]}</div>
-                  </td>
-                  <td className="px-6 py-4 text-sm font-mono text-gray-300">
-                    {node.stakedAmountXLM.toLocaleString()} XLM
-                  </td>
-                  <td className="px-6 py-4 text-sm font-mono text-emerald-400">
-                    +{node.accruedRewardsXLM.toLocaleString()} XLM
-                  </td>
-                  <td className="px-6 py-4 node-status-cell">
-                    <div className="flex items-center gap-2 metric-indicator">
-                      <div className="w-16 bg-gray-700 h-1.5 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full dynamic-scale-x ${getHealthBarColor(node.healthFactor)}`} 
-                          style={{ '--scale-x': node.healthFactor/100 } as React.CSSProperties}
-                        />
-                      </div>
-                      <span className="text-xs font-semibold numeric-value">{node.healthFactor}%</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 node-status-cell">
-                    <span className={`px-2 py-0.5 rounded text-xs font-mono font-bold high-frequency-badge ${
-                      node.totalSlashingEvents === 0 
-                        ? STAKER_SLASHING_NO_EVENTS 
-                        : STAKER_SLASHING_WITH_EVENTS
-                    }`}>
-                      {node.totalSlashingEvents} slash events
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="text-blue-400 hover:text-blue-300 inline-flex items-center gap-1 text-xs font-medium">
-                      <span>Manage Node</span>
-                      <Icon id={ICON_IDS.arrowUpRight} size={12} />
-                    </button>
-                  </td>
-                </tr>
+                <StakerTableRow key={node.id} node={node} />
               ))}
             </tbody>
           </table>
@@ -171,6 +164,24 @@ export default function StakingPage() {
           </p>
         </div>
       </div>
+
+      {/* --- Confirmation Toast --- */}
+      {confirmationMsg !== null && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="mt-4 p-3 bg-emerald-950/30 border border-emerald-800/40 rounded-lg text-emerald-400 text-sm"
+        >
+          {confirmationMsg}
+        </div>
+      )}
+
+      {/* --- Bond Allocation Calculator --- */}
+      <BondAllocationCalculator
+        nodes={MOCK_STAKERS}
+        availableBalance={100_000}
+        onConfirm={handleConfirm}
+      />
 
     </div>
   );

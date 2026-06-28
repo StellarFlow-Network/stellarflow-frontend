@@ -1,8 +1,10 @@
 "use client";
 
 import React, { memo, useState } from "react";
-import { Icon, ICON_IDS } from "@/components/icons";
-import type { IconId } from "@/components/icons";
+import Icon from "@/components/icons/Icon";
+import { ICON_IDS } from "@/components/icons/iconIds";
+import type { IconId } from "@/components/icons/iconIds";
+
 
 interface Tab {
   id: string;

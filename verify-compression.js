@@ -1,7 +1,7 @@
 const http = require('http');
 const https = require('https');
 const zlib = require('zlib');
-
+// 
 const url = 'http://localhost:3000/api/price-feed/ngn-xlm'; // Adjust URL as needed
 
 async function verifyCompression(encoding) {

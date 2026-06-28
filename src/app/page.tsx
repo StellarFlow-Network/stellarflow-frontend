@@ -5,6 +5,7 @@ import SystemStats from "./components/SystemStats";
 import ModularStatsCard from "./components/ModularStatsCard";
 import RelayerStatusTable from "./components/RelayerStatusTable";
 import DashboardInteractive from "./DashboardInteractive";
+import { SocketProvider } from "./components/providers/SocketProvider";
 
 const mockRelayers = [
   { id: "r1", name: "Abuja Relayer", status: "Online" as const, latency: 34 },
@@ -76,7 +77,9 @@ export default function Page() {
           </section>
 
           {/* Client-rendered interactive sections */}
-          <DashboardInteractive rateCards={rateCards} />
+          <SocketProvider>
+            <DashboardInteractive rateCards={rateCards} />
+          </SocketProvider>
 
           {/* Relayer Status Table — server-rendered static HTML */}
           <section

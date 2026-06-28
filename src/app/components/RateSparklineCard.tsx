@@ -1,9 +1,14 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { Shimmer } from "@/components/skeletons";
+import React, { useEffect, useMemo, useState } from "react";
+import { Shimmer } from "@/components/skeletons/Shimmer";
+import { useChartWorker } from "../charts/useChartWorker";
+import {
+  computeSparklinePoints,
+  CHART_HISTORY_LIMIT,
+} from "../charts/chartCalculations";
 
-const CHART_HISTORY_LIMIT = 150;
+const SPARKLINE_GEOMETRY = { width: 120, height: 32, limit: CHART_HISTORY_LIMIT };
 
 interface RateSparklineCardProps {
   currency: string;
@@ -18,30 +23,30 @@ const MiniSparkline = React.memo(function MiniSparkline({
 }: {
   data: number[];
 }) {
-  const points = useMemo(() => {
-    const width = 120;
-    const height = 32;
+  const { computeSparkline } = useChartWorker();
+  const id = React.useId();
 
-    // Cap to the last CHART_HISTORY_LIMIT vectors and null-prune trailing slots.
-    const windowed = data.slice(-CHART_HISTORY_LIMIT);
-    windowed.length = windowed.length;
+  // Seed synchronously from the shared module so the line is correct on first
+  // paint, then offload recomputation to the worker as the data stream updates.
+  const seed = useMemo(
+    () => computeSparklinePoints(data, SPARKLINE_GEOMETRY),
+    [data],
+  );
+  const [points, setPoints] = useState(seed);
 
-    if (windowed.length < 2) {
-      return "";
-    }
-
-    const min = Math.min(...windowed);
-    const max = Math.max(...windowed);
-    const range = max - min || 1;
-
-    return windowed
-      .map((value, index) => {
-        const x = (index / (windowed.length - 1)) * width;
-        const y = height - ((value - min) / range) * height;
-        return `${x},${y}`;
+  useEffect(() => {
+    let cancelled = false;
+    computeSparkline(id, data, SPARKLINE_GEOMETRY)
+      .then((next) => {
+        if (!cancelled) setPoints(next);
       })
-      .join(" ");
-  }, [data]);
+      .catch(() => {
+        // Keep the synchronous seed if the worker is unavailable.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [data, id, computeSparkline, seed]);
 
   return (
     <svg

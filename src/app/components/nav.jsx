@@ -4,21 +4,52 @@ import React, { memo, useCallback } from "react";
 import OptimizedImage from "./OptimizedImage";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { Icon, ICON_IDS } from "@/components/icons";
+import Icon from "@/components/icons/Icon";
+import { ICON_IDS } from "@/components/icons/iconIds";
 import { useProgressBar } from "./TopLoadingBar";
+import { useWallet, useWalletStatus, useWalletActions } from "../hooks/useWalletState";
+
+const WalletConnectButton = memo(() => {
+  const { wallet } = useWallet();
+  const { isChecking } = useWalletStatus();
+  const { refreshWalletState } = useWalletActions();
+  const { start, done } = useProgressBar();
+
+  const walletLabel = wallet?.connected
+    ? wallet.publicKey
+      ? `${wallet.publicKey.slice(0, 4)}...${wallet.publicKey.slice(-4)}`
+      : "Wallet connected"
+    : "Connect Wallet";
+
+  const handleConnectWallet = useCallback(async () => {
+    start();
+    const state = await refreshWalletState();
+    done();
+
+    if (state?.connected) {
+      alert(`Connected wallet: ${state.publicKey ?? "unknown"}`);
+    } else {
+      alert("No active Stellar wallet detected. Please connect your extension.");
+    }
+  }, [refreshWalletState, start, done]);
+
+  return (
+    <button
+      onClick={handleConnectWallet}
+      disabled={isChecking}
+      className="wallet-btn group flex min-w-0 items-center gap-2 px-3 sm:gap-2.5 sm:px-4 py-2 rounded-2xl font-semibold text-sm sm:text-base transition-all duration-300 hover:shadow-xl active:scale-95 whitespace-nowrap"
+    >
+      <Icon id={ICON_IDS.wallet} size={18} className="transition-transform group-hover:rotate-12" />
+      <span className="truncate">{walletLabel}</span>
+    </button>
+  );
+});
+WalletConnectButton.displayName = "WalletConnectButton";
 
 const Nav = memo(() => {
   const hasAnomaly = true;
   const router = useRouter();
   const pathname = usePathname();
-  const { start, done } = useProgressBar();
-
-  const handleConnectWallet = useCallback(async () => {
-    start();
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    done();
-    alert("Connect Wallet clicked! (Add your Web3 logic here)");
-  }, [start, done]);
 
   return (
     <main className="sticky top-0 z-50 bg-zinc-950 border-b border-zinc-800">
@@ -46,15 +77,7 @@ const Nav = memo(() => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={handleConnectWallet}
-            className="wallet-btn group flex min-w-0 items-center gap-2 px-3 sm:gap-2.5 sm:px-4 py-2 rounded-2xl font-semibold text-sm sm:text-base transition-all duration-300 hover:shadow-xl active:scale-95 whitespace-nowrap"
-          >
-            <Icon id={ICON_IDS.wallet} size={18} className="transition-transform group-hover:rotate-12" />
-            <span className="truncate">
-              Connect <span className="hidden md:inline">Wallet</span>
-            </span>
-          </button>
+          <WalletConnectButton />
 
           <button
             aria-label="System anomaly alerts"
@@ -82,7 +105,6 @@ const Nav = memo(() => {
             onPointerEnter={() => {
               if (pathname !== '/admin/settings') router.prefetch('/admin/settings')
             }}
-            onMouseEnter={() => router.prefetch("/admin/settings")}
             aria-label="Admin settings"
             className="p-2 rounded-xl hover:bg-zinc-800 transition-colors"
           >

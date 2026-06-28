@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Icon, ICON_IDS } from '@/components/icons';
+import Icon from '@/components/icons/Icon';
+import { ICON_IDS } from '@/components/icons/iconIds';
 import { useDebounce } from '../hooks/useDebounce';
+import { useRafThrottle } from '../hooks/useRafThrottle';
 
 interface Settings {
   emailReports: boolean;
@@ -34,25 +36,26 @@ export default function SettingsPage() {
   });
   const [savedSettings, setSavedSettings] = useState<Settings>({ ...settings });
   const [isPending, setIsPending] = useState(false);
-  const [lastSaveTime, setLastSaveTime] = useState<number>(0);
 
   const debouncedSettings = useDebounce(settings, 500);
-  const isSaving = Date.now() - lastSaveTime < 500;
-  const hasChanges = JSON.stringify(settings) !== JSON.stringify(savedSettings);
+
+  const throttledSetSessionTimeout = useRafThrottle((v: string) => setSettings(prev => ({ ...prev, sessionTimeout: v })));
+
+  // Compute hasChanges at render time to be used in the render and effect
+  const hasChanges = JSON.stringify(debouncedSettings) !== JSON.stringify(savedSettings);
 
   useEffect(() => {
     if (hasChanges && !isPending) {
       const timer = setTimeout(async () => {
         setIsPending(true);
-        console.log('Saving settings:', settings);
+        console.log('Saving settings:', debouncedSettings);
         await new Promise(r => setTimeout(r, 300));
-        setSavedSettings({ ...settings });
-        setLastSaveTime(Date.now());
+        setSavedSettings({ ...debouncedSettings });
         setIsPending(false);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [debouncedSettings, hasChanges, isPending, settings]);
+  }, [debouncedSettings, hasChanges, isPending]);
 
   const handleToggle = (key: keyof Settings) => {
     setSettings(prev => ({ ...prev, [key]: !prev[key] }));
@@ -173,7 +176,7 @@ export default function SettingsPage() {
               <select 
                 className="bg-[#0d1117] border border-gray-700 rounded py-1 px-2 text-xs"
                 value={settings.sessionTimeout}
-                onChange={(e) => setSettings(prev => ({ ...prev, sessionTimeout: e.target.value }))}
+                onChange={(e) => throttledSetSessionTimeout(e.target.value)}
               >
                 <option>15 Minutes</option>
                 <option>1 Hour</option>

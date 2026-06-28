@@ -44,13 +44,16 @@ body {
   box-shadow: 0 10px 15px -3px rgb(185 249 124 / 0.4);
 }
 
+.status-ping { animation: status-ping 1s ease-out infinite; transform: translateZ(0); will-change: transform, opacity; }
+.status-pulse { animation: status-pulse 1.2s ease-in-out infinite; transform: translateZ(0); will-change: transform, opacity; }
+@keyframes status-ping { 0% { transform: scale(.8); opacity: .3; } 100% { transform: scale(1.25); opacity: 0; } }
+@keyframes status-pulse { 0%, 100% { transform: scale(.95); opacity: .3; } 50% { transform: scale(1); opacity: 1; } }
+
 /* ─── Admin Tab Bar ──────────────────────────────────────── */
 
 .admin-tabbar-wrapper {
   width: 100%;
-  background: rgba(10, 10, 10, 0.65);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: #0a0a0a;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   padding-left: 1.5rem;
   padding-right: 1.5rem;
@@ -156,6 +159,40 @@ body {
   box-shadow: none;
 }
 
+/* ─── GPU-Accelerated Status Animations ──────────────────── */
+
+@keyframes status-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes status-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.animate-status-pulse {
+  animation: status-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-status-ping {
+  animation: status-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.gpu-layer {
+  will-change: opacity, transform;
+  transform: translateZ(0);
+}
 /* ─────────────────────────────────────────────────────────────
    HARDWARE-ACCELERATED EXPANSION/COLLAPSE ANIMATIONS
    
