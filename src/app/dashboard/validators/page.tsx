@@ -6,6 +6,9 @@ import {
   useValidatorAudit,
   type ValidatorNode,
 } from "../../hooks/useValidatorAudit";
+import { ValidatorHeartbeatCell } from "../../components/validators/ValidatorHeartbeatCell";
+import { ValidatorStatusWidget } from "../../components/validators/ValidatorStatusWidget";
+import { VALIDATOR_METRIC_CARD_MIN_HEIGHT_PX } from "@/types/validators";
 
 const ROW_HEIGHT = 57; // py-4 (~16px top+bottom) + 1px border + content ≈ 57px
 
@@ -71,22 +74,34 @@ export default function ValidatorAuditPage() {
 
       {/* Grid Overview Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+        <div
+          className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 dashboard-status-widget"
+          style={{ minHeight: VALIDATOR_METRIC_CARD_MIN_HEIGHT_PX }}
+        >
           <span className="text-xs font-mono text-neutral-400 block mb-1">TOTAL ACTIVE VALIDATORS</span>
           <span className="text-2xl font-bold font-mono text-neutral-100">
             {validators.filter((v) => v.status === "active").length} /{" "}
             {validators.length}
           </span>
         </div>
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+        <div
+          className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 dashboard-status-widget"
+          style={{ minHeight: VALIDATOR_METRIC_CARD_MIN_HEIGHT_PX }}
+        >
           <span className="text-xs font-mono text-neutral-400 block mb-1">TOTAL CAPITAL STAKED</span>
           <span className="text-2xl font-bold font-mono text-lime-400">107,000 XLM</span>
         </div>
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+        <div
+          className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 dashboard-status-widget"
+          style={{ minHeight: VALIDATOR_METRIC_CARD_MIN_HEIGHT_PX }}
+        >
           <span className="text-xs font-mono text-neutral-400 block mb-1">CUMULATIVE SLASH EVENTS</span>
           <span className="text-2xl font-bold font-mono text-red-400">9 Infracs</span>
         </div>
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+        <div
+          className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 dashboard-status-widget validator-heartbeat-cell"
+          style={{ minHeight: VALIDATOR_METRIC_CARD_MIN_HEIGHT_PX }}
+        >
           <span className="text-xs font-mono text-neutral-400 block mb-1">NETWORK HEARTBEAT INDEX</span>
           <span className="text-2xl font-bold font-mono text-emerald-400">93.15%</span>
         </div>
@@ -115,25 +130,21 @@ export default function ValidatorAuditPage() {
               {virtualRows.map((vRow) => {
                 const val = filteredValidators[vRow.index];
                 return (
-                  <tr key={val.id} className="hover:bg-neutral-800/20 transition-colors">
+                  <tr
+                    key={val.id}
+                    className="hover:bg-neutral-800/20 transition-colors"
+                    style={{ contain: "layout paint" }}
+                  >
                     <td className="py-4 px-4 font-bold text-neutral-200 font-sans">{val.name}</td>
                     <td className="py-4 px-4 text-xs text-neutral-500 font-mono select-all">{val.address}</td>
-                    <td className={`py-4 px-4 text-right font-bold ${val.uptime > 95 ? "text-emerald-400" : val.uptime > 80 ? "text-amber-500" : "text-red-500"}`}>
-                      {val.uptime.toFixed(2)}%
-                    </td>
+                    <ValidatorHeartbeatCell uptime={val.uptime} status={val.status} />
                     <td className="py-4 px-4 text-right text-neutral-300">{val.missedBlocks}</td>
                     <td className={`py-4 px-4 text-right font-bold ${val.slashingEvents > 0 ? "text-red-400" : "text-neutral-500"}`}>
                       {val.slashingEvents}
                     </td>
                     <td className="py-4 px-4 text-right text-neutral-100">{val.stakedXlm.toLocaleString()} XLM</td>
                     <td className="py-4 px-4 text-center">
-                      <span className={`px-2.5 py-1 rounded text-xs uppercase tracking-wider font-sans font-bold ${
-                        val.status === "active" ? "bg-emerald-950/80 text-emerald-400 border border-emerald-800" :
-                        val.status === "jailed" ? "bg-amber-950/80 text-amber-400 border border-amber-800" :
-                        "bg-neutral-950 text-neutral-500 border border-neutral-800"
-                      }`}>
-                        {val.status}
-                      </span>
+                      <ValidatorStatusWidget status={val.status} />
                     </td>
                   </tr>
                 );
