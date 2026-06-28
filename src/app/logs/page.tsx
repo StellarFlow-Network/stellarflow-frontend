@@ -7,9 +7,8 @@ import { buildHighlightedParts } from '@/utils/textUtils';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { LogEntry, FilteredLogResult } from './types';
-import { readIndexedLogs, writeIndexedLogs } from './indexedLogStorage';
 import { LogEntry, FilteredLogResult, FuseMatch } from './types';
+import { readIndexedLogs, writeIndexedLogs } from './indexedLogStorage';
 
 // --- Mock Data ---
 const MOCK_LOGS: LogEntry[] = [
@@ -19,13 +18,20 @@ const MOCK_LOGS: LogEntry[] = [
   { id: '104', timestamp: '2026-04-28 12:20:10', type: 'transaction', severity: 'info', message: 'XDR: BBBBBEEEEEEFFFFF...', actor: 'Binance Pan-Africa', txHash: '0xdef...456' },
 ];
 
-const getStartupLogs = () => readIndexedLogs() ?? MOCK_LOGS;
-
 export default function LogsPage() {
-  const [logs] = useState<LogEntry[]>(getStartupLogs);
+  const [logs, setLogs] = useState<LogEntry[]>(MOCK_LOGS);
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredResults, setFilteredResults] = useState<FilteredLogResult[]>(() => logs.map(l => ({ item: l })));
+  const [filteredResults, setFilteredResults] = useState<FilteredLogResult[]>(() => MOCK_LOGS.map(l => ({ item: l })));
+
+  React.useEffect(() => {
+    readIndexedLogs().then((cached) => {
+      if (cached && cached.length > 0) {
+        setLogs(cached);
+        setFilteredResults(cached.map(l => ({ item: l })));
+      }
+    });
+  }, []);
   const [isSearching, setIsSearching] = React.useState(false);
   const workerRef = React.useRef<Worker | null>(null);
 
@@ -299,44 +305,6 @@ export default function LogsPage() {
                       )}
                     </div>
                   </div>
-                     <div className="px-6 py-4 truncate text-gray-200">
-                       {log.decodedData ? (
-                         <div className="flex flex-col gap-1">
-                           <span className="text-[10px] text-purple-400 uppercase font-bold tracking-wider">Decoded XDR</span>
-                           <span className="text-xs text-green-400 font-mono">{JSON.stringify(log.decodedData)}</span>
-                         </div>
-                       ) : (
-                         <SearchHighlight text={log.message} matches={matches.find((m) => m.key === 'message')?.indices} />
-                       )}
-                     </div>
-                     <div className="px-6 py-4 text-gray-400 truncate">
-                       <SearchHighlight text={log.actor} matches={matches.find((m) => m.key === 'actor')?.indices} />
-                     </div>
-                     <div className="px-6 py-4 text-right">
-                       {log.txHash ? (
-                         <button className="text-blue-500 hover:text-blue-400 flex items-center gap-1 justify-end ml-auto group/hash">
-                           <span className="text-xs uppercase group-hover/hash:underline">
-                             <SearchHighlight text={log.txHash} matches={matches.find((m) => m.key === 'txHash')?.indices} />
-                           </span>
-                           <ExternalLink size={12} />
-                         </button>
-                       ) : (
-                         <span className="text-gray-600">—</span>
-                       )}
-                     </div>
-                   </div>
-                 </div>
-               );
-             })}
-
-
-            
-            {displayedResults.length === 0 && (
-              <div className="px-6 py-20 text-center text-gray-500 h-full flex flex-col items-center justify-center gap-2">
-                <Search size={32} className="opacity-20" />
-                <p>No logs matching "{searchQuery}"</p>
-              </div>
-            )}
                 );
               })}
             </div>
@@ -365,7 +333,7 @@ export default function LogsPage() {
 function SearchHighlight({ text, matches }: { text: string; matches?: readonly (readonly [number, number])[] }) {
   if (!matches || matches.length === 0) return <span>{text}</span>;
 
-  const parts = React.useMemo(() => buildHighlightedParts(text, matches), [deps.text, deps.matchesJson]);
+  const parts = React.useMemo(() => buildHighlightedParts(text, matches), [text, matches]);
 
   return (
     <span>

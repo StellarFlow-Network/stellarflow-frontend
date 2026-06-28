@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { PriceData } from "@/types";
+import { savePriceBatch } from "@/lib/priceStorage";
 import { useErrorTimeout } from "./useErrorTimeout";
 
 interface SocketMessage {
@@ -74,13 +75,21 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
     reconnectIntervalRef.current = reconnectInterval;
   }, [maxReconnectAttempts, reconnectInterval]);
 
-  // Flush pending updates to state
+  // Flush pending updates to state and IndexedDB
   const flushPendingUpdates = useCallback(() => {
     if (pendingUpdatesRef.current.length === 0) return;
     
     // Take all pending updates
     const updates = [...pendingUpdatesRef.current];
     pendingUpdatesRef.current.length = 0;
+    
+    // Stream into IndexedDB for offline replay / instant rehydration
+    const priceUpdates = updates.filter(
+      (u): u is PriceData => 'id' in u && 'assetPair' in u && 'timestamp' in u,
+    );
+    if (priceUpdates.length > 0) {
+      savePriceBatch(priceUpdates).catch(() => {});
+    }
     
     // Apply all updates in a single state commit
     setLastUpdate((prev: PriceData | null) => {

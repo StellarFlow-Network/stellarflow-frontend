@@ -9,6 +9,7 @@ import { useDebounce } from "../hooks/useDebounce";
 import { useErrorTimeout } from "../hooks/useErrorTimeout";
 import { useSocketConnection, useSocketData } from "./providers/SocketProvider";
 import { Shimmer } from "@/components/skeletons/Shimmer";
+import { getLatestPrice, getCachedPrices } from "@/lib/priceStorage";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -108,6 +109,24 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   const [filterInput, setFilterInput] = useState("");
   const debouncedFilter = useDebounce(filterInput, 250);
   const { start, done } = useProgressBar();
+
+  // Hydrate from IndexedDB on mount for instant startup
+  useEffect(() => {
+    getLatestPrice('NGN/XLM').then((cached) => {
+      if (cached) {
+        setData({
+          price: cached.price,
+          change_24h: 0,
+          high_24h: cached.price,
+          low_24h: cached.price,
+          volume_24h: 0,
+          last_updated: new Date(cached.timestamp).toISOString(),
+        });
+        setLoading(false);
+        setLastRefresh(new Date(cached.timestamp));
+      }
+    });
+  }, []);
 
   // Granular context subscriptions — each hook only re-renders this component
   // when its specific slice changes, not on every unrelated socket event.
