@@ -11,6 +11,8 @@ import { DashboardTrafficChartSkeleton } from "@/components/skeletons/DashboardT
 import { useMounted } from "@/app/hooks/useMounted";
 import WebSocketTest from "./components/test/WebSocketTest";
 import { CorridorProvider } from "@/context/CorridorContext";
+import { SocketProvider } from "./components/providers/SocketProvider";
+import { ASSET_SYMBOLS } from "@/config/assetSymbols";
 
 const LiveNetworkMap = dynamic(() => import("@/app/components/Map"), {
   ssr: false,
@@ -284,7 +286,10 @@ export default function DashboardInteractive({
         will re-render on price ticks. All other layout panels above and below
         this boundary are shielded by React.memo rendering gates.
       */}
-      <CorridorProvider>
+      <SocketProvider
+        options={{ assetIds: [ASSET_SYMBOLS.NGN_XLM], enableDeltaUpdates: true }}
+      >
+        <CorridorProvider>
         {/* Dynamic Price Feed — NGN/XLM */}
         <section className="min-w-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="min-w-0 w-full max-w-full aspect-auto sm:aspect-4/3 min-h-[260px] sm:min-h-[320px] overflow-hidden">
@@ -296,7 +301,8 @@ export default function DashboardInteractive({
         <section className="flex justify-center">
           <WebSocketTest />
         </section>
-      </CorridorProvider>
+        </CorridorProvider>
+      </SocketProvider>
 
       {/* Live Network Map — memo-gated, no socket dependency */}
       <NetworkMapSection />

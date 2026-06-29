@@ -5,8 +5,6 @@ import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { ProgressBarProvider } from "./components/TopLoadingBar";
 import { UserProvider } from "./components/providers/UserProvider";
-import { SocketProvider } from "./components/providers/SocketProvider";
-import { WalletProvider } from "./components/providers/WalletProvider";
 import { QueryProvider } from "./components/providers/QueryProvider";
 import Script from "next/script";
 import SvgSprite from "@/components/icons/SvgSprite";
@@ -84,17 +82,11 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <UserProvider>
-            {/* SocketProvider wraps the full app so any route can consume
-                live WebSocket data without re-mounting on navigation. */}
-            <SocketProvider>
-              <WalletProvider>
-                <QueryProvider>
-                  <ProgressBarProvider>
-                    {children}
-                  </ProgressBarProvider>
-                </QueryProvider>
-              </WalletProvider>
-            </SocketProvider>
+            <QueryProvider>
+              <ProgressBarProvider>
+                {children}
+              </ProgressBarProvider>
+            </QueryProvider>
           </UserProvider>
         </ThemeProvider>
       </body>

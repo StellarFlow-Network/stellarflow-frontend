@@ -17,7 +17,7 @@ import { subscribe } from '@/workers/masterTimerWorker';
 import { withShortenedAddressField } from '@/utils/addressUtils';
 import { useIsHydrated } from '@/app/hooks/useIsHydrated';
 
-import { useWallet, useWalletStatus, useWalletActions } from '@/app/hooks/useWalletState';
+import { WalletProvider, useWallet, useWalletStatus, useWalletActions } from '@/app/hooks/useWalletState';
 import Icon from '@/components/icons/Icon';
 import { ICON_IDS } from '@/components/icons/iconIds';
 
@@ -41,7 +41,7 @@ const MOCK_PROPOSALS: Proposal[] = [
   { id: 'SFP-09', title: 'Increase Relayer Missed-Heartbeat Penalty Weight by 2%', proposer: 'GCXXVHZLKMNPQRSXYZABCDEFGHIJKLM7766', status: 'Defeated', votesFor: 110000, votesAgainst: 920000, quorumThreshold: 50, endsInLedgers: 0 },
 ];
 
-const GovernanceWalletControl = React.memo(function GovernanceWalletControl() {
+const GovernanceWalletControlContent = React.memo(function GovernanceWalletControlContent() {
   const { wallet } = useWallet();
   const { isChecking } = useWalletStatus();
   const { refreshWalletState } = useWalletActions();
@@ -81,6 +81,14 @@ const GovernanceWalletControl = React.memo(function GovernanceWalletControl() {
     </div>
   );
 });
+
+function GovernanceWalletControl() {
+  return (
+    <WalletProvider>
+      <GovernanceWalletControlContent />
+    </WalletProvider>
+  );
+}
 
 export default function GovernancePage() {
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'archived'>('all');
