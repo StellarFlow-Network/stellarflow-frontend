@@ -105,15 +105,13 @@ export default function CorridorMonitorPage() {
               {asks.map((ask, index) => (
                 <div
                   key={`ask-${index}`}
-                  className="relative flex justify-between text-xs font-mono py-1 px-2 group"
+                  className="relative flex justify-between text-xs font-mono py-1 px-2 group overflow-hidden"
                 >
                   <div
-                    className="absolute right-0 top-0 bottom-0 w-full bg-red-950/20 pointer-events-none"
-                    style={{
-                      transform: `scaleX(${ask.total / maxVolume})`,
+                    className="absolute right-0 top-0 bottom-0 left-0 bg-red-950/20 transition-transform duration-300 pointer-events-none will-change:transform"
+                    style={{ 
                       transformOrigin: 'right',
-                      willChange: 'transform',
-                      transition: 'transform 0.3s ease',
+                      transform: `scaleX(${(ask.total / maxVolume)})` 
                     }}
                   />
                   <span className="text-red-400 relative z-10">
@@ -140,15 +138,13 @@ export default function CorridorMonitorPage() {
               {bids.map((bid, index) => (
                 <div
                   key={`bid-${index}`}
-                  className="relative flex justify-between text-xs font-mono py-1 px-2 group"
+                  className="relative flex justify-between text-xs font-mono py-1 px-2 group overflow-hidden"
                 >
                   <div
-                    className="absolute right-0 top-0 bottom-0 w-full bg-emerald-950/20 pointer-events-none"
-                    style={{
-                      transform: `scaleX(${bid.total / maxVolume})`,
+                    className="absolute right-0 top-0 bottom-0 left-0 bg-emerald-950/20 transition-transform duration-300 pointer-events-none will-change:transform"
+                    style={{ 
                       transformOrigin: 'right',
-                      willChange: 'transform',
-                      transition: 'transform 0.3s ease',
+                      transform: `scaleX(${(bid.total / maxVolume)})` 
                     }}
                   />
                   <span className="text-emerald-400 relative z-10">
