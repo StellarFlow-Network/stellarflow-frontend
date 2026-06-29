@@ -20,8 +20,8 @@ function isValidStellarKey(key: string): boolean {
 
 export function RegistrySearch({ validators }: RegistrySearchProps) {
   const [input, setInput] = useState("");
-  // Structural address checking executes only after typing pauses (300 ms).
-  const debouncedQuery = useDebounce(input, 300);
+  // Structural address checking executes only after typing pauses (250 ms).
+  const debouncedQuery = useDebounce(input, 250);
 
   const results = useMemo(() => {
     const q = debouncedQuery.trim();
