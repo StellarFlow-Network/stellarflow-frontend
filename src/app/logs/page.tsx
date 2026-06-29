@@ -367,7 +367,7 @@ export default function LogsPage() {
           <select 
             className="bg-[#0d1117] border border-gray-700 rounded-md py-2 px-4 text-sm focus:outline-none"
             value={filter}
-            onChange={(e) => throttledSetFilter(e.target.value as any)}
+            onChange={(e) => throttledSetFilter(e.target.value)
           >
             <option value="all">All Severities</option>
             <option value="info">Info Only</option>

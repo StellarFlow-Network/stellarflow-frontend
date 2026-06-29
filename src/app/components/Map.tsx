@@ -4,7 +4,13 @@ import "leaflet/dist/leaflet.css";
 import React, { useEffect, useState, memo } from "react";
 import dynamic from "next/dynamic";
 import { useErrorTimeout } from "../hooks/useErrorTimeout";
-
+import type {
+  Feature,
+  FeatureCollection,
+  GeoJsonProperties,
+  Geometry,
+} from "geojson";
+import type { Layer } from "leaflet";
 // Dynamically import map components to avoid SSR issues
 const MapContainer = dynamic(() => import("react-leaflet").then((mod) => mod.MapContainer), { ssr: false });
 const TileLayer = dynamic(() => import("react-leaflet").then((mod) => mod.TileLayer), { ssr: false });
@@ -17,7 +23,8 @@ interface NetworkNode {
 }
 
 function Map() {
-  const [geoData, setGeoData] = useState<any>(null);
+  const [geoData, setGeoData] =
+  useState<FeatureCollection<Geometry, GeoJsonProperties> | null>(null);
   const [loading, setLoading] = useState(true);
   const { error, setError } = useErrorTimeout({ timeoutMs: 5000 });
 
@@ -42,9 +49,18 @@ function Map() {
   }, []);
 
   // Custom style for network regions
-  const networkStyle = (feature: any) => {
-    const status = feature.properties.network;
-    const nodeCount = feature.properties.nodes;
+  const networkStyle = (
+  feature?: Feature<Geometry, GeoJsonProperties>
+) => {
+    const props = feature?.properties as
+  | {
+      network?: string;
+      nodes?: number;
+    }
+  | undefined;
+
+const status = props?.network;
+const nodeCount = props?.nodes ?? 0;
     
     // Color intensity based on node count
     let opacity = 0.3;
@@ -62,7 +78,10 @@ function Map() {
   };
 
   // Popup content for each region
-  const onEachFeature = (feature: any, layer: any) => {
+  const onEachFeature = (
+  feature: Feature<Geometry, GeoJsonProperties>,
+  layer: Layer
+) => {
     if (feature.properties) {
       const popupContent = `
         <div class="p-2">
