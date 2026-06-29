@@ -108,8 +108,13 @@ export default function CorridorMonitorPage() {
                   className="relative flex justify-between text-xs font-mono py-1 px-2 group"
                 >
                   <div
-                    className="absolute right-0 top-0 bottom-0 bg-red-950/20 transition-all duration-300 pointer-events-none"
-                    style={{ width: `${(ask.total / maxVolume) * 100}%` }}
+                    className="absolute right-0 top-0 bottom-0 w-full bg-red-950/20 pointer-events-none"
+                    style={{
+                      transform: `scaleX(${ask.total / maxVolume})`,
+                      transformOrigin: 'right',
+                      willChange: 'transform',
+                      transition: 'transform 0.3s ease',
+                    }}
                   />
                   <span className="text-red-400 relative z-10">
                     {ask.price.toFixed(2)}
@@ -138,8 +143,13 @@ export default function CorridorMonitorPage() {
                   className="relative flex justify-between text-xs font-mono py-1 px-2 group"
                 >
                   <div
-                    className="absolute right-0 top-0 bottom-0 bg-emerald-950/20 transition-all duration-300 pointer-events-none"
-                    style={{ width: `${(bid.total / maxVolume) * 100}%` }}
+                    className="absolute right-0 top-0 bottom-0 w-full bg-emerald-950/20 pointer-events-none"
+                    style={{
+                      transform: `scaleX(${bid.total / maxVolume})`,
+                      transformOrigin: 'right',
+                      willChange: 'transform',
+                      transition: 'transform 0.3s ease',
+                    }}
                   />
                   <span className="text-emerald-400 relative z-10">
                     {bid.price.toFixed(2)}
