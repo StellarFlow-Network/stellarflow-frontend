@@ -24,6 +24,24 @@ export interface InboundMessage {
 
 // ─── Parsed XDR Fields ──────────────────────────────────────────────────────
 
+export interface SorobanContractEvent {
+  type: string;
+  contractId: string;
+  topics: string[];
+  data: any;
+}
+
+export interface SorobanTransactionMetrics {
+  cpuInsns: number;
+  memBytes: number;
+  outputSize: number;
+  eventsCount: number;
+  success: boolean;
+  errorMessage?: string;
+  gasUsed: string;
+  feeCharged: string;
+}
+
 export interface XdrFields {
   byteLength: number;
   envelopeType: number;
@@ -31,6 +49,15 @@ export interface XdrFields {
   headerHex: string;
   rawHex: string;
   decodedAt: string;
+  // Soroban-specific fields for transaction receipts
+  sorobanReceipt?: {
+    metrics: SorobanTransactionMetrics;
+    events: SorobanContractEvent[];
+    contractId?: string;
+    functionName?: string;
+    parameters?: any[];
+    returnValue?: any;
+  };
 }
 
 export interface DecodedResult {

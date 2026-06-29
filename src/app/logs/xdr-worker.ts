@@ -61,6 +61,9 @@ interface InboundMessage {
   payload: DecodeXdrPayload | BatchDecodePayload;
 }
 
+// Import Soroban type definitions
+import type { SorobanContractEvent, SorobanTransactionMetrics } from './worker-types';
+
 // Parsed fields we extract from the raw XDR binary buffer
 interface XdrFields {
   /** Raw byte length of the decoded binary */
@@ -75,6 +78,15 @@ interface XdrFields {
   rawHex: string;
   /** ISO timestamp of when decoding was completed in the worker */
   decodedAt: string;
+  // Soroban-specific fields for transaction receipts
+  sorobanReceipt?: {
+    metrics: SorobanTransactionMetrics;
+    events: SorobanContractEvent[];
+    contractId?: string;
+    functionName?: string;
+    parameters?: any[];
+    returnValue?: any;
+  };
 }
 
 interface DecodedResult {
