@@ -6,6 +6,7 @@ import {
   useValidatorAudit,
   type ValidatorNode,
 } from "../../hooks/useValidatorAudit";
+import { useDebounce } from "@/app/hooks/useDebounce";
 
 const ROW_HEIGHT = 57; // py-4 (~16px top+bottom) + 1px border + content ≈ 57px
 
