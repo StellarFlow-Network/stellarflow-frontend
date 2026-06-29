@@ -76,11 +76,18 @@ function buildMatches(log: LogEntry, query: string): FuseMatch[] | undefined {
   return matches.length > 0 ? matches : undefined;
 }
 
-function mergeDecodedLogs(logs: LogEntry[], decodedMap: Map<string, XdrFields>): LogEntry[] {
+function mergeDecodedLogs(
+  logs: LogEntry[],
+  decodedMap: Map<string, XdrFields>
+): LogEntry[] {
   return logs.map((log) => {
     const decodedData = decodedMap.get(log.id);
     if (!decodedData) return log;
-    return { ...log, decodedData: decodedData };
+
+    return {
+      ...log,
+      decodedData,
+    };
   });
 }
 
