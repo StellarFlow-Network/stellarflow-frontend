@@ -1,0 +1,378 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" aria-hidden="true" focusable="false" style="position: absolute; overflow: hidden;">
+  <defs>
+    {/* ── Admin tab icons ── */}
+    <symbol id="icon-radio" viewBox="0 0 24 24">
+      <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9" />
+      <path d="M7.8 16.2a6 6 0 0 1 0-8.5" />
+      <circle cx="12" cy="12" r="2" />
+      <path d="M16.2 7.8a6 6 0 0 1 0 8.5" />
+      <path d="M19.1 4.9c3.9 3.9 3.9 10.2 0 14.1" />
+    </symbol>
+
+    <symbol id="icon-file-check" viewBox="0 0 24 24">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+      <path d="m9 15 2 2 4-4" />
+    </symbol>
+
+    <symbol id="icon-network" viewBox="0 0 24 24">
+      <rect x="16" y="16" width="6" height="6" rx="1" />
+      <rect x="2" y="16" width="6" height="6" rx="1" />
+      <rect x="9" y="2" width="6" height="6" rx="1" />
+      <path d="M12 8v4" />
+      <path d="M5 16v-2a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2" />
+    </symbol>
+
+    <symbol id="icon-sliders" viewBox="0 0 24 24">
+      <path d="M21 4H14" /><path d="M10 4H3" />
+      <path d="M21 12H12" /><path d="M8 12H3" />
+      <path d="M21 20H16" /><path d="M12 20H3" />
+      <circle cx="12" cy="4" r="2" />
+      <circle cx="10" cy="12" r="2" />
+      <circle cx="14" cy="20" r="2" />
+    </symbol>
+
+    {/* ── Relayer page icons ── */}
+    <symbol id="icon-activity" viewBox="0 0 24 24">
+      <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+    </symbol>
+
+    <symbol id="icon-plus" viewBox="0 0 24 24">
+      <path d="M5 12h14" /><path d="M12 5v14" />
+    </symbol>
+
+    <symbol id="icon-search" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.35-4.35" />
+    </symbol>
+
+    <symbol id="icon-more-vertical" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="12" cy="5" r="1" />
+      <circle cx="12" cy="19" r="1" />
+    </symbol>
+
+    <symbol id="icon-refresh" viewBox="0 0 24 24">
+      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+      <path d="M3 21v-5h5" />
+      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+      <path d="M21 3v5h-5" />
+    </symbol>
+
+    <symbol id="icon-shield" viewBox="0 0 24 24">
+      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.68 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+      <path d="m9 12 2 2 4-4" />
+    </symbol>
+
+    <symbol id="icon-clock" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 6v6l4 2" />
+    </symbol>
+
+    <symbol id="icon-signal" viewBox="0 0 24 24">
+      <path d="M2 20h.01" /><path d="M7 20v-4" />
+      <path d="M12 20v-8" /><path d="M17 20V8" />
+      <path d="M22 20V4" />
+    </symbol>
+
+    {/* ── Table / list row actions ── */}
+    <symbol id="icon-arrow-up-right" viewBox="0 0 24 24">
+      <path d="M7 17L17 7" />
+      <path d="M7 7h10v10" />
+    </symbol>
+
+    <symbol id="icon-external-link" viewBox="0 0 24 24">
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <polyline points="15 3 21 3 21 9" />
+      <line x1="10" y1="14" x2="21" y2="3" />
+    </symbol>
+
+    <symbol id="icon-chevron-right" viewBox="0 0 24 24">
+      <path d="M9 18l6-6-6-6" />
+    </symbol>
+
+    {/* ── Status / health ── */}
+    <symbol id="icon-check-circle" viewBox="0 0 24 24">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <path d="M22 4L12 14.01l-3-3" />
+    </symbol>
+
+    <symbol id="icon-alert-triangle" viewBox="0 0 24 24">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </symbol>
+
+    <symbol id="icon-shield-alert" viewBox="0 0 24 24">
+      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.68 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </symbol>
+
+    {/* ── Misc page-level ── */}
+    <symbol id="icon-cpu" viewBox="0 0 24 24">
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+      <path d="M9 9h6v6H9z" />
+      <path d="M9 2v3" /><path d="M15 2v3" />
+      <path d="M9 19v3" /><path d="M15 19v3" />
+      <path d="M2 9h3" /><path d="M19 9h3" />
+      <path d="M2 15h3" /><path d="M19 15h3" />
+    </symbol>
+
+    <symbol id="icon-upload" viewBox="0 0 24 24">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
+    </symbol>
+
+    <symbol id="icon-zap" viewBox="0 0 24 24">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+    </symbol>
+
+    <symbol id="icon-lock" viewBox="0 0 24 24">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </symbol>
+
+    <symbol id="icon-unlock" viewBox="0 0 24 24">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+    </symbol>
+
+    <symbol id="icon-history" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </symbol>
+
+    <symbol id="icon-code2" viewBox="0 0 24 24">
+      <polyline points="16 18 22 12 16 6" />
+      <polyline points="8 6 2 12 8 18" />
+    </symbol>
+
+    <symbol id="icon-vote" viewBox="0 0 24 24">
+      <path d="M9 12l2 2 4-4" />
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+    </symbol>
+
+    <symbol id="icon-file-plus" viewBox="0 0 24 24">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+      <path d="M12 18v-6" />
+      <path d="M9 15h6" />
+    </symbol>
+
+    <symbol id="icon-users" viewBox="0 0 24 24">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </symbol>
+
+    <symbol id="icon-wallet" viewBox="0 0 24 24">
+      <path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
+      <polyline points="16 17 16 13 16.01 13" />
+      <path d="M4 9h16V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v3z" />
+    </symbol>
+
+    <symbol id="icon-coins" viewBox="0 0 24 24">
+      <circle cx="8" cy="14" r="7" />
+      <path d="M8 10a7 7 0 1 0 0 14 7 7 0 0 0 0-14z" transform="translate(-8 -6)" />
+      <path d="M15 4a7 7 0 0 1 0 14" />
+    </symbol>
+
+    <symbol id="icon-percent" viewBox="0 0 24 24">
+      <line x1="19" y1="5" x2="5" y2="19" />
+      <circle cx="6.5" cy="6.5" r="2.5" />
+      <circle cx="17.5" cy="17.5" r="2.5" />
+    </symbol>
+
+    <symbol id="icon-flame" viewBox="0 0 24 24">
+      <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+    </symbol>
+
+    <symbol id="icon-trending-up" viewBox="0 0 24 24">
+      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+      <polyline points="17 6 23 6 23 12" />
+    </symbol>
+
+    <symbol id="icon-gavel" viewBox="0 0 24 24">
+      <path d="M12 2L2 7l10 5 10-5-10-5z" />
+      <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
+    </symbol>
+
+    <symbol id="icon-shield-check" viewBox="0 0 24 24">
+      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.68 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+      <path d="m9 12 2 2 4-4" />
+    </symbol>
+
+    <symbol id="icon-key" viewBox="0 0 24 24">
+      <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778-7.778 5.5 5.5 0 0 1 7.777 7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+    </symbol>
+
+    <symbol id="icon-layers" viewBox="0 0 24 24">
+      <polygon points="12 2 2 7 12 12 22 7 12 2" />
+      <polyline points="2 17 12 22 22 17" />
+      <polyline points="2 12 12 17 22 12" />
+    </symbol>
+
+    <symbol id="icon-credit-card" viewBox="0 0 24 24">
+      <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+      <line x1="1" y1="10" x2="23" y2="10" />
+    </symbol>
+
+    <symbol id="icon-eye" viewBox="0 0 24 24">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </symbol>
+
+    <symbol id="icon-eye-off" viewBox="0 0 24 24">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a10.07 10.07 0 0 1 2.06-3.94M9.9 4.24A9.82 9.82 0 0 1 12 4c7 0 11 8 11 8a9.82 9.82 0 0 1-2.06 3.94M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </symbol>
+
+    <symbol id="icon-copy" viewBox="0 0 24 24">
+      <rect x="9" y="9" width="12" height="12" rx="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </symbol>
+
+    <symbol id="icon-refresh-ccw" viewBox="0 0 24 24">
+      <polyline points="1 4 1 10 7 10" />
+      <polyline points="23 20 23 14 17 14" />
+      <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
+    </symbol>
+
+    {/* ── Navigation sidebar ── */}
+    <symbol id="icon-layout-dashboard" viewBox="0 0 24 24">
+      <rect x="3" y="3" width="7" height="9" rx="1" />
+      <rect x="14" y="3" width="7" height="5" rx="1" />
+      <rect x="14" y="12" width="7" height="9" rx="1" />
+      <rect x="3" y="15" width="7" height="6" rx="1" />
+    </symbol>
+
+    <symbol id="icon-database" viewBox="0 0 24 24">
+      <ellipse cx="12" cy="5" rx="9" ry="3" />
+      <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+      <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+    </symbol>
+
+    <symbol id="icon-line-chart" viewBox="0 0 24 24">
+      <line x1="18" y1="20" x2="2" y2="20" />
+      <polyline points="4 14 9 9 12 12 15 8 19 13" />
+    </symbol>
+
+    <symbol id="icon-globe" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="2" y1="12" x2="22" y2="12" />
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+    </symbol>
+
+    <symbol id="icon-settings" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </symbol>
+
+    {/* ── Docs page ── */}
+    <symbol id="icon-book-open" viewBox="0 0 24 24">
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+    </symbol>
+
+    <symbol id="icon-terminal" viewBox="0 0 24 24">
+      <polyline points="4 17 10 11 4 5" />
+      <line x1="14" y1="19" x2="20" y2="19" />
+    </symbol>
+
+    <symbol id="icon-check" viewBox="0 0 24 24">
+      <polyline points="20 6 9 17 4 12" />
+    </symbol>
+
+    <symbol id="icon-play" viewBox="0 0 24 24">
+      <polygon points="5 3 19 12 5 21 5 3" />
+    </symbol>
+
+    {/* ── Logs page ── */}
+    <symbol id="icon-file-text" viewBox="0 0 24 24">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+      <polyline points="10 9 9 9 8 9" />
+    </symbol>
+
+    <symbol id="icon-download" viewBox="0 0 24 24">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </symbol>
+
+    <symbol id="icon-filter" viewBox="0 0 24 24">
+      <polygon points="22 3 2 3 10 12.46v7.54l4 2v-9.54L22 3" />
+    </symbol>
+
+    <symbol id="icon-chevron-left" viewBox="0 0 24 24">
+      <path d="M15 18l-6-6 6-6" />
+    </symbol>
+
+    <symbol id="icon-wifi" viewBox="0 0 24 24">
+      <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+      <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+      <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+      <line x1="12" y1="20" x2="12.01" y2="20" />
+    </symbol>
+
+    <symbol id="icon-wifi-off" viewBox="0 0 24 24">
+      <line x1="1" y1="1" x2="23" y2="23" />
+      <path d="M16.72 11.06a11 11 0 0 1 2.36 1.49" />
+      <path d="M5 12.55a11 11 0 0 1 5.17-2.47" />
+      <path d="M10.71 16.11a6 6 0 0 1 5.32 0" />
+      <path d="M1.42 9a16 16 0 0 1 4.59-2.57" />
+      <path d="M18 5.23a16 16 0 0 1 4.58 3.77" />
+      <line x1="12" y1="20" x2="12.01" y2="20" />
+    </symbol>
+
+    {/* ── Settings page ── */}
+    <symbol id="icon-user" viewBox="0 0 24 24">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </symbol>
+
+    <symbol id="icon-bell" viewBox="0 0 24 24">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </symbol>
+
+    <symbol id="icon-smartphone" viewBox="0 0 24 24">
+      <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+      <line x1="12" y1="18" x2="12.01" y2="18" />
+    </symbol>
+
+    <symbol id="icon-mail" viewBox="0 0 24 24">
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+      <polyline points="22,6 12,13 2,6" />
+    </symbol>
+
+    <symbol id="icon-save" viewBox="0 0 24 24">
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l7 7v11a2 2 0 0 1-2 2z" />
+      <path d="M17 21v-8H7v8M7 3v5h8" />
+    </symbol>
+
+    <symbol id="icon-rotate-ccw" viewBox="0 0 24 24">
+      <polyline points="1 4 1 10 7 10" />
+      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+    </symbol>
+
+    {/* ── Governance page ── */}
+    <symbol id="icon-x-circle" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="15" y1="9" x2="9" y2="15" />
+      <line x1="9" y1="9" x2="15" y2="15" />
+    </symbol>
+
+    {/* ── Navigation / topbar ── */}
+    <symbol id="icon-log-out" viewBox="0 0 24 24">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </symbol>
+  </defs>
+</svg>
