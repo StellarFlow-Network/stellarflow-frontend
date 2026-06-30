@@ -11,18 +11,23 @@ import { QueryProvider } from "./components/providers/QueryProvider";
 import Script from "next/script";
 import SvgSprite from "@/components/icons/SvgSprite";
 
+// Typography delivery (#467): `subsets: ["latin"]` restricts each font to the
+// essential latin glyph ranges, stripping the unused language asset mappings
+// (Cyrillic, Greek, Vietnamese, latin-ext) so only ~143 KB of font is ingested.
+// Geist and Geist Mono are variable fonts, so we keep the full weight axis in a
+// single self-hosted file per font instead of pinning static cuts — the app uses
+// weights 400/500/600/700, and the variable axis serves them all from one
+// subsetted file with no extra payload.
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
-  display: "optional",
-  weight: ["400", "700"]
+  display: "optional"
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-  display: "optional",
-  weight: ["400", "700"]
+  display: "optional"
 });
 
 export const metadata: Metadata = {
