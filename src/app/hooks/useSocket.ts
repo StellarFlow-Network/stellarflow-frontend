@@ -8,13 +8,6 @@ import { useRAFInterval } from "./useRAFInterval";
 import type { AssetSymbol } from "@/config/assetSymbols";
 import { WebSocketManager } from "@/utils/WebSocketManager";
 
-interface SocketMessage {
-  type: "price_update" | "delta_update";
-  assetId?: string;
-  data: PriceData | Partial<PriceData>;
-  timestamp: number;
-}
-
 export interface UseSocketOptions {
   assetIds?: AssetSymbol[];
   enableDeltaUpdates?: boolean;
@@ -46,7 +39,8 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
   const [lastUpdate, setLastUpdate] = useState<PriceData | null>(null);
   const { error, setError } = useErrorTimeout({ timeoutMs: errorTimeoutMs });
 
-  // Local tracking of subscribed assets for this component lifecycle context
+  // Track which assets this consumer instance has subscribed to so that
+  // cleanup on unmount is scoped to only those assets.
   const subscribedAssetsRef = useRef<Set<string>>(new Set(assetIds));
   const isVisible = usePageVisibility();
 

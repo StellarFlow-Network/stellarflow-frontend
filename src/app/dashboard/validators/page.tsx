@@ -151,7 +151,7 @@ export default function ValidatorAuditPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-800/50 text-sm font-mono">
-              {paddingTop > 0 && <tr><td colSpan={7} style={{ height: paddingTop }} /></tr>}
+              {paddingTop > 0 && <tr><td colSpan={8} style={{ height: paddingTop }} /></tr>}
               {virtualRows.map((vRow) => {
                 const val = filteredValidators[vRow.index];
                 return (
@@ -175,10 +175,22 @@ export default function ValidatorAuditPage() {
                         {val.status}
                       </span>
                     </td>
+                    <td className="py-4 px-4 text-right">
+                      {val.status === "jailed" && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedJailedValidator(val)}
+                          className="rounded-md border border-amber-800/70 bg-amber-950/40 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-amber-300 transition-colors hover:border-amber-500 hover:text-amber-100"
+                          aria-haspopup="dialog"
+                        >
+                          Inspect
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
-              {paddingBottom > 0 && <tr><td colSpan={7} style={{ height: paddingBottom }} /></tr>}
+              {paddingBottom > 0 && <tr><td colSpan={8} style={{ height: paddingBottom }} /></tr>}
             </tbody>
           </table>
         </div>
