@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { PriceData } from "@/types";
+import { savePriceBatch } from "@/lib/priceStorage";
 import { useErrorTimeout } from "./useErrorTimeout";
 import { usePageVisibility } from "./usePageVisibility";
 import { useRAFInterval } from "./useRAFInterval";
@@ -51,6 +52,7 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
   // Stable singleton transport layer — all consumers share one WS connection.
   const wsManager = WebSocketManager.getInstance();
 
+  // Flush pending updates to state and IndexedDB
   // ------------------------------------------------------------------
   // flushPendingUpdates — collapses all buffered ticks into one setState.
   // Stable identity (empty dep-array) so the RAF interval never restarts.
@@ -60,6 +62,16 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
 
     const updates = [...pendingUpdatesRef.current];
     pendingUpdatesRef.current.length = 0;
+    
+    // Stream into IndexedDB for offline replay / instant rehydration
+    const priceUpdates = updates.filter(
+      (u): u is PriceData => 'id' in u && 'assetPair' in u && 'timestamp' in u,
+    );
+    if (priceUpdates.length > 0) {
+      savePriceBatch(priceUpdates).catch(() => {});
+    }
+    
+    // Apply all updates in a single state commit
 
     setLastUpdate((prev: PriceData | null) => {
       let current = prev;

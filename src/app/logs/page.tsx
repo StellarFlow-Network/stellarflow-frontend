@@ -25,6 +25,7 @@ import { buildHighlightedParts, HighlightPart } from '@/utils/textUtils';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { LogEntry, FilteredLogResult, FuseMatch } from './types';
 const SEARCH_FIELDS: (keyof LogEntry)[] = ['message', 'actor', 'txHash'];
 
 import { LogEntry, FilteredLogResult, FuseMatch, XdrFields } from './types';
@@ -38,6 +39,24 @@ const MOCK_LOGS: LogEntry[] = [
   { id: '104', timestamp: '2026-04-28 12:20:10', type: 'transaction', severity: 'info', message: 'XDR: BBBBBEEEEEEFFFFF...', actor: 'Binance Pan-Africa', txHash: '0xdef...456' },
 ];
 
+export default function LogsPage() {
+  const [logs, setLogs] = useState<LogEntry[]>(MOCK_LOGS);
+  const [filter, setFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredResults, setFilteredResults] = useState<FilteredLogResult[]>(() => MOCK_LOGS.map(l => ({ item: l })));
+
+  React.useEffect(() => {
+    readIndexedLogs().then((cached) => {
+      if (cached && cached.length > 0) {
+        setLogs(cached);
+        setFilteredResults(cached.map(l => ({ item: l })));
+      }
+    });
+  }, []);
+  const [isSearching, setIsSearching] = React.useState(false);
+  const workerRef = React.useRef<Worker | null>(null);
+
+  // ── XDR Worker (off-thread base64 → binary decoding) ──────────────────
 function matchesSeverity(log: LogEntry, severity: "all" | LogEntry["severity"]) {
   return severity === "all" || log.severity === severity;
 }
@@ -547,6 +566,7 @@ function SearchHighlight({
 }) {
   const parts = useMemo<HighlightPart[]>(() => buildHighlightedParts(text, matches as [number, number][] | undefined), [text, matches]);
 
+  const parts = React.useMemo(() => buildHighlightedParts(text, matches), [text, matches]);
   if (!matches || matches.length === 0) {
     return <span>{text}</span>;
   }

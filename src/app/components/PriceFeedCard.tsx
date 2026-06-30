@@ -131,6 +131,28 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
   const throttledSetFilterInput = useRafThrottle((value: string) => setFilterInput(value));
   const { start, done } = useProgressBar();
 
+  // Hydrate from IndexedDB on mount for instant startup
+  useEffect(() => {
+    getLatestPrice('NGN/XLM').then((cached) => {
+      if (cached) {
+        setData({
+          price: cached.price,
+          change_24h: 0,
+          high_24h: cached.price,
+          low_24h: cached.price,
+          volume_24h: 0,
+          last_updated: new Date(cached.timestamp).toISOString(),
+        });
+        setLoading(false);
+        setLastRefresh(new Date(cached.timestamp));
+      }
+    });
+  }, []);
+
+  // Granular context subscriptions — each hook only re-renders this component
+  // when its specific slice changes, not on every unrelated socket event.
+  const { isConnected, error: wsError } = useSocketConnection();
+  const { lastUpdate: wsUpdate } = useSocketData();
   // Granular corridor context subscriptions — each hook only re-renders this
   // component when its specific slice changes. Price ticks update only the
   // stream slice; connection changes update only the connection slice.
