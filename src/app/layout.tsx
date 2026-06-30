@@ -17,9 +17,6 @@ const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
   display: "optional",
-  weight: ["400", "700"],
-  preload: true,
-  fallback: ["system-ui", "arial"],
 });
 
 // Monospace font is non-critical path — defer preload to reduce initial payload.
@@ -27,9 +24,6 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
   display: "optional",
-  weight: ["400", "700"],
-  preload: false,
-  fallback: ["ui-monospace", "Courier New"],
 });
 
 export const metadata: Metadata = {
@@ -59,6 +53,14 @@ export default function RootLayout({
           as="image"
           type="image/webp"
           fetchPriority="high"
+        />
+        {/* Preload the SVG symbol sheet so icons render on first paint */}
+        <link
+          rel="preload"
+          href="/sprite.svg"
+          as="image"
+          type="image/svg+xml"
+          fetchPriority="low"
         />
         <Script
           id="polyfill-loader"

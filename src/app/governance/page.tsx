@@ -63,15 +63,24 @@ const GovernanceWalletControl = React.memo(function GovernanceWalletControl() {
           <button
             onClick={() => refreshWalletState()}
             disabled={isChecking}
-            className="flex items-center gap-2 bg-[#161b22] border border-gray-800 hover:bg-gray-800 text-gray-300 px-4 py-2 rounded-lg transition-all text-sm font-medium"
+            className="flex items-center gap-2 bg-[#161b22] border border-gray-800 text-gray-300 px-4 py-2 rounded-lg text-sm font-medium relative overflow-hidden"
+            style={{ transition: 'transform 150ms ease, box-shadow 150ms ease' }}
           >
-            <Icon id={ICON_IDS.wallet} size={16} className="text-purple-400" />
-            {wallet?.connected ? walletStatus : 'Connect Freighter Wallet'}
+            <span className="absolute inset-0 bg-gray-800 opacity-0 hover:opacity-100 transition-opacity duration-150 pointer-events-none" />
+            <span className="relative z-10 flex items-center gap-2">
+              <Icon id={ICON_IDS.wallet} size={16} className="text-purple-400" />
+              {wallet?.connected ? walletStatus : 'Connect Freighter Wallet'}
+            </span>
           </button>
-          <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all text-sm font-medium">
+        <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium relative overflow-hidden"
+          style={{ transition: 'transform 150ms ease, box-shadow 150ms ease' }}
+        >
+          <span className="absolute inset-0 bg-blue-700 opacity-0 transition-opacity duration-150 pointer-events-none" />
+          <span className="relative z-10 flex items-center gap-2">
             <Icon id={ICON_IDS.filePlus} size={16} />
             Submit New Proposal
-          </button>
+          </span>
+        </button>
         </div>
       </div>
 
@@ -130,9 +139,18 @@ export default function GovernancePage() {
 
       {/* --- Filtering Tabs --- */}
       <div className="flex border-b border-gray-800 mb-6 gap-6">
-        <button onClick={() => setActiveTab('all')} className={`pb-3 text-sm font-medium capitalize transition-all ${activeTab === 'all' ? 'text-blue-400 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-300'}`}>All Ballots</button>
-        <button onClick={() => setActiveTab('active')} className={`pb-3 text-sm font-medium capitalize transition-all ${activeTab === 'active' ? 'text-blue-400 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-300'}`}>Active</button>
-        <button onClick={() => setActiveTab('archived')} className={`pb-3 text-sm font-medium capitalize transition-all ${activeTab === 'archived' ? 'text-blue-400 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-300'}`}>Archived</button>
+        <button onClick={() => setActiveTab('all')} className={`pb-3 text-sm font-medium capitalize relative ${activeTab === 'all' ? 'text-blue-400 border-b-2 border-blue-500' : 'text-gray-500'}`}>
+          {activeTab !== 'all' && <span className="absolute inset-0 bg-white/4 opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none" />}
+          <span className="relative z-10">All Ballots</span>
+        </button>
+        <button onClick={() => setActiveTab('active')} className={`pb-3 text-sm font-medium capitalize relative ${activeTab === 'active' ? 'text-blue-400 border-b-2 border-blue-500' : 'text-gray-500'}`}>
+          {activeTab !== 'active' && <span className="absolute inset-0 bg-white/4 opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none" />}
+          <span className="relative z-10">Active</span>
+        </button>
+        <button onClick={() => setActiveTab('archived')} className={`pb-3 text-sm font-medium capitalize relative ${activeTab === 'archived' ? 'text-blue-400 border-b-2 border-blue-500' : 'text-gray-500'}`}>
+          {activeTab !== 'archived' && <span className="absolute inset-0 bg-white/4 opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none" />}
+          <span className="relative z-10">Archived</span>
+        </button>
       </div>
 
       {/* --- Proposal List Suite --- */}
@@ -142,7 +160,8 @@ export default function GovernancePage() {
           const forPercentage = totalVotes > 0 ? (proposal.votesFor / totalVotes) * 100 : 0;
           
           return (
-            <div key={proposal.id} className="bg-[#161b22] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-colors group">
+            <div key={proposal.id} className="bg-[#161b22] border border-gray-800 rounded-xl p-6 group relative overflow-hidden" style={{ transition: 'border-color 150ms ease' }}>
+              <span className="absolute inset-0 bg-gray-700/10 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none" />
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 
                 {/* Proposal Text Meta */}
@@ -168,7 +187,7 @@ export default function GovernancePage() {
                       )
                     )}
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-100 group-hover:text-blue-400 transition-colors">{proposal.title}</h3>
+                  <h3 className="text-lg font-semibold text-gray-100 group-hover:text-blue-400 relative z-10">{proposal.title}</h3>
                   {/* PERFORMANCE OPTIMIZATION: Use pre-computed shortened address instead of runtime string slicing */}
                   <p className="text-xs text-gray-500 font-mono">Proposed by authority wallet: <span className="text-gray-400">{proposal.shortenedAddress}</span></p>
                 </div>
@@ -189,8 +208,9 @@ export default function GovernancePage() {
                     </div>
                   </div>
 
-                  <button className="p-2 bg-[#0d1117] group-hover:bg-gray-800 border border-gray-700 text-gray-400 rounded-lg shrink-0 self-end md:self-auto transition-colors">
-                    <Icon id={ICON_IDS.chevronRight} size={18} />
+                  <button className="p-2 bg-[#0d1117] border border-gray-700 text-gray-400 rounded-lg shrink-0 self-end md:self-auto relative overflow-hidden" style={{ transition: 'border-color 150ms ease' }}>
+                    <span className="absolute inset-0 bg-gray-800 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none" />
+                    <Icon id={ICON_IDS.chevronRight} size={18} className="relative z-10" />
                   </button>
                 </div>
 

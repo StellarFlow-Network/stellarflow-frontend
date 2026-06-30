@@ -3,11 +3,14 @@ import { render } from '@testing-library/react';
 import { MapSkeleton } from '../MapSkeleton';
 
 describe('MapSkeleton Component', () => {
-  it('renders and matches the map container dimensions', () => {
+  it('reserves a hard-locked height matching the map container (prevents CLS)', () => {
     const { container } = render(<MapSkeleton />);
     const skeletonDiv = container.firstChild as HTMLElement;
     expect(skeletonDiv).toBeInTheDocument();
-    expect(skeletonDiv).toHaveClass('min-h-[320px]');
+    // Fixed height (not min-height) so the reserved box cannot grow or shift
+    // when the dynamic Leaflet map and its remote tiles mount in its place.
+    expect(skeletonDiv).toHaveClass('h-[320px]');
+    expect(skeletonDiv).not.toHaveClass('min-h-[320px]');
     expect(skeletonDiv).toHaveClass('w-full');
   });
 });

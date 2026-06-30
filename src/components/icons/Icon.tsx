@@ -42,7 +42,7 @@ const Icon = React.memo(function Icon({
       strokeLinejoin="round"
       className={className}
     >
-      <use href={`#${id}`} />
+      <use xlink:href={`/static/sprite.svg#${id}`} />
     </svg>
   );
 });

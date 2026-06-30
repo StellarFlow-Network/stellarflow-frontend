@@ -78,9 +78,12 @@ export default function RelayersPage() {
           <p className="text-sm text-gray-500 mb-1">Admin / Network</p>
           <h1 className="text-3xl font-bold tracking-tight">Relayer Management</h1>
         </div>
-        <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all font-medium">
-          <Icon id={ICON_IDS.plus} size={18} />
-          Add New Relayer
+        <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium relative overflow-hidden" style={{ transition: 'transform 150ms ease, box-shadow 150ms ease' }}>
+          <span className="absolute inset-0 bg-blue-700 opacity-0 hover:opacity-100 transition-opacity duration-150 pointer-events-none" />
+          <span className="relative z-10 flex items-center gap-2">
+            <Icon id={ICON_IDS.plus} size={18} />
+            Add New Relayer
+          </span>
         </button>
       </div>
 
@@ -115,16 +118,21 @@ export default function RelayersPage() {
               size={18}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
             />
-            <input
-              type="text"
-              placeholder="Search by name or address..."
-              className="w-full bg-[#0d1117] border border-gray-700 rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-blue-500 transition-colors"
-              onChange={(e) => throttledSetSearchTerm(e.target.value)}
-            />
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search by name or address..."
+                className="w-full bg-[#0d1117] border border-gray-700 rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none relative z-10"
+                style={{ transition: 'border-color 150ms ease' }}
+                onChange={(e) => throttledSetSearchTerm(e.target.value)}
+              />
+              <span className="absolute inset-0 bg-gray-800 opacity-0 hover:opacity-100 transition-opacity duration-150 pointer-events-none rounded-md" />
+            </div>
           </div>
-          <div className="flex gap-2">
-            <button className="p-2 hover:bg-gray-800 rounded-md border border-gray-700 text-gray-400">
-              <Icon id={ICON_IDS.refresh} size={18} />
+          <div className="relative">
+            <button className="p-2 border border-gray-700 text-gray-400 rounded-md relative overflow-hidden" style={{ transition: 'border-color 150ms ease' }}>
+              <span className="absolute inset-0 bg-gray-800 opacity-0 hover:opacity-100 transition-opacity duration-150 pointer-events-none rounded-md" />
+              <Icon id={ICON_IDS.refresh} size={18} className="relative z-10" />
             </button>
           </div>
         </div>
