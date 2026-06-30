@@ -11,12 +11,15 @@ import { QueryProvider } from "./components/providers/QueryProvider";
 import Script from "next/script";
 import SvgSprite from "@/components/icons/SvgSprite";
 
+// subsets: ["latin"] restricts glyph maps to Latin characters only,
+// avoiding loading Cyrillic/Greek/CJK blocks and reducing CSS payload.
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
   display: "optional",
 });
 
+// Monospace font is non-critical path — defer preload to reduce initial payload.
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
