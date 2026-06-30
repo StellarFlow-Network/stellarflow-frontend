@@ -1,14 +1,23 @@
-import React from "react";
-import Breadcrumb from "./Breadcrumb";
-import GlobalHealthIndicator from "./GlobalHealthIndicator";
+'use client';
 
-interface StatsCardProps {
+import React from 'react';
+import { useHealthStatus } from '@/hooks/useHealthStatus';
+
+interface HealthIndicatorProps {
   label: string;
-  value: string | number;
-  showDot?: boolean;
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  timestamp?: number;
 }
 
-const StatsCard = ({ label, value, showDot = false }: StatsCardProps) => {
+function HealthIndicator({ label, status, timestamp }: HealthIndicatorProps) {
+  const statusColors: Record<string, string> = {
+    healthy: 'bg-green-500',
+    degraded: 'bg-yellow-500',
+    unhealthy: 'bg-red-500',
+  };
+
+  const color = statusColors[status] || 'bg-gray-500';
+
   return (
     <div  className="flex flex-col items-center md:items-start gap-1">
       <div className="flex items-center gap-2">
@@ -39,39 +48,71 @@ const StatsCard = ({ label, value, showDot = false }: StatsCardProps) => {
 </p>
     </div>
   );
-};
+}
 
-const SystemStats = () => {
-  return (
-    <section className="w-full max-w-7xl mx-auto px-4 sm:px-6">
-      {/* Section label */}
-      <h2 className="text-white text-xl font-bold mb-4 tracking-tight">
-        Oracle Status
-      </h2>
+/**
+ * System Stats Component
+ * Displays health status using batched health check endpoint
+ * Consolidates GlobalHealthIndicator and OracleHealthIndicator into single request
+ */
+export function SystemStats() {
+  const { health, loading, error, refetch } = useHealthStatus();
 
-      {/* Main card */}
-      <div className="bg-[#0A0F1E] border border-[#1B2A3B] border-t-2 border-t-[#39FF14] rounded-lg overflow-hidden shadow-2xl">
-
-        {/* Global Health row */}
-        <div className="px-6 py-4">
-          <GlobalHealthIndicator status="ACTIVE" />
-        </div>
-
-        {/* Green separator */}
-        <div className="h-px bg-gradient-to-r from-[#39FF14]/60 via-[#39FF14]/20 to-transparent mx-6" />
-
-        {/* Stats grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-4 px-6 py-8">
-          <StatsCard label="Global Health:" value="0" showDot={true} />
-          <StatsCard label="Active Contracts" value="4" />
-          <StatsCard label="Whitelisted Relayers:" value="3" />
-        </div>
-
-        {/* Bottom separator */}
-        <div className="h-px bg-[#1B2A3B] mx-6 mb-6" />
+  if (loading) {
+    return (
+      <div className="space-y-2 p-4">
+        <div className="h-12 bg-gray-200 rounded animate-pulse" />
+        <div className="h-12 bg-gray-200 rounded animate-pulse" />
       </div>
-    </section>
-  );
-};
+    );
+  }
 
-export default React.memo(SystemStats);
+  if (error) {
+    return (
+      <div className="p-4 bg-red-50 border border-red-200 rounded">
+        <p className="text-red-700 text-sm font-medium">Health check failed</p>
+        <p className="text-red-600 text-xs mt-1">{error.message}</p>
+        <button
+          onClick={refetch}
+          className="mt-2 px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (!health) {
+    return <div className="text-gray-500 text-sm">No health data available</div>;
+  }
+
+  return (
+    <div className="space-y-3 p-4 bg-white border border-gray-200 rounded-lg">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="font-semibold text-sm">System Status</h3>
+        <button
+          onClick={refetch}
+          className="text-xs px-2 py-1 text-blue-600 hover:bg-blue-50 rounded"
+        >
+          Refresh
+        </button>
+      </div>
+
+      <HealthIndicator
+        label="Global Health"
+        status={health.global.status}
+        timestamp={health.global.timestamp}
+      />
+
+      <HealthIndicator
+        label="Oracle Health"
+        status={health.oracle.status}
+        timestamp={health.oracle.timestamp}
+      />
+
+      <div className="text-xs text-gray-400 pt-2 border-t">
+        Last updated: {new Date(health.timestamp).toLocaleTimeString()}
+      </div>
+    </div>
+  );
+}
