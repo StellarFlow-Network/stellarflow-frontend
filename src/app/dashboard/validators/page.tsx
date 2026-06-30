@@ -90,22 +90,34 @@ export default function ValidatorAuditPage() {
 
       {/* Grid Overview Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+        <div
+          style={{ contain: "layout paint" }}
+          className="bg-neutral-900 border border-neutral-800 rounded-xl p-4"
+        >
           <span className="text-xs font-mono text-neutral-400 block mb-1">TOTAL ACTIVE VALIDATORS</span>
           <span className="text-2xl font-bold font-mono text-neutral-100">
             {validators.filter((v) => v.status === "active").length} /{" "}
             {validators.length}
           </span>
         </div>
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+        <div
+          style={{ contain: "layout paint" }}
+          className="bg-neutral-900 border border-neutral-800 rounded-xl p-4"
+        >
           <span className="text-xs font-mono text-neutral-400 block mb-1">TOTAL CAPITAL STAKED</span>
           <span className="text-2xl font-bold font-mono text-lime-400">107,000 XLM</span>
         </div>
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+        <div
+          style={{ contain: "layout paint" }}
+          className="bg-neutral-900 border border-neutral-800 rounded-xl p-4"
+        >
           <span className="text-xs font-mono text-neutral-400 block mb-1">CUMULATIVE SLASH EVENTS</span>
           <span className="text-2xl font-bold font-mono text-red-400">9 Infracs</span>
         </div>
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+        <div
+          style={{ contain: "layout paint" }}
+          className="bg-neutral-900 border border-neutral-800 rounded-xl p-4"
+        >
           <span className="text-xs font-mono text-neutral-400 block mb-1">NETWORK HEARTBEAT INDEX</span>
           <span className="text-2xl font-bold font-mono text-emerald-400">93.15%</span>
         </div>
