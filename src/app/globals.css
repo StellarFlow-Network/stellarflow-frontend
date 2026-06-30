@@ -391,3 +391,20 @@ body {
   will-change: contents;
 }
 
+/**
+ * Dashboard status widget — high-frequency metric cards and badge shells
+ * Restricts style recalculation to the widget bounds on the validator audit page.
+ */
+.dashboard-status-widget {
+  contain: layout paint;
+}
+
+/**
+ * Validator heartbeat cell — active-node pulse and uptime updates
+ * Isolates compositor-driven status animations from the document canvas.
+ */
+.validator-heartbeat-cell {
+  contain: layout paint;
+  will-change: opacity, transform;
+}
+
