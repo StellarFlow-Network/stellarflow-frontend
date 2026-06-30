@@ -39,12 +39,12 @@ export function useValidatorBatch(
     queryKey,
     queryFn: async () => {
       if (normalizedAddresses.length === 0) return [];
-
+      
       const cached = await getCachedHistory<ValidatorMetric[]>(historyKey);
       if (cached && cached.length > 0) {
         return cached;
       }
-
+      
       const url = `/api/validators?ids=${normalizedAddresses.map(encodeURIComponent).join(',')}`;
       const res = await fetch(url, {
         method: 'GET',
@@ -59,8 +59,11 @@ export function useValidatorBatch(
       return data;
     },
     initialData,
+// Keep previous data while loading new batched results.
     refetchOnWindowFocus: false,
     placeholderData: (previousData) => previousData,
+    // Do not refetch on window focus to keep data stable during rapid UI interactions.
+    refetchOnWindowFocus: false,
     staleTime: cacheConfig.staleTime,
     gcTime: cacheConfig.gcTime,
   });
