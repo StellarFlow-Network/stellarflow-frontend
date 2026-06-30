@@ -1,10 +1,14 @@
 "use client";
 
 import React from "react";
-import { useSocket } from "../../hooks/useSocket";
 import { useMounted } from "@/app/hooks/useMounted";
 import { Shimmer } from "@/components/skeletons/Shimmer";
 import { ASSET_SYMBOLS } from "@/config/assetSymbols";
+import {
+  useCorridorActions,
+  useCorridorConnection,
+  useCorridorStream,
+} from "@/context/CorridorContext";
 
 function WebSocketTestSkeleton() {
   return (
@@ -29,17 +33,9 @@ function WebSocketTestSkeleton() {
 
 export default function WebSocketTest() {
   const mounted = useMounted();
-  const {
-    isConnected,
-    lastUpdate,
-    error,
-    reconnectAttempts,
-    subscribeToAsset,
-    unsubscribeFromAsset,
-  } = useSocket({
-    assetIds: [ASSET_SYMBOLS.NGN_XLM],
-    enableDeltaUpdates: true,
-  });
+  const { isConnected, error, reconnectAttempts } = useCorridorConnection();
+  const { lastUpdate } = useCorridorStream();
+  const { subscribeToAsset, unsubscribeFromAsset } = useCorridorActions();
 
   if (!mounted) {
     return <WebSocketTestSkeleton />;

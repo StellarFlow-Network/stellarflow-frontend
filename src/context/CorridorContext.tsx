@@ -3,8 +3,8 @@
 /**
  * CorridorContext — focused sub-context node for live socket stream state.
  *
- * Problem: funnelling WebSocket price-tick state through the monolithic root
- * SocketProvider triggers full component-tree re-renders on every tick,
+ * Problem: funnelling WebSocket price-tick state through a broad root
+ * SocketProvider can trigger full component-tree re-renders on every tick,
  * including stable navigation and layout panels that have no dependency on
  * live price data.
  *
@@ -37,6 +37,7 @@ interface CorridorStreamContextType {
 interface CorridorConnectionContextType {
   isConnected: boolean;
   error: string | null;
+  reconnectAttempts: number;
 }
 
 /** Stable corridor action callbacks — identity never changes after mount. */
@@ -73,10 +74,10 @@ interface CorridorProviderProps {
  * must remain outside so they are never re-rendered by socket ticks.
  */
 export function CorridorProvider({ children }: CorridorProviderProps) {
-  // Pull the three independent slices from the root SocketProvider.
+  // Pull the three independent slices from the local SocketProvider.
   // Each hook already subscribes to only its own slice, so only the relevant
   // re-render cascade is triggered inside this sub-tree.
-  const { isConnected, error } = useSocketConnection();
+  const { isConnected, error, reconnectAttempts } = useSocketConnection();
   const { lastUpdate } = useSocketData();
   const { subscribeToAsset, unsubscribeFromAsset, reconnect } = useSocketActions();
 
@@ -89,8 +90,8 @@ export function CorridorProvider({ children }: CorridorProviderProps) {
   );
 
   const connectionValue = useMemo<CorridorConnectionContextType>(
-    () => ({ isConnected, error }),
-    [isConnected, error],
+    () => ({ isConnected, error, reconnectAttempts }),
+    [isConnected, error, reconnectAttempts],
   );
 
   const actionsValue = useMemo<CorridorActionsContextType>(
