@@ -61,7 +61,10 @@ export default function CorridorMonitorPage() {
 
           {/* Module 2: Synthetic Analytics / Flow Summary Component */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+            <div
+              style={{ contain: "layout paint" }}
+              className="bg-neutral-900 border border-neutral-800 rounded-xl p-4"
+            >
               <span className="text-xs font-mono text-neutral-400 block mb-1">
                 AGGREGATED 24H FLOW
               </span>
@@ -69,7 +72,10 @@ export default function CorridorMonitorPage() {
                 $7,020,000
               </span>
             </div>
-            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+            <div
+              style={{ contain: "layout paint" }}
+              className="bg-neutral-900 border border-neutral-800 rounded-xl p-4"
+            >
               <span className="text-xs font-mono text-neutral-400 block mb-1">
                 AVERAGE NETWORK SPREAD
               </span>
@@ -77,7 +83,10 @@ export default function CorridorMonitorPage() {
                 0.35%
               </span>
             </div>
-            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+            <div
+              style={{ contain: "layout paint" }}
+              className="bg-neutral-900 border border-neutral-800 rounded-xl p-4"
+            >
               <span className="text-xs font-mono text-neutral-400 block mb-1">
                 GLOBAL INGESTION HEALTH
               </span>
@@ -105,11 +114,14 @@ export default function CorridorMonitorPage() {
               {asks.map((ask, index) => (
                 <div
                   key={`ask-${index}`}
-                  className="relative flex justify-between text-xs font-mono py-1 px-2 group"
+                  className="relative flex justify-between text-xs font-mono py-1 px-2 group overflow-hidden"
                 >
                   <div
-                    className="absolute right-0 top-0 bottom-0 bg-red-950/20 transition-all duration-300 pointer-events-none"
-                    style={{ width: `${(ask.total / maxVolume) * 100}%` }}
+                    className="absolute right-0 top-0 bottom-0 left-0 bg-red-950/20 transition-transform duration-300 pointer-events-none will-change:transform"
+                    style={{ 
+                      transformOrigin: 'right',
+                      transform: `scaleX(${(ask.total / maxVolume)})` 
+                    }}
                   />
                   <span className="text-red-400 relative z-10">
                     {ask.price.toFixed(2)}
@@ -135,11 +147,11 @@ export default function CorridorMonitorPage() {
               {bids.map((bid, index) => (
                 <div
                   key={`bid-${index}`}
-                  className="relative flex justify-between text-xs font-mono py-1 px-2 group"
+                  className="relative flex justify-between text-xs font-mono py-1 px-2 group overflow-hidden"
                 >
                   <div
                     className="absolute right-0 top-0 bottom-0 bg-emerald-950/20 transition-all duration-300 pointer-events-none"
-                    style={{ width: `${(bid.total / maxVolume) * 100}%` }}
+                    style={{ width: "100%", transform: `scaleX(${(bid.total / maxVolume)})`, transformOrigin: "left", willChange: "transform" }}
                   />
                   <span className="text-emerald-400 relative z-10">
                     {bid.price.toFixed(2)}

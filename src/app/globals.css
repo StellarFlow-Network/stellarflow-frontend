@@ -36,12 +36,27 @@ body {
 .wallet-btn {
   background-color: #d9f99d;
   color: #1f2937;
+  position: relative;
+}
+
+.wallet-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: #bef574;
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+  pointer-events: none;
+  will-change: opacity;
 }
 
 .wallet-btn:hover {
-  background-color: #bef574;
   transform: translateY(-2px);
   box-shadow: 0 10px 15px -3px rgb(185 249 124 / 0.4);
+}
+
+.wallet-btn:hover::before {
+  opacity: 1;
 }
 
 .status-ping { animation: status-ping 1s ease-out infinite; transform: translateZ(0); will-change: transform, opacity; }
@@ -102,9 +117,27 @@ body {
   outline: none;
 }
 
+.admin-tab {
+  position: relative;
+}
+
+.admin-tab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.04);
+  opacity: 0;
+  transition: opacity 250ms ease;
+  pointer-events: none;
+  will-change: opacity;
+}
+
 .admin-tab:hover {
   color: rgba(255, 255, 255, 0.75);
-  background: rgba(255, 255, 255, 0.04);
+}
+
+.admin-tab:hover::before {
+  opacity: 1;
 }
 
 .admin-tab:focus-visible {
@@ -119,9 +152,23 @@ body {
   color: #99dc1b;
 }
 
+.admin-tab--active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(153, 220, 27, 0.06);
+  opacity: 0;
+  transition: opacity 250ms ease;
+  pointer-events: none;
+  will-change: opacity;
+}
+
 .admin-tab--active:hover {
   color: #99dc1b;
-  background: rgba(153, 220, 27, 0.06);
+}
+
+.admin-tab--active:hover::after {
+  opacity: 1;
 }
 
 /* ── Cyber Lime underline indicator ── */
@@ -244,12 +291,23 @@ body {
 
 .expandable-grid-header {
   cursor: pointer;
-  transition: background-color 150ms ease-out;
+  position: relative;
   user-select: none;
 }
 
-.expandable-grid-header:hover {
+.expandable-grid-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
   background-color: rgba(28, 33, 40, 0.5);
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+  pointer-events: none;
+  will-change: opacity;
+}
+
+.expandable-grid-header:hover::before {
+  opacity: 1;
 }
 
 /* CSS variable-based scaling for dynamic animations */

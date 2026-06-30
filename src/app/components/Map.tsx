@@ -4,7 +4,13 @@ import "leaflet/dist/leaflet.css";
 import React, { useEffect, useState, memo } from "react";
 import dynamic from "next/dynamic";
 import { useErrorTimeout } from "../hooks/useErrorTimeout";
-
+import type {
+  Feature,
+  FeatureCollection,
+  GeoJsonProperties,
+  Geometry,
+} from "geojson";
+import type { Layer } from "leaflet";
 // Dynamically import map components to avoid SSR issues
 const MapContainer = dynamic(() => import("react-leaflet").then((mod) => mod.MapContainer), { ssr: false });
 const TileLayer = dynamic(() => import("react-leaflet").then((mod) => mod.TileLayer), { ssr: false });
@@ -17,7 +23,8 @@ interface NetworkNode {
 }
 
 function Map() {
-  const [geoData, setGeoData] = useState<any>(null);
+  const [geoData, setGeoData] =
+  useState<FeatureCollection<Geometry, GeoJsonProperties> | null>(null);
   const [loading, setLoading] = useState(true);
   const { error, setError } = useErrorTimeout({ timeoutMs: 5000 });
 
@@ -42,9 +49,18 @@ function Map() {
   }, []);
 
   // Custom style for network regions
-  const networkStyle = (feature: any) => {
-    const status = feature.properties.network;
-    const nodeCount = feature.properties.nodes;
+  const networkStyle = (
+  feature?: Feature<Geometry, GeoJsonProperties>
+) => {
+    const props = feature?.properties as
+  | {
+      network?: string;
+      nodes?: number;
+    }
+  | undefined;
+
+const status = props?.network;
+const nodeCount = props?.nodes ?? 0;
     
     // Color intensity based on node count
     let opacity = 0.3;
@@ -62,7 +78,10 @@ function Map() {
   };
 
   // Popup content for each region
-  const onEachFeature = (feature: any, layer: any) => {
+  const onEachFeature = (
+  feature: Feature<Geometry, GeoJsonProperties>,
+  layer: Layer
+) => {
     if (feature.properties) {
       const popupContent = `
         <div class="p-2">
@@ -77,9 +96,9 @@ function Map() {
 
   if (loading) {
     return (
-      <div className="relative min-h-[320px] overflow-hidden rounded-[28px] border border-[#A7C957]/30 bg-[#0A1020] p-5 shadow-[0_24px_80px_rgba(2,8,23,0.42)]">
+      <div className="relative h-[320px] overflow-hidden rounded-[28px] border border-[#A7C957]/30 bg-[#0A1020] p-5 shadow-[0_24px_80px_rgba(2,8,23,0.42)]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,rgba(217,249,157,0.12),transparent_35%),radial-gradient(circle_at_85%_80%,rgba(96,165,250,0.12),transparent_40%)]" />
-        <div className="relative flex h-full min-h-[280px] items-center justify-center rounded-[24px] border border-white/10 bg-[#0F172A] p-6 text-center">
+        <div className="relative flex h-[280px] items-center justify-center rounded-[24px] border border-white/10 bg-[#0F172A] p-6 text-center">
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#D9F99D]/85">
               Loading Network Map...
@@ -95,9 +114,9 @@ function Map() {
 
   if (error) {
     return (
-      <div className="relative min-h-[320px] overflow-hidden rounded-[28px] border border-[#A7C957]/30 bg-[#0A1020] p-5 shadow-[0_24px_80px_rgba(2,8,23,0.42)]">
+      <div className="relative h-[320px] overflow-hidden rounded-[28px] border border-[#A7C957]/30 bg-[#0A1020] p-5 shadow-[0_24px_80px_rgba(2,8,23,0.42)]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,rgba(217,249,157,0.12),transparent_35%),radial-gradient(circle_at_85%_80%,rgba(96,165,250,0.12),transparent_40%)]" />
-        <div className="relative flex h-full min-h-[280px] items-center justify-center rounded-[24px] border border-white/10 bg-[#0F172A] p-6 text-center">
+        <div className="relative flex h-[280px] items-center justify-center rounded-[24px] border border-white/10 bg-[#0F172A] p-6 text-center">
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-red-400">
               Map Error
@@ -113,13 +132,13 @@ function Map() {
 
   return (
     <div
-      className="relative min-h-[320px] overflow-hidden rounded-[28px] border border-[#A7C957]/30 bg-[#0A1020] p-5 shadow-[0_24px_80px_rgba(2,8,23,0.42)]"
+      className="relative h-[320px] overflow-hidden rounded-[28px] border border-[#A7C957]/30 bg-[#0A1020] p-5 shadow-[0_24px_80px_rgba(2,8,23,0.42)]"
       // @ts-expect-error — fetchPriority is a valid HTML attribute but not yet in React types
       fetchPriority="high"
       data-lcp-element="network-map"
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,rgba(217,249,157,0.12),transparent_35%),radial-gradient(circle_at_85%_80%,rgba(96,165,250,0.12),transparent_40%)]" />
-      <div className="relative h-full min-h-[280px] rounded-[24px] border border-white/10 overflow-hidden">
+      <div className="relative h-[280px] rounded-[24px] border border-white/10 overflow-hidden">
         <div className="w-full h-full">
           <MapContainer
             center={[0, 20]} // Center on Africa
