@@ -134,6 +134,11 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
 
     // Ensure the singleton connection is open.
     wsManager.connect();
+    
+    return () => {
+      // Clean up subscriptions
+    };
+  }, [wsManager, isVisible, setError]);
 
     if (subscribedAssetsRef.current.size > 0) {
       wsManager.subscribeToAssets(Array.from(subscribedAssetsRef.current));
