@@ -7,6 +7,7 @@ import {
   type ValidatorNode,
 } from "../../hooks/useValidatorAudit";
 import { useDebouncedInput } from "../../hooks/useDebouncedInput";
+import { useDebounce } from "@/app/hooks/useDebounce";
 
 const ROW_HEIGHT = 57; // py-4 (~16px top+bottom) + 1px border + content ≈ 57px
 
@@ -15,6 +16,8 @@ export default function ValidatorAuditPage() {
   const { validators } = data;
 
   const [filter, setFilter] = useState<"all" | "active" | "jailed">("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 250);
   const [selectedJailedValidator, setSelectedJailedValidator] =
     useState<ValidatorNode | null>(null);
 
@@ -40,6 +43,25 @@ export default function ValidatorAuditPage() {
         v.address.toLowerCase().includes(q) || v.name.toLowerCase().includes(q),
     );
   }, [validators, filter, searchQuery]);
+    let result = validators;
+    
+    // Apply status filter
+    if (filter !== "all") {
+      result = result.filter((v) => v.status === filter);
+    }
+    
+    // Apply search filter (only using debounced query to prevent excessive filtering)
+    if (debouncedSearchQuery.trim()) {
+      const query = debouncedSearchQuery.toLowerCase();
+      result = result.filter(
+        (v) =>
+          v.name.toLowerCase().includes(query) ||
+          v.address.toLowerCase().includes(query)
+      );
+    }
+    
+    return result;
+  }, [validators, filter, debouncedSearchQuery]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -166,6 +188,82 @@ export default function ValidatorAuditPage() {
                   ×
                 </button>
               )}
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 shadow-2xl">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+          <h2 className="text-lg font-semibold text-neutral-200 flex items-center gap-2">
+            <span>🛡️</span> Security Infrastructure Node Matrix
+          </h2>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search validators or addresses..."
+            className="w-full sm:w-64 rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-white placeholder-neutral-500 outline-none focus:border-lime-500/50 transition-colors"
+          />
+        </div>
+        <div ref={scrollRef} className="overflow-auto max-h-[600px]">
+          <table className="w-full text-left border-collapse">
+            <thead className="sticky top-0 z-10 bg-neutral-900">
+              <tr className="border-b border-neutral-800 text-xs text-neutral-400 uppercase font-mono tracking-wider">
+                <th className="py-3 px-4">Validator Identity</th>
+                <th className="py-3 px-4">Stellar Account Handle</th>
+                <th className="py-3 px-4 text-right">Heartbeat Uptime</th>
+                <th className="py-3 px-4 text-right">Missed Checkpoints</th>
+                <th className="py-3 px-4 text-right">Slashing History</th>
+                <th className="py-3 px-4 text-right">Active Security Bond</th>
+                <th className="py-3 px-4 text-center">Status</th>
+                <th className="py-3 px-4 text-right">Review</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-800/50 text-sm font-mono">
+              {paddingTop > 0 && <tr><td colSpan={7} style={{ height: paddingTop }} /></tr>}
+              {virtualRows.map((vRow) => {
+                const val = filteredValidators[vRow.index];
+                return (
+                  <tr key={val.id} className="hover:bg-neutral-800/20 transition-colors">
+                    <td className="py-4 px-4 font-bold text-neutral-200 font-sans">{val.name}</td>
+                    <td className="py-4 px-4 text-xs text-neutral-500 font-mono select-all">{val.address}</td>
+                    <td className={`py-4 px-4 text-right font-bold ${val.uptime > 95 ? "text-emerald-400" : val.uptime > 80 ? "text-amber-500" : "text-red-500"}`}>
+                      {val.uptime.toFixed(2)}%
+                    </td>
+                    <td className="py-4 px-4 text-right text-neutral-300">{val.missedBlocks}</td>
+                    <td className={`py-4 px-4 text-right font-bold ${val.slashingEvents > 0 ? "text-red-400" : "text-neutral-500"}`}>
+                      {val.slashingEvents}
+                    </td>
+                    <td className="py-4 px-4 text-right text-neutral-100">{val.stakedXlm.toLocaleString()} XLM</td>
+                    <td className="py-4 px-4 text-center">
+                      <span className={`px-2.5 py-1 rounded text-xs uppercase tracking-wider font-sans font-bold ${
+                        val.status === "active" ? "bg-emerald-950/80 text-emerald-400 border border-emerald-800" :
+                        val.status === "jailed" ? "bg-amber-950/80 text-amber-400 border border-amber-800" :
+                        "bg-neutral-950 text-neutral-500 border border-neutral-800"
+                      }`}>
+                        {val.status}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+              {paddingBottom > 0 && <tr><td colSpan={7} style={{ height: paddingBottom }} /></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    {selectedJailedValidator && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="jailed-validator-modal-title"
+      >
+        <div className="w-full max-w-lg rounded-2xl border border-amber-800/70 bg-neutral-950 p-6 shadow-2xl shadow-black/60">
+          <div className="mb-5 flex items-start justify-between gap-4 border-b border-neutral-800 pb-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.28em] text-amber-400">Jailed validator</p>
+              <h2 id="jailed-validator-modal-title" className="mt-2 text-2xl font-bold text-neutral-100">
+                {selectedJailedValidator.name}
+              </h2>
             </div>
           </div>
 

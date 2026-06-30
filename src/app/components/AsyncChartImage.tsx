@@ -167,7 +167,7 @@ export default function AsyncChartImage({
         width={width}
         height={height}
         className={`w-full h-full transition-opacity duration-300 ${isLoading ? "opacity-0" : "opacity-100"}`}
-        alt={alt}
+        aria-label={alt}
       />
     </div>
   );

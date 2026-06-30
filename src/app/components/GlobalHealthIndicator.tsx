@@ -32,7 +32,7 @@ const GlobalHealthIndicator = ({ status = "ACTIVE" }: GlobalHealthIndicatorProps
   const isActive = status === "ACTIVE";
 
   return (
-    <div className="flex items-center gap-2" style={{ contain: "layout paint" }}>
+    <div className="flex items-center gap-2" >
       {/* Label */}
       <span className={`text-sm font-bold font-mono tracking-widest ${config.textColor}`}>
         Global Health:

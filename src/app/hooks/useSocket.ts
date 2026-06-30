@@ -44,7 +44,6 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
 
   const [isConnected, setIsConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<PriceData | null>(null);
-  const [reconnectAttempts, setReconnectAttempts] = useState(0);
   const { error, setError } = useErrorTimeout({ timeoutMs: errorTimeoutMs });
 
   // Local tracking of subscribed assets for this component lifecycle context
@@ -54,13 +53,6 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
   // Batch pending WS message payloads; flushed by the RAF interval below so
   // we never write state more than once per animation frame.
   const pendingUpdatesRef = useRef<(PriceData | Partial<PriceData>)[]>([]);
-  const wsRef = useRef<WebSocket | null>(null);
-  const pageVisibleRef = useRef(true);
-  const manuallyDisconnectedRef = useRef(false);
-  const reconnectAttemptsRef = useRef(0);
-  const maxReconnectAttemptsRef = useRef(options.maxReconnectAttempts ?? 5);
-  const reconnectIntervalRef = useRef(options.reconnectInterval ?? 3000);
-  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Stable singleton transport layer — all consumers share one WS connection.
   const wsManager = WebSocketManager.getInstance();
@@ -86,111 +78,10 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
     });
   }, []);
 
-  // `connect` has an empty dependency array because every value it needs is
-  // accessed through a ref.  This breaks the cycle where a WS message would
-  // update `lastUpdate` -> recreate `connect` -> effect fires -> socket torn down.
-  const connect = useCallback(function doConnect() {
-    if (
-      typeof document !== "undefined" &&
-      document.visibilityState === "hidden"
-    ) {
-      return;
-    }
-
-    pageVisibleRef.current = true;
-    manuallyDisconnectedRef.current = false;
-
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      return;
-    }
-    try {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/ws`;
-
-      wsRef.current = new WebSocket(wsUrl);
-
-      wsRef.current.onopen = () => {
-        setIsConnected(true);
-        setError(null);
-        reconnectAttemptsRef.current = 0;
-        setReconnectAttempts(0);
-
-        if (subscribedAssetsRef.current.size > 0) {
-          wsRef.current?.send(
-            JSON.stringify({
-              type: "subscribe",
-              assetIds: Array.from(subscribedAssetsRef.current),
-            }),
-          );
-        }
-      };
-
-      wsRef.current.onmessage = (event: MessageEvent) => {
-        if (!pageVisibleRef.current) return;
-
-        try {
-          const message: SocketMessage = JSON.parse(event.data as string);
-
-          if (
-            message.type === "price_update" ||
-            message.type === "delta_update"
-          ) {
-            // Add to pending updates instead of updating state directly
-            pendingUpdatesRef.current.push(message.data);
-          }
-        } catch (err) {
-          console.error("Failed to parse WebSocket message:", err);
-        }
-      };
-
-      wsRef.current.onclose = (event: CloseEvent) => {
-        setIsConnected(false);
-
-        // Flush any remaining pending updates
-        flushPendingUpdates();
-
-        // Use ref for reconnect counter — avoids stale closure.
-        if (
-          !event.wasClean &&
-          !manuallyDisconnectedRef.current &&
-          pageVisibleRef.current &&
-          reconnectAttemptsRef.current < maxReconnectAttemptsRef.current
-        ) {
-          reconnectAttemptsRef.current += 1;
-          setReconnectAttempts(reconnectAttemptsRef.current);
-          reconnectTimeoutRef.current = setTimeout(() => {
-            if (subscribedAssetsRef.current.size > 0) {
-              doConnect();
-            }
-          }, reconnectIntervalRef.current);
-        }
-      };
-
-      wsRef.current.onerror = () => {
-        setError("WebSocket connection error");
-      };
-    } catch (err) {
-      setError("Failed to establish WebSocket connection");
-      console.error("Connection error:", err);
-    }
-  }, [flushPendingUpdates, setError]);
-
   const disconnect = useCallback(() => {
-    manuallyDisconnectedRef.current = true;
-
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
-
-    if (wsRef.current) {
-      wsRef.current.onclose = null;
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-
     if (subscribedAssetsRef.current.size > 0) {
       wsManager.unsubscribeFromAssets(Array.from(subscribedAssetsRef.current));
+      subscribedAssetsRef.current.clear();
     }
     setIsConnected(false);
   }, [wsManager]);
@@ -222,27 +113,8 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
   // reconnect — tears down and re-connects via the manager.
   // ------------------------------------------------------------------
   const reconnect = useCallback(() => {
-    disconnect();
-    manuallyDisconnectedRef.current = false;
-    reconnectAttemptsRef.current = 0;
-    setReconnectAttempts(0);
-
-    // Clear any existing reconnect timeout
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
-
-    // Set new reconnect timeout and track it
-    reconnectTimeoutRef.current = setTimeout(() => {
-      reconnectTimeoutRef.current = null;
-      if (subscribedAssetsRef.current.size > 0) {
-        wsManager.subscribeToAssets(
-          Array.from(subscribedAssetsRef.current),
-        );
-      }
-    }, 100);
-  }, [disconnect, wsManager]);
+    wsManager.connect();
+  }, [wsManager]);
 
   // ------------------------------------------------------------------
   // Mount effect — register listeners and initial asset subscriptions.
@@ -269,49 +141,19 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
     // Ensure the singleton connection is open.
     wsManager.connect();
 
-  // Connect on mount, disconnect on unmount
-  useEffect(() => {
     if (subscribedAssetsRef.current.size > 0) {
       wsManager.subscribeToAssets(Array.from(subscribedAssetsRef.current));
     }
 
     return () => {
+      wsManager.unsubscribeFromMessages(handleIncomingData);
+      wsManager.unsubscribeFromStatus(handleStatusChange);
+      if (subscribedAssetsRef.current.size > 0) {
+        wsManager.unsubscribeFromAssets(Array.from(subscribedAssetsRef.current));
+      }
       flushPendingUpdates();
     };
-  }, [flushPendingUpdates]);
-
-  // Freeze message processing when the page is hidden; resume when visible.
-  useEffect(() => {
-    pageVisibleRef.current = isVisible;
-
-    if (isVisible) {
-      if (
-        !manuallyDisconnectedRef.current &&
-        subscribedAssetsRef.current.size > 0
-      ) {
-        reconnectAttemptsRef.current = 0;
-        setReconnectAttempts(0);
-        connect();
-      }
-    } else {
-      if (wsRef.current) {
-        manuallyDisconnectedRef.current = true;
-
-        if (reconnectTimeoutRef.current) {
-          clearTimeout(reconnectTimeoutRef.current);
-          reconnectTimeoutRef.current = null;
-        }
-
-        wsRef.current.onclose = null;
-        wsRef.current.close();
-        wsRef.current = null;
-        setIsConnected(false);
-      }
-    }
-  }, [isVisible, connect]);
-
-  // Pause data delivery while the page is hidden — no state needed, handled
-  // inside the message callback via the closure over `isVisible`.
+  }, [wsManager, isVisible, setError, flushPendingUpdates]);
 
   // Master layout clock — flush buffered price ticks at most once per frame
   // while the socket is connected, keeping all state writes off the critical
@@ -322,7 +164,7 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
     isConnected,
     lastUpdate,
     error,
-    reconnectAttempts,
+    reconnectAttempts: 0,
     subscribeToAsset,
     unsubscribeFromAsset,
     disconnect,

@@ -53,6 +53,14 @@ export default function RootLayout({
           type="image/webp"
           fetchPriority="high"
         />
+        {/* Preload the SVG symbol sheet so icons render on first paint */}
+        <link
+          rel="preload"
+          href="/sprite.svg"
+          as="image"
+          type="image/svg+xml"
+          fetchPriority="low"
+        />
         <Script
           id="polyfill-loader"
           strategy="afterInteractive"

@@ -6,17 +6,25 @@ import { getFetchCacheOptions, REVALIDATE_INTERVALS } from '@/config/cacheConfig
  */
 // Centralized In-Flight Request Pool (Deduplication)
 // Intercepts parallel requests for the exact same URL and serves them from a single promise
-const inFlightRequests = new Map<string, Promise<any>>();
+// Centralized In-Flight Request Pool (Deduplication)
+const inFlightRequests = new Map<string, Promise<unknown>>();
 
-async function pooledFetch(url: string, options?: RequestInit) {
+async function pooledFetch<T>(
+  url: string,
+  options?: RequestInit,
+): Promise<T> {
   if (inFlightRequests.has(url)) {
-    return inFlightRequests.get(url);
+    return inFlightRequests.get(url)! as Promise<T>;
   }
 
   const requestPromise = (async () => {
     const res = await fetch(url, options);
-    if (!res.ok) throw new Error(`Failed to fetch ${url}`);
-    return res.json();
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch ${url}`);
+    }
+
+    return (await res.json()) as T;
   })();
 
   inFlightRequests.set(url, requestPromise);
@@ -24,17 +32,15 @@ async function pooledFetch(url: string, options?: RequestInit) {
   try {
     return await requestPromise;
   } finally {
-    // Clear from pool once resolved so subsequent requests trigger a fresh fetch
     inFlightRequests.delete(url);
   }
 }
-
 export const api = {
   /**
    * Fetches current price data with 10-second cache.
    * Prevents excessive requests to price data endpoints during high activity.
    */
-  async getPrices() {
+  async getPrices(): Promise<unknown> {
     return pooledFetch('/api/prices', getFetchCacheOptions('SHORT_INTERVAL'))
   },
 
@@ -42,7 +48,7 @@ export const api = {
    * Fetches portfolio data with 30-second cache.
    * Reduces database queries for portfolio aggregations that change infrequently.
    */
-  async getPortfolio() {
+  async getPortfolio():Promise<unknown> {
     return pooledFetch('/api/portfolio', getFetchCacheOptions('MEDIUM_INTERVAL'))
   },
 }

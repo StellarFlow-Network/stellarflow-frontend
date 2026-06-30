@@ -89,8 +89,6 @@ function mergeDecodedLogs(
       decodedData,
     };
   });
-}main
-  });
 }
 
 function LogsSkeleton() {
@@ -338,15 +336,24 @@ export default function LogsPage() {
 
           <button
             onClick={exportCsv}
-            className="flex items-center gap-2 rounded-lg border border-gray-700 bg-[#161b22] px-4 py-2 text-sm text-gray-300 transition-all hover:bg-gray-800"
+            className="flex items-center gap-2 rounded-lg border border-gray-700 bg-[#161b22] px-4 py-2 text-sm text-gray-300 relative overflow-hidden"
+            style={{ transition: 'transform 150ms ease, box-shadow 150ms ease' }}
           >
+            <span className="absolute inset-0 bg-gray-800 opacity-0 hover:opacity-100 transition-opacity duration-150 pointer-events-none" />
+            <span className="relative z-10 flex items-center gap-2">
             <Icon id={ICON_IDS.download} size={16} />
             Export CSV
+          </span>
           </button>
 
-          <button className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-blue-700">
-            <Icon id={ICON_IDS.terminal} size={16} />
-            Live Console
+          <button className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white relative overflow-hidden"
+            style={{ transition: 'transform 150ms ease, box-shadow 150ms ease' }}
+          >
+            <span className="absolute inset-0 bg-blue-700 opacity-0 hover:opacity-100 transition-opacity duration-150 pointer-events-none" />
+            <span className="relative z-10 flex items-center gap-2">
+              <Icon id={ICON_IDS.terminal} size={16} />
+              Live Console
+            </span>
           </button>
         </div>
       </div>
@@ -354,14 +361,18 @@ export default function LogsPage() {
       {/* --- Filter & Search Bar --- */}
       <div className="bg-[#161b22] border border-gray-800 rounded-xl p-4 mb-6 flex flex-col md:flex-row gap-4 items-center">
         <div className="relative flex-1 w-full">
-          <Icon id={ICON_IDS.search} size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${isSearching ? 'text-blue-500 animate-pulse' : 'text-slate-500'}`} />
-          <input
-            type="text"
-            placeholder="Filter logs by message, actor, or hash..."
-            value={searchQuery}
-            onChange={(e) => throttledSetSearchQuery(e.target.value)}
-            className="w-full bg-[#0d1117] border border-gray-700 rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-blue-500 transition-colors"
-          />
+          <Icon id={ICON_IDS.search} size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 transition-opacity duration-150 ${isSearching ? 'text-blue-500' : 'text-slate-500'}`} />
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Filter logs by message, actor, or hash..."
+              value={searchQuery}
+              onChange={(e) => throttledSetSearchQuery(e.target.value)}
+              className="w-full bg-[#0d1117] border border-gray-700 rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-blue-500 relative z-10"
+              style={{ transition: 'border-color 150ms ease' }}
+            />
+            <span className="absolute inset-0 bg-gray-800 opacity-0 hover:opacity-100 transition-opacity duration-150 pointer-events-none rounded-md" />
+          </div>
         </div>
 
         <div className="flex w-full items-center gap-2 md:w-auto">
@@ -369,7 +380,7 @@ export default function LogsPage() {
           <select 
             className="bg-[#0d1117] border border-gray-700 rounded-md py-2 px-4 text-sm focus:outline-none"
             value={filter}
-            onChange={(e) => throttledSetFilter(e.target.value as any)}
+            onChange={(e) => throttledSetFilter(e.target.value)
           >
             <option value="all">All Severities</option>
             <option value="info">Info Only</option>
@@ -434,9 +445,10 @@ export default function LogsPage() {
                       width: "100%",
                       transform: `translateY(${virtualRow.start}px)`,
                     }}
-                    className="grid grid-cols-[140px_120px_100px_1fr_150px_120px] items-center border-b border-gray-800/50 font-mono text-[13px] transition-colors hover:bg-[#1c2128]"
+                    className="grid grid-cols-[140px_120px_100px_1fr_150px_120px] items-center border-b border-gray-800/50 font-mono text-[13px] relative overflow-hidden"
                   >
-                    <div className="px-6 py-4 whitespace-nowrap text-gray-400">
+                    <span className="absolute inset-0 bg-[#1c2128] opacity-0 hover:opacity-100 transition-opacity duration-150 pointer-events-none" />
+                    <div className="px-6 py-4 whitespace-nowrap text-gray-400 relative z-10">
                       {log.timestamp}
                     </div>
 
@@ -515,8 +527,9 @@ export default function LogsPage() {
             <button className="rounded-md border border-gray-700 p-2 opacity-50" disabled>
               <Icon id={ICON_IDS.chevronLeft} size={16} />
             </button>
-            <button className="rounded-md border border-gray-700 p-2 transition-colors hover:bg-gray-800">
-              <Icon id={ICON_IDS.chevronRight} size={16} />
+            <button className="rounded-md border border-gray-700 p-2 relative overflow-hidden" style={{ transition: 'border-color 150ms ease' }}>
+              <span className="absolute inset-0 bg-gray-800 opacity-0 hover:opacity-100 transition-opacity duration-150 pointer-events-none" />
+              <Icon id={ICON_IDS.chevronRight} size={16} className="relative z-10" />
             </button>
           </div>
         </div>
