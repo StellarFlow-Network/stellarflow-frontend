@@ -54,8 +54,11 @@ function getWebSocketServer() {
   }
   return wss
 }
-
-function handleMessage(ws: WebSocket, data: any) {
+interface SocketMessage {
+  type: "subscribe" | "unsubscribe";
+  assetIds?: string[];
+}
+function handleMessage(ws: WebSocket, data: SocketMessage) {
   const { type, assetIds } = data
 
   switch (type) {

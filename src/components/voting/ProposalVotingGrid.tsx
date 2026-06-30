@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -10,6 +10,7 @@ import {
   flexRender,
   type SortingState,
   type ColumnFiltersState,
+  type PaginationState,
 } from '@tanstack/react-table';
 import { columns } from './columns';
 import type { ProposalVote } from '@/types/voting';
@@ -19,26 +20,130 @@ interface ProposalVotingGridProps {
   proposalId: string;
 }
 
+type ProposalVotingGridState = {
+  sorting: SortingState;
+  columnFilters: ColumnFiltersState;
+  globalFilter: string;
+  pagination: PaginationState;
+};
+
+type StateUpdater<T> = T | ((previous: T) => T);
+
+function resolveStateUpdate<T>(updater: StateUpdater<T>, previous: T): T {
+  return typeof updater === 'function'
+    ? (updater as (previous: T) => T)(previous)
+    : updater;
+}
+
 /**
  * Heavy, interactive proposal voting history grid.
  * This component is client-side only and deferred from initial hydration.
  */
 export function ProposalVotingGrid({ data, proposalId }: ProposalVotingGridProps) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [globalFilter, setGlobalFilter] = useState('');
+  const [tableState, setTableState] = useState<ProposalVotingGridState>({
+    sorting: [],
+    columnFilters: [],
+    globalFilter: '',
+    pagination: {
+      pageIndex: 0,
+      pageSize: 10,
+    },
+  });
+
+  const updateTableState = useCallback(
+    <K extends keyof ProposalVotingGridState>(
+      key: K,
+      updater: StateUpdater<ProposalVotingGridState[K]>
+    ) => {
+      setTableState((previous) => {
+        const nextValue = resolveStateUpdate(updater, previous[key]);
+
+        if (Object.is(nextValue, previous[key])) {
+          return previous;
+        }
+
+        return {
+          ...previous,
+          [key]: nextValue,
+        };
+      });
+    },
+    []
+  );
+
+  const handleSortingChange = useCallback(
+    (updater: StateUpdater<SortingState>) => updateTableState('sorting', updater),
+    [updateTableState]
+  );
+
+  const handlePaginationChange = useCallback(
+    (updater: StateUpdater<PaginationState>) => updateTableState('pagination', updater),
+    [updateTableState]
+  );
+
+  const handleColumnFiltersChange = useCallback((updater: StateUpdater<ColumnFiltersState>) => {
+    setTableState((previous) => {
+      const nextColumnFilters = resolveStateUpdate(updater, previous.columnFilters);
+      const nextPagination =
+        previous.pagination.pageIndex === 0
+          ? previous.pagination
+          : { ...previous.pagination, pageIndex: 0 };
+
+      if (
+        Object.is(nextColumnFilters, previous.columnFilters) &&
+        Object.is(nextPagination, previous.pagination)
+      ) {
+        return previous;
+      }
+
+      return {
+        ...previous,
+        columnFilters: nextColumnFilters,
+        pagination: nextPagination,
+      };
+    });
+  }, []);
+
+  const handleGlobalFilterInputChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const nextGlobalFilter = event.target.value;
+
+      setTableState((previous) => {
+        const nextPagination =
+          previous.pagination.pageIndex === 0
+            ? previous.pagination
+            : { ...previous.pagination, pageIndex: 0 };
+
+        if (
+          previous.globalFilter === nextGlobalFilter &&
+          Object.is(nextPagination, previous.pagination)
+        ) {
+          return previous;
+        }
+
+        return {
+          ...previous,
+          globalFilter: nextGlobalFilter,
+          pagination: nextPagination,
+        };
+      });
+    },
+    []
+  );
 
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, columnFilters, globalFilter },
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
+    state: tableState,
+    onSortingChange: handleSortingChange,
+    onColumnFiltersChange: handleColumnFiltersChange,
+    onPaginationChange: handlePaginationChange,
+    autoResetPageIndex: false,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    globalFilterFn: 'includesString',
   });
 
   const exportToCSV = useCallback(() => {
@@ -71,8 +176,8 @@ export function ProposalVotingGrid({ data, proposalId }: ProposalVotingGridProps
         <input
           type="text"
           placeholder="Search voters, hashes..."
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
+          value={tableState.globalFilter}
+          onChange={handleGlobalFilterInputChange}
           className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 sm:w-72"
         />
         <div className="flex gap-2">

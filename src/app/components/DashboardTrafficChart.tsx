@@ -13,6 +13,7 @@ import {
   type ChartConfiguration,
 } from "chart.js";
 import { useChartWorker } from "../charts/useChartWorker";
+import { useImageWorker } from "../images/useImageWorker";
 import {
   windowSeries,
   CHART_HISTORY_LIMIT,
@@ -48,6 +49,7 @@ const DashboardTrafficChart = React.memo(function DashboardTrafficChart({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chartRef = useRef<Chart<"line"> | null>(null);
   const { computeSeries } = useChartWorker();
+  const { decodeImage } = useImageWorker();
 
   // Track pointer state for RAF loop
   const pointerPositionRef = useRef<PointerPosition | null>(null);
@@ -121,7 +123,7 @@ const DashboardTrafficChart = React.memo(function DashboardTrafficChart({
   useEffect(() => {
     let cancelled = false;
     computeSeries("dashboard-traffic", labels, values, CHART_HISTORY_LIMIT)
-      .then(({ window }) => {
+      .then(({ window }: { window: SeriesWindow }) => {
         if (!cancelled) setSeries(window);
       })
       .catch(() => {

@@ -1,5 +1,5 @@
 /**
- * xdr-worker.ts
+ * xdrParser.worker.ts
  *
  * ─────────────────────────────────────────────────────────────────────────────
  * THREAD ISOLATION: Heavy XDR Payload Parsing

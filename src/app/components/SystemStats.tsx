@@ -19,17 +19,33 @@ function HealthIndicator({ label, status, timestamp }: HealthIndicatorProps) {
   const color = statusColors[status] || 'bg-gray-500';
 
   return (
-    <div className="flex items-center gap-2 p-3 bg-slate-50 rounded">
-      <div className={`w-3 h-3 rounded-full ${color}`} />
-      <span className="text-sm font-medium">{label}</span>
-      <span className="text-xs text-gray-500 ml-auto">
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </span>
-      {timestamp && (
-        <span className="text-xs text-gray-400">
-          {new Date(timestamp).toLocaleTimeString()}
-        </span>
-      )}
+    <div  className="flex flex-col items-center md:items-start gap-1">
+      <div className="flex items-center gap-2">
+        <h3 className="text-[#39FF14] font-bold text-sm md:text-base tracking-widest">
+          {label}
+        </h3>
+        {showDot && (
+          <div className="relative flex items-center justify-center">
+            <div className="absolute w-4 h-4 rounded-full bg-[#39FF14] animate-ping opacity-30" />
+            <div className="w-3 h-3 rounded-full bg-[#39FF14] shadow-[0_0_8px_3px_rgba(57,255,20,0.8)]" />
+          </div>
+        )}
+      </div>
+    <p
+  className="
+    text-[#39FF14]
+    text-7xl
+    md:text-9xl
+    font-black
+    leading-none
+    font-mono
+    tabular-nums
+    min-w-[4ch]
+    text-center
+  "
+>
+  {value}
+</p>
     </div>
   );
 }

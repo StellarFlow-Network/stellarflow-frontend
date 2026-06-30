@@ -50,12 +50,13 @@ export default function ContractsPage() {
               <Icon id={ICON_IDS.upload} size={20} className="text-blue-400" />
               Upgrade Contract WASM
             </h2>
-            <div className="border-2 border-dashed border-gray-800 rounded-lg p-10 flex flex-col items-center justify-center text-center hover:border-blue-500/50 transition-colors cursor-pointer group">
-              <div className="p-4 bg-blue-500/10 rounded-full mb-4 group-hover:scale-110 transition-transform">
+            <div className="border-2 border-dashed border-gray-800 rounded-lg p-10 flex flex-col items-center justify-center text-center cursor-pointer group relative overflow-hidden" style={{ transition: 'border-color 150ms ease' }}>
+              <span className="absolute inset-0 bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none" />
+              <div className="p-4 bg-blue-500/10 rounded-full mb-4 group-hover:scale-110 transition-transform relative z-10">
                 <Icon id={ICON_IDS.code2} size={32} className="text-blue-500" />
               </div>
-              <p className="text-sm font-medium mb-1">Upload new .wasm binary</p>
-              <p className="text-xs text-gray-500">Max file size: 2MB. Ensure code is pre-compiled for Soroban.</p>
+              <p className="text-sm font-medium mb-1 relative z-10">Upload new .wasm binary</p>
+              <p className="text-xs text-gray-500 relative z-10">Max file size: 2MB. Ensure code is pre-compiled for Soroban.</p>
             </div>
             <div className="mt-4 p-4 bg-[#0d1117] rounded-lg border border-gray-800 flex justify-between items-center">
               <div>
@@ -65,9 +66,11 @@ export default function ContractsPage() {
               <button 
                 onClick={handleVerify}
                 disabled={isVerifying}
-                className="text-xs bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded border border-gray-700 transition-all disabled:opacity-50"
+                className="text-xs bg-gray-800 px-3 py-1.5 rounded border border-gray-700 disabled:opacity-50 relative overflow-hidden"
+                style={{ transition: 'border-color 150ms ease' }}
               >
-                {isVerifying ? "Loading..." : "Verify on Ledger"}
+                <span className="absolute inset-0 bg-gray-700 opacity-0 hover:opacity-100 transition-opacity duration-150 pointer-events-none" />
+                <span className="relative z-10">{isVerifying ? "Loading..." : "Verify on Ledger"}</span>
               </button>
             </div>
           </div>
@@ -94,8 +97,9 @@ export default function ContractsPage() {
                 </div>
               </div>
             </div>
-            <button className="mt-6 w-full py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors">
-              Submit Parameter Update
+            <button className="mt-6 w-full py-2 bg-blue-600 rounded-lg text-sm font-medium relative overflow-hidden" style={{ transition: 'transform 150ms ease, box-shadow 150ms ease' }}>
+              <span className="absolute inset-0 bg-blue-700 opacity-0 hover:opacity-100 transition-opacity duration-150 pointer-events-none" />
+              <span className="relative z-10">Submit Parameter Update</span>
             </button>
           </div>
         </div>
@@ -104,7 +108,8 @@ export default function ContractsPage() {
         <div className="space-y-6">
           
           {/* Emergency Halt Section */}
-          <div className={`border p-6 rounded-xl transition-all ${isHalted ? 'bg-red-900/10 border-red-500' : 'bg-[#161b22] border-gray-800'}`}>
+          <div className={`border p-6 rounded-xl relative overflow-hidden ${isHalted ? 'bg-red-900/10 border-red-500' : 'bg-[#161b22] border-gray-800'}`} style={{ transition: 'border-color 150ms ease' }}>
+            {!isHalted && <span className="absolute inset-0 bg-red-900/10 opacity-0 hover:opacity-100 transition-opacity duration-150 pointer-events-none" />}
             <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
               <Icon id={ICON_IDS.shieldAlert} size={20} className={isHalted ? 'text-red-500' : 'text-gray-400'} />
               Emergency Halt
@@ -114,14 +119,18 @@ export default function ContractsPage() {
             </p>
             <button 
               onClick={() => setIsHalted(!isHalted)}
-              className={`w-full py-3 rounded-lg flex items-center justify-center gap-2 font-bold transition-all ${
+              className={`w-full py-3 rounded-lg flex items-center justify-center gap-2 font-bold relative overflow-hidden ${
                 isHalted 
-                ? 'bg-green-600 hover:bg-green-700 text-white' 
-                : 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/20'
+                ? 'bg-green-600 text-white' 
+                : 'bg-red-600 text-white shadow-lg shadow-red-900/20'
               }`}
+              style={{ transition: 'transform 150ms ease, box-shadow 150ms ease' }}
             >
-              {isHalted ? <Icon id={ICON_IDS.unlock} size={18} /> : <Icon id={ICON_IDS.lock} size={18} />}
-              {isHalted ? 'RESUME ORACLE' : 'HALT ALL OPERATIONS'}
+              <span className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-150 pointer-events-none" style={{ backgroundColor: isHalted ? '#16a34a' : '#dc2626' }} />
+              <span className="relative z-10 flex items-center gap-2">
+                {isHalted ? <Icon id={ICON_IDS.unlock} size={18} /> : <Icon id={ICON_IDS.lock} size={18} />}
+                {isHalted ? 'RESUME ORACLE' : 'HALT ALL OPERATIONS'}
+              </span>
             </button>
           </div>
 
