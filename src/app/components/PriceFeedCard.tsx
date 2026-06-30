@@ -15,7 +15,6 @@ import { useDebounce } from "../hooks/useDebounce";
 import { useRafThrottle } from "../hooks/useRafThrottle";
 import { useErrorTimeout } from "../hooks/useErrorTimeout";
 import { Shimmer } from "@/components/skeletons/Shimmer";
-import { PriceFeedCardSkeleton } from "@/components/skeletons/PriceFeedCardSkeleton";
 import { getCachedHistory, getCachedHistorySync, setCachedHistory } from "../lib/historySync";
 import { useMounted } from "@/app/hooks/useMounted";
 import { usePageVisibility } from "../hooks/usePageVisibility";
