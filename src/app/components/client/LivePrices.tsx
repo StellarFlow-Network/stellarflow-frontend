@@ -11,9 +11,13 @@ interface PriceData {
   timestamp: number
 }
 
-function LivePrices({ initialData }: any) {
-  const [data, setData] = useState<PriceData[]>(initialData || [])
+interface LivePricesProps {
+  initialData?: PriceData[];
+}
+
+function LivePrices({ initialData = [] }: LivePricesProps) {
   
+  const [data, setData] = useState<PriceData[]>(initialData);
   // Subscribe to multiple asset updates
   const { isConnected, lastUpdate, error } = useSocket({
     assetIds: [...ASSET_SYMBOL_LIST],

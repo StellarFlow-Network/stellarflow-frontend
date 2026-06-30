@@ -32,7 +32,18 @@ interface WalletStatusContextType {
 interface WalletActionsContextType {
   refreshWalletState: () => Promise<WalletState | null>;
 }
+interface FreighterExtension {
+  getPublicKey?: () => Promise<string>;
+  publicKey?: string;
+  isConnected?: () => Promise<boolean>;
+}
 
+interface WalletWindow extends Window {
+  stellar?: FreighterExtension;
+  Freighter?: FreighterExtension;
+  freighterApi?: FreighterExtension;
+  Horizon?: FreighterExtension;
+}
 const WalletStateContext = createContext<WalletStateContextType | null>(null);
 const WalletStatusContext = createContext<WalletStatusContextType | null>(null);
 const WalletActionsContext = createContext<WalletActionsContextType | null>(null);
@@ -53,9 +64,9 @@ async function queryExtensionWalletState(): Promise<WalletState> {
     return createFallbackState('none');
   }
 
-  const anyWindow = window as any;
+const walletWindow = window as WalletWindow;
   const extension =
-    anyWindow.stellar || anyWindow.Freighter || anyWindow.freighterApi || anyWindow.Horizon || null;
+    walletWindow.stellar || walletWindow.Freighter || walletWindow.freighterApi || walletWindow.Horizon || null;
 
   try {
     if (typeof extension?.getPublicKey === 'function') {

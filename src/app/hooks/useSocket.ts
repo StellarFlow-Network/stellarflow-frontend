@@ -72,14 +72,10 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
     });
   }, []);
 
-  // ------------------------------------------------------------------
-  // disconnect — unregisters this consumer's listeners and asset subs.
-  // ------------------------------------------------------------------
   const disconnect = useCallback(() => {
     if (subscribedAssetsRef.current.size > 0) {
-      wsManager.unsubscribeFromAssets(
-        Array.from(subscribedAssetsRef.current),
-      );
+      wsManager.unsubscribeFromAssets(Array.from(subscribedAssetsRef.current));
+      subscribedAssetsRef.current.clear();
     }
     setIsConnected(false);
   }, [wsManager]);
@@ -111,17 +107,8 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
   // reconnect — tears down and re-connects via the manager.
   // ------------------------------------------------------------------
   const reconnect = useCallback(() => {
-    disconnect();
-    // Re-establish after a microtask so disconnect's cleanup completes first.
-    setTimeout(() => {
-      wsManager.connect();
-      if (subscribedAssetsRef.current.size > 0) {
-        wsManager.subscribeToAssets(
-          Array.from(subscribedAssetsRef.current),
-        );
-      }
-    }, 100);
-  }, [disconnect, wsManager]);
+    wsManager.connect();
+  }, [wsManager]);
 
   // ------------------------------------------------------------------
   // Mount effect — register listeners and initial asset subscriptions.
@@ -148,30 +135,19 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
     // Ensure the singleton connection is open.
     wsManager.connect();
 
-    // Register assets for this consumer instance.
     if (subscribedAssetsRef.current.size > 0) {
       wsManager.subscribeToAssets(Array.from(subscribedAssetsRef.current));
     }
 
     return () => {
-      // Deregister listeners on unmount — flush any buffered ticks first.
-      flushPendingUpdates();
       wsManager.unsubscribeFromMessages(handleIncomingData);
       wsManager.unsubscribeFromStatus(handleStatusChange);
-
       if (subscribedAssetsRef.current.size > 0) {
-        wsManager.unsubscribeFromAssets(
-          Array.from(subscribedAssetsRef.current),
-        );
+        wsManager.unsubscribeFromAssets(Array.from(subscribedAssetsRef.current));
       }
+      flushPendingUpdates();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    // `isVisible` is intentionally excluded: page-visibility pausing is handled
-    // inside handleIncomingData, not by tearing down and restarting the effect.
-  }, [wsManager, flushPendingUpdates, setError]);
-
-  // Pause data delivery while the page is hidden — no state needed, handled
-  // inside the message callback via the closure over `isVisible`.
+  }, [wsManager, isVisible, setError, flushPendingUpdates]);
 
   // Master layout clock — flush buffered price ticks at most once per frame
   // while the socket is connected, keeping all state writes off the critical
@@ -182,7 +158,7 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
     isConnected,
     lastUpdate,
     error,
-    reconnectAttempts: 0, // Handled automatically at the WebSocketManager layer
+    reconnectAttempts: 0,
     subscribeToAsset,
     unsubscribeFromAsset,
     disconnect,

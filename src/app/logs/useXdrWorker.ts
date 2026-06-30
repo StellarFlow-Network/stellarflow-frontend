@@ -22,7 +22,7 @@ export function useXdrWorker(options?: UseXdrWorkerOptions) {
   }>>(new Map());
 
   useEffect(() => {
-    const worker = new Worker(new URL('./xdr-worker.ts', import.meta.url));
+    const worker = new Worker(new URL('../../workers/xdrParser.worker.ts', import.meta.url));
     workerRef.current = worker;
 
     // ── Message handler: unified to handle all outbound message types ──
