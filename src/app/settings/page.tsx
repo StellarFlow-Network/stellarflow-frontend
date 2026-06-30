@@ -163,9 +163,10 @@ export default function SettingsPage() {
               </div>
               <button
                 onClick={() => handleToggle('multiSigApproval')}
-                className={`w-12 h-6 rounded-full relative transition-colors cursor-pointer ${multiSigTrackClasses}`}
+                className={`w-12 h-6 rounded-full relative cursor-pointer ${multiSigTrackClasses}`}
+                style={{ transition: 'transform 150ms ease' }}
               >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${multiSigKnobClasses}`} />
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full ${multiSigKnobClasses}`} style={{ transition: 'transform 200ms cubic-bezier(0.4, 0, 0.2, 1)' }} />
               </button>
             </div>
             <div className="flex justify-between items-center">
@@ -187,15 +188,20 @@ export default function SettingsPage() {
         </section>
 
         <div className="flex justify-end gap-4 pt-4">
-          <button className="px-6 py-2 border border-gray-700 rounded-lg text-sm hover:bg-gray-800 transition-all">
-            Cancel
+          <button className="px-6 py-2 border border-gray-700 rounded-lg text-sm relative overflow-hidden" style={{ transition: 'border-color 150ms ease' }}>
+            <span className="absolute inset-0 bg-gray-800 opacity-0 hover:opacity-100 transition-opacity duration-150 pointer-events-none" />
+            <span className="relative z-10">Cancel</span>
           </button>
           <button 
             disabled={!hasChanges || isPending}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-bold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2 bg-blue-600 rounded-lg text-sm font-bold flex items-center gap-2 relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ transition: 'transform 150ms ease, box-shadow 150ms ease' }}
           >
-            <Icon id={ICON_IDS.save} size={18} />
-            {isPending ? 'Saving...' : 'Save Changes'}
+            <span className="absolute inset-0 bg-blue-700 opacity-0 hover:opacity-100 transition-opacity duration-150 pointer-events-none" />
+            <span className="relative z-10 flex items-center gap-2">
+              <Icon id={ICON_IDS.save} size={18} />
+              {isPending ? 'Saving...' : 'Save Changes'}
+            </span>
           </button>
         </div>
       </div>
@@ -208,20 +214,24 @@ function ToggleItem({ icon, title, description, enabled, onToggle }: { icon: Rea
   const knobClasses = enabled ? TOGGLE_STYLES.enabled.knob : TOGGLE_STYLES.disabled.knob;
 
   return (
-    <div className="flex items-start justify-between p-3 rounded-lg hover:bg-[#1c2128] transition-colors">
-      <div className="flex gap-4">
+    <div className="flex items-start justify-between p-3 rounded-lg relative overflow-hidden" style={{ transition: 'border-color 150ms ease' }}>
+      <span className="absolute inset-0 bg-[#1c2128] opacity-0 hover:opacity-100 transition-opacity duration-150 pointer-events-none" />
+      <div className="flex gap-4 relative z-10">
         <div className="mt-1 text-gray-500">{icon}</div>
         <div>
           <p className="text-sm font-medium">{title}</p>
           <p className="text-xs text-gray-500">{description}</p>
         </div>
       </div>
-      <button
-        onClick={onToggle}
-        className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${trackClasses}`}
-      >
-        <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${knobClasses}`} />
-      </button>
+      <div className="relative z-10">
+        <button
+          onClick={onToggle}
+          className={`w-10 h-5 rounded-full relative cursor-pointer ${trackClasses}`}
+          style={{ transition: 'transform 150ms ease' }}
+        >
+          <div className={`absolute top-1 w-3 h-3 bg-white rounded-full ${knobClasses}`} style={{ transition: 'transform 200ms cubic-bezier(0.4, 0, 0.2, 1)' }} />
+        </button>
+      </div>
     </div>
   );
 }

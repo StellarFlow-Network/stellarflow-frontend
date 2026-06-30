@@ -106,8 +106,8 @@ export function BondAllocationCalculator({
                 <span className="text-xs text-gray-500 w-36 truncate">{node.nodeName}</span>
                 <div className="flex-1 bg-gray-700 h-1.5 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-blue-500 transition-[width] duration-75"
-                    style={{ width: `${share}%` }}
+                    className="h-full w-full bg-blue-500 dynamic-scale-x"
+                    style={{ '--scale-x': share / 100 } as React.CSSProperties}
                   />
                 </div>
                 <span className="text-xs font-mono text-gray-400 w-10 text-right">

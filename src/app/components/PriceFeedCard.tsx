@@ -15,10 +15,7 @@ import { useDebounce } from "../hooks/useDebounce";
 import { useRafThrottle } from "../hooks/useRafThrottle";
 import { useErrorTimeout } from "../hooks/useErrorTimeout";
 import { Shimmer } from "@/components/skeletons/Shimmer";
-import { getLatestPrice, getCachedPrices } from "@/lib/priceStorage";
-import { PriceFeedCardSkeleton } from "@/components/skeletons/PriceFeedCardSkeleton";
 import { getCachedHistory, getCachedHistorySync, setCachedHistory } from "../lib/historySync";
-import { PriceFeedCardSkeleton } from "@/components/skeletons/PriceFeedCardSkeleton";
 import { useMounted } from "@/app/hooks/useMounted";
 import { usePageVisibility } from "../hooks/usePageVisibility";
 import { POLLING_INTERVALS, INACTIVITY_CONFIG } from "@/config/cacheConfig";
@@ -425,7 +422,7 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
         </div>
       )}
 
-      {/* ── Filter input (debounced 300ms) ── */}
+      {/* ── Filter input (debounced 250ms) ── */}
       <div className="relative mt-4">
         <input
           type="text"
