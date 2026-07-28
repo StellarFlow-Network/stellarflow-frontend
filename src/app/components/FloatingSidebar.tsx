@@ -73,7 +73,7 @@ const FloatingSidebar = memo(() => {
             <Link
               href={href}
               prefetch={false}
-              className="relative flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200"
+              className="relative flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f5c842] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f1723]"
               style={{
                 color: "rgba(255,255,255,0.45)",
                 background: "transparent",
@@ -134,7 +134,11 @@ const FloatingSidebar = memo(() => {
               href={href}
               prefetch={false}
               onClick={() => handleSetActive(href)}
-              onFocus={() => handlePrefetch(href)}
+              onFocus={() => {
+                handlePrefetch(href);
+                handleSetHovered(label);
+              }}
+              onBlur={() => handleSetHovered(null)}
               onMouseEnter={(e) => {
                 handleSetHovered(label, e);
                 handlePrefetch(href);
@@ -142,7 +146,7 @@ const FloatingSidebar = memo(() => {
               onPointerEnter={(e) => handlePrefetch(href)}
               onMouseOver={(e) => handlePrefetch(href)}
               onMouseLeave={() => handleSetHovered(null)}
-              className="relative flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200"
+              className="relative flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f5c842] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f1723]"
               style={{
                 color: isActive
                   ? "#f5c842"
@@ -157,6 +161,7 @@ const FloatingSidebar = memo(() => {
                 transform: isHovered && !isActive ? "scale(1.08)" : "scale(1)",
               }}
               aria-label={label}
+              aria-current={isActive ? "page" : undefined}
             >
               <Icon id={iconId} size={20} strokeWidth={isActive ? 2.2 : 1.8} />
             </Link>

@@ -59,19 +59,21 @@ const ModularStatsCard: React.FC<ModularStatsCardProps> = ({
 
         {/* Trend Indicator */}
         {trend !== undefined && (
-          <div className="flex items-center gap-1.5 mt-2">
-            <div
-              className={`flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                isPositive
-                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                  : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-              }`}
-            >
-              <span>{isPositive ? "▲" : "▼"}</span>
-            <span className="font-mono tabular-nums min-w-[5ch] text-right">
+              <div className="flex items-center gap-1.5 mt-2">
+                <div
+                  className={`flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    isPositive
+                      ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                      : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                  }`}
+                  role="text"
+                  aria-label={`Trend: ${isPositive ? "up" : "down"} ${Math.abs(trend)} percent`}
+                >
+                  <span aria-hidden="true">{isPositive ? "▲" : "▼"}</span>
+                <span className="font-mono tabular-nums min-w-[5ch] text-right">
     {Math.abs(trend)}%
 </span>
-            </div>
+                </div>
             <span className="text-[10px] text-gray-600 font-medium italic">
               vs last 24h
             </span>

@@ -50,7 +50,7 @@ interface RateCard {
 function DashboardSkeleton() {
   return (
     <>
-      <section className="min-w-0 grid grid-cols-1 sm:grid-cols-3 gap-6" aria-busy="true">
+      <section className="min-w-0 grid grid-cols-1 sm:grid-cols-3 gap-6" aria-busy="true" aria-label="Loading rate cards">
         <RateSparklineSkeleton />
         <RateSparklineSkeleton />
         <RateSparklineSkeleton />

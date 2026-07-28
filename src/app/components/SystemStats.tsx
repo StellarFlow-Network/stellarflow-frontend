@@ -11,41 +11,37 @@ interface HealthIndicatorProps {
 
 function HealthIndicator({ label, status, timestamp }: HealthIndicatorProps) {
   const statusColors: Record<string, string> = {
-    healthy: 'bg-green-500',
+    healthy: 'bg-[#39FF14]',
     degraded: 'bg-yellow-500',
     unhealthy: 'bg-red-500',
   };
 
-  const color = statusColors[status] || 'bg-gray-500';
+  const statusLabels: Record<string, string> = {
+    healthy: 'Healthy',
+    degraded: 'Degraded',
+    unhealthy: 'Unhealthy',
+  };
+
+  const dotColor = statusColors[status] || 'bg-gray-500';
+  const showDot = true;
 
   return (
-    <div  className="flex flex-col items-center md:items-start gap-1">
+    <div className="flex flex-col items-center md:items-start gap-1">
       <div className="flex items-center gap-2">
         <h3 className="text-[#39FF14] font-bold text-sm md:text-base tracking-widest">
           {label}
         </h3>
-        {showDot && (
-          <div className="relative flex items-center justify-center">
-            <div className="absolute w-4 h-4 rounded-full bg-[#39FF14] animate-ping opacity-30" />
-            <div className="w-3 h-3 rounded-full bg-[#39FF14] shadow-[0_0_8px_3px_rgba(57,255,20,0.8)]" />
-          </div>
-        )}
+        <div className="relative flex items-center justify-center" role="status" aria-label={`${label}: ${statusLabels[status]}`}>
+          <div className={`absolute w-4 h-4 rounded-full ${dotColor} animate-ping opacity-30`} aria-hidden="true" />
+          <div className={`w-3 h-3 rounded-full ${dotColor} shadow-[0_0_8px_3px_rgba(57,255,20,0.8)]`} aria-hidden="true" />
+          <span className="sr-only">{statusLabels[status]}</span>
+        </div>
       </div>
-    <p
-  className="
-    text-[#39FF14]
-    text-7xl
-    md:text-9xl
-    font-black
-    leading-none
-    font-mono
-    tabular-nums
-    min-w-[4ch]
-    text-center
-  "
->
-  {value}
-</p>
+      {timestamp && (
+        <time className="text-xs text-gray-500" dateTime={new Date(timestamp).toISOString()}>
+          Updated: {new Date(timestamp).toLocaleTimeString()}
+        </time>
+      )}
     </div>
   );
 }
