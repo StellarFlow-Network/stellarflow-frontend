@@ -144,6 +144,8 @@ const RateSparklineCard: React.FC<RateSparklineCardProps> = ({
         </div>
         <span
           className={`inline-flex items-center rounded-full px-3 py-1 text-[10px] font-semibold ${trendClasses}`}
+          role="text"
+          aria-label={`${isPositive ? "Up" : "Down"} ${Math.abs(trend).toFixed(2)} percent`}
         >
           <span
     className="
@@ -153,6 +155,7 @@ const RateSparklineCard: React.FC<RateSparklineCardProps> = ({
         min-w-[7ch]
         text-center
     "
+    aria-hidden="true"
 >
     {trendLabel}
 </span>

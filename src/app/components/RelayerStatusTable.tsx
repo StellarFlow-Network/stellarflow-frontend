@@ -78,9 +78,9 @@ function RelayerStatusTable({ relayers = [] }: RelayerStatusTableProps) {
       <table className="w-full table-fixed text-left text-sm text-white/80">
         <thead>
           <tr className="border-b border-white/10 bg-white/5 text-white/50">
-            <th className="w-1/3 p-4 font-medium">Relayer Name</th>
-            <th className="w-1/3 p-4 font-medium">Status</th>
-            <th className="w-1/3 p-4 font-medium text-right">Latency</th>
+            <th className="w-1/3 p-4 font-medium" scope="col" aria-sort="none">Relayer Name</th>
+            <th className="w-1/3 p-4 font-medium" scope="col" aria-sort="none">Status</th>
+            <th className="w-1/3 p-4 font-medium text-right" scope="col" aria-sort="none">Latency</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-white/5">

@@ -158,7 +158,17 @@ export const ExpandableRow = React.memo(function ExpandableRow({
       {/* Row header — click target */}
       <tr
         onClick={handleToggle}
-        className={`cursor-pointer hover:bg-[#1c2128] transition-colors group ${className}`}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleToggle();
+          }
+        }}
+        tabIndex={0}
+        role="button"
+        aria-expanded={isOpen}
+        aria-label={`${isOpen ? "Collapse" : "Expand"} ${title}`}
+        className={`cursor-pointer hover:bg-[#1c2128] transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#99dc1b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d1117] ${className}`}
       >
         <td className="px-6 py-4 flex items-center gap-3">
           {/* Chevron indicator */}

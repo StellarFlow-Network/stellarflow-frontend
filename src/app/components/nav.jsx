@@ -34,7 +34,7 @@ const Nav = memo(() => {
   const pathname = usePathname();
 
   return (
-    <main className="sticky top-0 z-50 bg-zinc-950 border-b border-zinc-800">
+    <header className="sticky top-0 z-50 bg-zinc-950 border-b border-zinc-800" role="banner">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex flex-nowrap items-center justify-between gap-3">
         {/* Left Side: Logo + Title */}
         <div className="flex-1 min-w-0 flex items-center gap-3 overflow-hidden">
@@ -103,7 +103,7 @@ const Nav = memo(() => {
           </button>
         </div>
       </div>
-    </main>
+    </header>
   );
 });
 
