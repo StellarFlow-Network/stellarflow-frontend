@@ -421,7 +421,9 @@ const PriceFeedCard: React.FC<PriceFeedCardProps> = ({
 
       {/* ── Filter input (debounced 250ms) ── */}
       <div className="relative mt-4">
+        <label htmlFor="price-feed-filter" className="sr-only">Filter price feed pair</label>
         <input
+          id="price-feed-filter"
           type="text"
           value={filterInput}
           onChange={(e) => throttledSetFilterInput(e.target.value)}

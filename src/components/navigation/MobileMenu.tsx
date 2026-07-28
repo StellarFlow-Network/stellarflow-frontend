@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -37,6 +37,8 @@ const Path = (props: PathProps) => (
 export default function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+  const menuRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
 
   const toggleOpen = useCallback(() => {
     setIsOpen((prev) => !prev);
@@ -45,6 +47,47 @@ export default function MobileMenu() {
   const closeMenu = useCallback(() => {
     setIsOpen(false);
   }, []);
+
+  // Focus trap: keep focus within the drawer when open
+  useEffect(() => {
+    if (!isOpen) return;
+    const menu = menuRef.current;
+    if (!menu) return;
+
+    const focusableElements = menu.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    const firstFocusable = focusableElements[0];
+    const lastFocusable = focusableElements[focusableElements.length - 1];
+
+    // Focus the first element when drawer opens
+    setTimeout(() => firstFocusable?.focus(), 50);
+
+    function handleTab(e: KeyboardEvent) {
+      if (e.key !== "Tab") return;
+      if (e.shiftKey) {
+        if (document.activeElement === firstFocusable) {
+          e.preventDefault();
+          lastFocusable?.focus();
+        }
+      } else {
+        if (document.activeElement === lastFocusable) {
+          e.preventDefault();
+          firstFocusable?.focus();
+        }
+      }
+    }
+
+    document.addEventListener("keydown", handleTab);
+    return () => document.removeEventListener("keydown", handleTab);
+  }, [isOpen]);
+
+  // Return focus to toggle button when menu closes
+  useEffect(() => {
+    if (!isOpen) {
+      toggleRef.current?.focus();
+    }
+  }, [isOpen]);
 
   // Sync route change with closing the menu drawer
   useEffect(() => {
@@ -73,7 +116,7 @@ export default function MobileMenu() {
         whileTap={{ scale: 0.92 }}
         animate={isOpen ? { rotate: 90 } : { rotate: 0 }}
         transition={{ type: "spring", stiffness: 320, damping: 24 }}
-        className="p-2 text-slate-200 hover:text-white rounded-xl focus:outline-none z-50 relative"
+        className="p-2 text-slate-200 hover:text-white rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#99dc1b] focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 z-50 relative"
         aria-label={isOpen ? "Close menu" : "Open menu"}
       >
         <svg width="22" height="22" viewBox="0 0 23 23">
@@ -108,6 +151,10 @@ export default function MobileMenu() {
 
             {/* Slide-out Drawer */}
             <motion.div
+              ref={menuRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Navigation menu"
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}

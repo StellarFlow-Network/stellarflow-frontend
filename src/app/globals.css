@@ -28,6 +28,17 @@ body {
   overflow-x: hidden;
 }
 
+/* Global focus-visible fallback for all interactive elements */
+*:focus-visible {
+  outline: 2px solid #99dc1b;
+  outline-offset: 2px;
+}
+
+/* Remove the fallback for mouse users */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
 .content-visibility-auto {
   content-visibility: auto;
   contain-intrinsic-size: var(--content-visibility-fallback, 1px 480px);
@@ -141,9 +152,10 @@ body {
 }
 
 .admin-tab:focus-visible {
-  outline: 2px solid #99dc1b;
-  outline-offset: -2px;
+  outline: 3px solid #99dc1b;
+  outline-offset: 2px;
   border-radius: 6px;
+  box-shadow: 0 0 0 4px rgba(153, 220, 27, 0.15);
 }
 
 /* ── Active state ── */

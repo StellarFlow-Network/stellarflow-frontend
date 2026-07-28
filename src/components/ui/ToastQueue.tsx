@@ -154,6 +154,8 @@ function ToastCard({ toast, onClose }: { toast: Toast; onClose: () => void }) {
 
   return (
     <div
+      role="alert"
+      aria-live={status === "failed" ? "assertive" : "polite"}
       className={`flex items-start gap-4 p-4 rounded-xl border backdrop-blur-md ${bgColor} ${borderColor} shadow-2xl relative group overflow-hidden`}
     >
       {/* Visual Accent/Glow */}
