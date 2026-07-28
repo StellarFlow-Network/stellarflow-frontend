@@ -11,7 +11,12 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node scripts/test-lang-cache.js",
-    "analyze": "cross-env ANALYZE=true npm run build"
+    "analyze": "cross-env ANALYZE=true npm run build",
+    "audit": "node scripts/dependency-audit.js",
+    "audit:strict": "node scripts/dependency-audit.js --strict",
+    "audit:ci": "node scripts/dependency-audit.js --ci",
+    "audit:fix": "node scripts/dependency-audit.js --fix",
+    "audit:json": "node scripts/dependency-audit.js --json"
   },
   "dependencies": {
     "@stellar/freighter-api": "^6.0.1",

@@ -43,5 +43,8 @@ next-env.d.ts
 # bundle analysis
 .bundle-report.json
 .bundle-report.baseline.json
-.env.local
 
+# dependency audit reports
+/reports/
+
+.env.local
