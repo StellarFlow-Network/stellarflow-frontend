@@ -11,7 +11,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node scripts/test-lang-cache.js",
-    "analyze": "cross-env ANALYZE=true npm run build"
+    "analyze": "cross-env ANALYZE=true npm run build",
+    "verify:fonts": "node scripts/verify-font-config.js"
   },
   "dependencies": {
     "@stellar/freighter-api": "^6.0.1",

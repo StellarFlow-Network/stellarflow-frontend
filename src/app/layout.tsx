@@ -1,6 +1,6 @@
 import "@/config/env";
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { inter, robotoMono } from "./fonts";
 import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { ProgressBarProvider } from "./components/TopLoadingBar";
@@ -8,17 +8,6 @@ import { UserProvider } from "./components/providers/UserProvider";
 import { QueryProvider } from "./components/providers/QueryProvider";
 import Script from "next/script";
 import SvgSprite from "@/components/icons/SvgSprite";
-
-// subsets: ["latin"] restricts glyph maps to Latin characters only,
-// avoiding loading Cyrillic/Greek/CJK blocks and reducing CSS payload.
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-  display: "optional",
-});
-
-// Single variable font asset covers all app text weights; monospace utilities
-// are mapped to this same face in globals.css to avoid a second font payload.
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -76,7 +65,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} antialiased`}
+        className={`${inter.variable} ${robotoMono.variable} antialiased`}
       >
         {/* Single global SVG symbol sheet — all icon <use> refs resolve here */}
         <SvgSprite />
