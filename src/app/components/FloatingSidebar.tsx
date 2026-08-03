@@ -8,6 +8,7 @@ import Icon from "@/components/icons/Icon";
 import { ICON_IDS } from "@/components/icons/iconIds";
 import type { IconId } from "@/components/icons/iconIds";
 import { useMounted } from "@/app/hooks/useMounted";
+import { motion, useReducedMotion } from "framer-motion";
 
 const navItems: { iconId: IconId; label: string; href: string }[] = [
   { iconId: ICON_IDS.layoutDashboard, label: "Dashboard",  href: "/" },
@@ -21,6 +22,7 @@ const FloatingSidebar = memo(() => {
   const mounted = useMounted();
   const pathname = usePathname();
   const router = useRouter();
+  const shouldReduceMotion = useReducedMotion();
   const [active, setActive] = useState(pathname ?? "Dashboard");
   const [hovered, setHovered] = useState<string | null>(null);
   const [hoveredRect, setHoveredRect] = useState<DOMRect | null>(null);
@@ -58,7 +60,7 @@ const FloatingSidebar = memo(() => {
   if (!mounted) {
     return (
       <nav
-        className="fixed left-2 top-1/2 z-50 flex h-auto w-14 flex-col items-center justify-start gap-2 rounded-full px-2 py-4 -translate-y-1/2 md:left-4 md:top-1/2 md:w-auto md:max-w-none md:px-2 md:py-4"
+        className="fixed left-2 top-1/2 z-50 hidden md:flex h-auto w-14 flex-col items-center justify-start gap-2 rounded-full px-2 py-4 -translate-y-1/2 md:left-4 md:top-1/2 md:w-auto md:max-w-none md:px-2 md:py-4"
         style={{
           background: "rgb(15, 23, 35)",
           border: "1px solid rgba(255,255,255,0.08)",
@@ -90,7 +92,7 @@ const FloatingSidebar = memo(() => {
 
   return (
     <nav
-      className="fixed left-2 top-1/2 z-50 flex h-auto w-14 flex-col items-center justify-start gap-2 rounded-full px-2 py-4 -translate-y-1/2 md:left-4 md:top-1/2 md:w-auto md:max-w-none md:px-2 md:py-4"
+      className="fixed left-2 top-1/2 z-50 hidden md:flex h-auto w-14 flex-col items-center justify-start gap-2 rounded-full px-2 py-4 -translate-y-1/2 md:left-4 md:top-1/2 md:w-auto md:max-w-none md:px-2 md:py-4"
       style={{
         background: "rgb(15, 23, 35)",
         border: "1px solid rgba(255,255,255,0.08)",
@@ -130,36 +132,42 @@ const FloatingSidebar = memo(() => {
               </>
             )}
 
-            <Link
-              href={href}
-              prefetch={false}
-              onClick={() => handleSetActive(href)}
-              onFocus={() => handlePrefetch(href)}
-              onMouseEnter={(e) => {
-                handleSetHovered(label, e);
-                handlePrefetch(href);
-              }}
-              onPointerEnter={(e) => handlePrefetch(href)}
-              onMouseOver={(e) => handlePrefetch(href)}
-              onMouseLeave={() => handleSetHovered(null)}
-              className="relative flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200"
-              style={{
-                color: isActive
-                  ? "#f5c842"
-                  : isHovered
-                    ? "#ffffff"
-                    : "rgba(255,255,255,0.45)",
-                background: isActive
-                  ? "rgba(245,200,66,0.12)"
-                  : isHovered
-                    ? "rgba(255,255,255,0.08)"
-                    : "transparent",
-                transform: isHovered && !isActive ? "scale(1.08)" : "scale(1)",
-              }}
-              aria-label={label}
+            <motion.div
+              whileHover={shouldReduceMotion ? undefined : { scale: 1.08, y: -2 }}
+              whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
+              transition={{ duration: shouldReduceMotion ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }}
             >
-              <Icon id={iconId} size={20} strokeWidth={isActive ? 2.2 : 1.8} />
-            </Link>
+              <Link
+                href={href}
+                prefetch={false}
+                onClick={() => handleSetActive(href)}
+                onFocus={() => handlePrefetch(href)}
+                onMouseEnter={(e) => {
+                  handleSetHovered(label, e);
+                  handlePrefetch(href);
+                }}
+                onPointerEnter={(e) => handlePrefetch(href)}
+                onMouseOver={(e) => handlePrefetch(href)}
+                onMouseLeave={() => handleSetHovered(null)}
+                className="relative flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200"
+                style={{
+                  color: isActive
+                    ? "#f5c842"
+                    : isHovered
+                      ? "#ffffff"
+                      : "rgba(255,255,255,0.45)",
+                  background: isActive
+                    ? "rgba(245,200,66,0.12)"
+                    : isHovered
+                      ? "rgba(255,255,255,0.08)"
+                      : "transparent",
+                  transform: isHovered && !isActive ? "scale(1.08)" : "scale(1)",
+                }}
+                aria-label={label}
+              >
+                <Icon id={iconId} size={20} strokeWidth={isActive ? 2.2 : 1.8} />
+              </Link>
+            </motion.div>
 
             {/* Tooltip */}
             {isHovered && mounted && hoveredRect && createPortal(

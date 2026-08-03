@@ -20,6 +20,7 @@ import { getCachedHistory, getCachedHistorySync, setCachedHistory } from "../lib
 import { useMounted } from "@/app/hooks/useMounted";
 import { usePageVisibility } from "../hooks/usePageVisibility";
 import { POLLING_INTERVALS, INACTIVITY_CONFIG } from "@/config/cacheConfig";
+import { getLatestPrice } from "@/lib/priceStorage";
 import {
   useCorridorStream,
   useCorridorConnection,

@@ -1,15 +1,16 @@
 "use client";
 
-import { PriceData } from "@/types";
+import { PriceData, OrderBookSnapshot } from "@/types";
 
 interface SocketMessage {
-  type: "price_update" | "delta_update";
+  type: "price_update" | "delta_update" | "orderbook_update";
   assetId?: string;
-  data: PriceData | Partial<PriceData>;
+  data: PriceData | Partial<PriceData> | OrderBookSnapshot;
   timestamp: number;
 }
 
 type MessageCallback = (data: PriceData | Partial<PriceData>) => void;
+type OrderBookCallback = (data: OrderBookSnapshot) => void;
 type StatusCallback = (connected: boolean) => void;
 
 export class WebSocketManager {
@@ -18,6 +19,7 @@ export class WebSocketManager {
   
   // Track listeners for data streams and connection statuses
   private messageListeners: Set<MessageCallback> = new Set();
+  private orderBookListeners: Set<OrderBookCallback> = new Set();
   private statusListeners: Set<StatusCallback> = new Set();
   
   // Keep an aggregated set of all sub-assets requested by various hooks
@@ -78,7 +80,13 @@ export class WebSocketManager {
           const message: SocketMessage = JSON.parse(event.data as string);
           if (message.type === "price_update" || message.type === "delta_update") {
             // Distribute the incoming data packets down to all observer instances
-            this.messageListeners.forEach((callback) => callback(message.data));
+            this.messageListeners.forEach((callback) =>
+              callback(message.data as PriceData | Partial<PriceData>),
+            );
+          } else if (message.type === "orderbook_update") {
+            this.orderBookListeners.forEach((callback) =>
+              callback(message.data as OrderBookSnapshot),
+            );
           }
         } catch (err) {
           console.error("Failed to parse centralized WebSocket message:", err);
@@ -120,6 +128,15 @@ export class WebSocketManager {
 
   public unsubscribeFromMessages(callback: MessageCallback) {
     this.messageListeners.delete(callback);
+  }
+
+  // Subscribe a component listener to order book snapshot events
+  public subscribeToOrderBook(callback: OrderBookCallback) {
+    this.orderBookListeners.add(callback);
+  }
+
+  public unsubscribeFromOrderBook(callback: OrderBookCallback) {
+    this.orderBookListeners.delete(callback);
   }
 
   // Subscribe a component listener to status change events

@@ -45,6 +45,7 @@ const BondAllocationCalculator = dynamic(
 );
 import Icon from '@/components/icons/Icon';
 import { ICON_IDS } from '@/components/icons/iconIds';
+import { useToast } from '@/components/ui/ToastQueue';
 
 // --- Types ---
 type StakerNode = StakerTableRecord;
@@ -58,6 +59,7 @@ const MOCK_STAKERS: StakerNode[] = [
 ];
 
 export default function StakingPage() {
+  const { addToast, updateToast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 250);
   const throttledSetSearchTerm = useRafThrottle((v: string) => setSearchTerm(v));
@@ -79,11 +81,27 @@ export default function StakingPage() {
     if (isSubmitting) return;
     setIsSubmitting(true);
     setConfirmationMsg('Loading secure environment...');
+    const toastId = addToast({
+      title: 'Transaction submitted',
+      description: 'Preparing staking allocation transaction for submission.',
+      status: 'submitted',
+    });
     try {
       const { submitTransaction } = await import('@/lib/transactionOps');
       setConfirmationMsg('Allocation confirmed. Submitting to network…');
+      updateToast(toastId, {
+        status: 'processing',
+        title: 'Transaction processing',
+        description: 'Your staking transaction is being submitted to the network.',
+      });
       const txHash = await submitTransaction(allocations);
       setConfirmationMsg(`Transaction successful: ${txHash}`);
+      updateToast(toastId, {
+        status: 'confirmed',
+        title: 'Transaction confirmed',
+        description: 'Your staking allocation was confirmed on-chain.',
+        txHash,
+      });
       
       const timer1 = setTimeout(() => {
         setConfirmationMsg(null);
@@ -92,6 +110,11 @@ export default function StakingPage() {
       timeoutsRef.current.add(timer1);
     } catch (err) {
       setConfirmationMsg('Transaction failed');
+      updateToast(toastId, {
+        status: 'failed',
+        title: 'Transaction failed',
+        description: err instanceof Error ? err.message : 'The staking transaction could not be completed.',
+      });
       const timer2 = setTimeout(() => {
         setConfirmationMsg(null);
         timeoutsRef.current.delete(timer2);
@@ -100,7 +123,7 @@ export default function StakingPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [isSubmitting]);
+  }, [addToast, isSubmitting, updateToast]);
 
   const displayedStakers = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();

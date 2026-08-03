@@ -44,9 +44,9 @@ interface WalletWindow extends Window {
   freighterApi?: FreighterExtension;
   Horizon?: FreighterExtension;
 }
-const WalletStateContext = createContext<WalletStateContextType | null>(null);
-const WalletStatusContext = createContext<WalletStatusContextType | null>(null);
-const WalletActionsContext = createContext<WalletActionsContextType | null>(null);
+export const WalletStateContext = createContext<WalletStateContextType | null>(null);
+export const WalletStatusContext = createContext<WalletStatusContextType | null>(null);
+export const WalletActionsContext = createContext<WalletActionsContextType | null>(null);
 
 const CACHE_TTL = 2500;
 let cache: { expiresAt: number; value: WalletState | null } | null = null;
@@ -208,6 +208,22 @@ export function useWallet(): WalletStateContextType {
     throw new Error('useWallet must be used within a WalletProvider');
   }
   return ctx;
+}
+
+/**
+ * Same slices as {@link useWallet} / {@link useWalletActions} but returning
+ * `null` instead of throwing when no provider is mounted above the consumer.
+ *
+ * Lets globally-mounted UI (the command palette) offer wallet actions where a
+ * provider exists and degrade quietly where it does not, without forcing every
+ * page to wrap itself in a WalletProvider.
+ */
+export function useOptionalWallet(): WalletStateContextType | null {
+  return useContext(WalletStateContext);
+}
+
+export function useOptionalWalletActions(): WalletActionsContextType | null {
+  return useContext(WalletActionsContext);
 }
 
 export function useWalletStatus(): WalletStatusContextType {

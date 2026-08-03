@@ -37,8 +37,22 @@ export async function verifyOnLedger(hash?: string): Promise<boolean> {
 export async function submitTransaction(payload: Record<string, number>): Promise<string> {
   console.log("Preparing transaction with payload:", payload);
 
+  if (typeof window !== "undefined" && (window as any).__MOCK_TX_CONFIG__) {
+    const mockConfig = (window as any).__MOCK_TX_CONFIG__;
+    console.log("Mock Provider intercepted transaction:", payload);
+    
+    await new Promise((resolve) => setTimeout(resolve, mockConfig.delayMs || 1000));
+    
+    if (mockConfig.simulateFailure) {
+      throw new Error("Mock transaction failure simulated.");
+    }
+    
+    // Return fake hash
+    return "mock_tx_" + Math.random().toString(36).substring(2, 15);
+  }
+
   const { isConnected, getAddress } = await import("@stellar/freighter-api");
-  const { Keypair, TransactionBuilder, Networks, Transaction } = await import("@stellar/stellar-sdk");
+  const { Horizon, TransactionBuilder, Networks, Transaction } = await import("@stellar/stellar-sdk");
 
   if (!(await isConnected())) {
     throw new Error("Freighter wallet is not connected. Please connect your wallet first.");
@@ -77,7 +91,7 @@ export async function submitTransaction(payload: Record<string, number>): Promis
   }
 
   // Reconstruct the transaction from the signed XDR
-  const signedTx = TransactionBuilder.fromXDR(signedTxXdr, Networks.TESTNET) as Transaction;
+  const signedTx = TransactionBuilder.fromXDR(signedTxXdr, Networks.TESTNET);
 
   // Submit to the Stellar network
   const response = await server.submitTransaction(signedTx);

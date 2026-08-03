@@ -1,0 +1,375 @@
+# 📦 Bundle Size Guard
+#
+# Runs @next/bundle-analyzer during CI, compares bundle sizes against the
+# target branch (main), comments results on Pull Requests, fails if any
+# individual page bundle exceeds 200 KB (raw), and uploads an interactive
+# HTML bundle analysis artifact.
+#
+# This workflow complements the existing scripts/check-bundle-size.js
+# and .bundle-limits.json infrastructure already present in the repo.
+#
+# Triggers:
+#   - pull_request  (targeting main)
+#   - workflow_dispatch
+
+name: 📦 Bundle Size Check
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: read
+
+jobs:
+  bundle-check:
+    name: Bundle Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build with bundle analysis and size check
+        run: npm run build
+        env:
+          ANALYZE: "true"
+        # The existing build script runs: next build && node scripts/check-bundle-size.js
+        # With ANALYZE=true, @next/bundle-analyzer also generates interactive HTML
+        # reports in .next/analyze/
+
+      - name: Extract and compare bundle sizes
+        id: analyze
+        run: node .github/scripts/bundle-analysis.js
+        env:
+          BUNDLE_REPORT: .bundle-report.json
+          BUNDLE_LIMITS: .bundle-limits.json
+          NEXT_ANALYZE_DIR: .next/analyze
+          OUTPUT_DIR: .
+
+      - name: Download baseline bundle stats from main
+        id: baseline
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { execSync } = require("child_process");
+            const fs = require("fs");
+
+            core.info("Looking for a previous successful bundle-check run on main…");
+
+            let runs;
+            try {
+              runs = await github.rest.actions.listWorkflowRuns({
+                ...context.repo,
+                workflow_id: "bundle-check.yml",
+                branch: "main",
+                status: "success",
+                per_page: 1,
+              });
+            } catch (err) {
+              core.warning(`Failed to list workflow runs: ${err.message}`);
+              return;
+            }
+
+            if (!runs.data.workflow_runs.length) {
+              core.info("No previous successful run on main found — skipping baseline comparison.");
+              return;
+            }
+
+            const runId = runs.data.workflow_runs[0].id;
+            core.info(`Found run #${runId} on main`);
+
+            let artifacts;
+            try {
+              artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+                ...context.repo,
+                run_id: runId,
+              });
+            } catch (err) {
+              core.info(`Could not list artifacts: ${err.message}`);
+              return;
+            }
+
+            const artifact = artifacts.data.artifacts.find(
+              (a) => a.name === "bundle-stats",
+            );
+            if (!artifact) {
+              core.info("No bundle-stats artifact found on main — skipping baseline comparison.");
+              return;
+            }
+
+            core.info(`Downloading artifact #${artifact.id} (${artifact.name})…`);
+
+            let zip;
+            try {
+              zip = await github.rest.actions.downloadArtifact({
+                ...context.repo,
+                artifact_id: artifact.id,
+                archive_format: "zip",
+              });
+            } catch (err) {
+              core.info(`Could not download artifact: ${err.message}`);
+              return;
+            }
+
+            fs.mkdirSync("baseline-stats", { recursive: true });
+            fs.writeFileSync("baseline-stats.zip", Buffer.from(zip.data));
+            execSync("unzip -o baseline-stats.zip -d baseline-stats", {
+              stdio: "pipe",
+            });
+
+            const baselineExists = fs.existsSync("baseline-stats/bundle-sizes.json");
+            if (baselineExists) {
+              core.info("Baseline bundle stats downloaded successfully.");
+            } else {
+              core.info("Baseline artifact did not contain bundle-sizes.json.");
+            }
+
+      - name: Build comparison report
+        id: compare
+        run: |
+          node -e "
+          const fs = require('fs');
+
+          const current = JSON.parse(fs.readFileSync('bundle-sizes.json', 'utf8'));
+          const pages = current.pages || {};
+
+          const md = [];
+          md.push('## \ud83d\udce6 Bundle Size Report');
+          md.push('');
+
+          const THRESHOLD_KB = 200;
+          const exceeding = [];
+
+          // Try to load baseline
+          let baseline = null;
+          try {
+            baseline = JSON.parse(fs.readFileSync('baseline-stats/bundle-sizes.json', 'utf8'));
+          } catch (_) {
+            // no baseline
+          }
+          const baselinePages = baseline ? (baseline.pages || {}) : {};
+
+          let totalCurrent = 0;
+          let totalBaseline = 0;
+
+          // Sort pages by size (descending)
+          const sortedPages = Object.entries(pages).sort(function (a, b) { return b[1] - a[1]; });
+
+          // Compute deltas for each page
+          const deltas = [];
+          for (const [page, sizeBytes] of Object.entries(pages)) {
+            const baselineSize = baselinePages[page] || 0;
+            const delta = sizeBytes - baselineSize;
+            deltas.push({ page, sizeBytes, baselineSize, delta });
+          }
+          deltas.sort(function (a, b) { return b.delta - a.delta; });
+
+          // --- Table with dynamic columns ---
+          const headerCols = ['Page', 'Size'];
+          if (baseline) headerCols.push('Delta');
+          headerCols.push('Status');
+          md.push('| ' + headerCols.join(' | ') + ' |');
+          md.push('|' + headerCols.map(function () { return '---'; }).join('|') + '|');
+
+          for (const [page, sizeBytes] of sortedPages) {
+            const sizeKB = (sizeBytes / 1024).toFixed(1);
+            totalCurrent += sizeBytes;
+
+            const baselineSize = baselinePages[page] || 0;
+            totalBaseline += baselineSize;
+
+            const delta = sizeBytes - baselineSize;
+            const deltaKB = (delta / 1024).toFixed(1);
+            const deltaSign = delta > 0 ? '+' : '';
+
+            const status = sizeBytes > THRESHOLD_KB * 1024 ? '\u26a0\ufe0f Exceeds threshold' : '\u2705';
+            if (sizeBytes > THRESHOLD_KB * 1024) {
+              exceeding.push({ page: page, sizeKB: sizeKB });
+            }
+
+            const row = [page, sizeKB + ' KB'];
+            if (baseline) row.push(deltaSign + deltaKB + ' KB');
+            row.push(status);
+            md.push('| ' + row.join(' | ') + ' |');
+          }
+
+          // --- Summary ---
+          md.push('');
+          md.push('### Summary');
+          md.push('');
+
+          const totalCurrentKB = (totalCurrent / 1024).toFixed(1);
+          const totalDelta = totalCurrent - totalBaseline;
+          const totalDeltaKB = (totalDelta / 1024).toFixed(1);
+          const totalDeltaSign = totalDelta > 0 ? '+' : '';
+
+          md.push('- **Total JS bundle size:** ' + totalCurrentKB + ' KB');
+          if (baseline) {
+            md.push('- **Delta vs main:** ' + totalDeltaSign + totalDeltaKB + ' KB');
+          }
+          md.push('- **Pages tracked:** ' + sortedPages.length);
+
+          // --- Largest increases (top 3) ---
+          if (baseline) {
+            const increases = deltas.filter(function (d) { return d.delta > 0; }).sort(function (a, b) { return b.delta - a.delta; }).slice(0, 3);
+            if (increases.length > 0) {
+              md.push('');
+              md.push('### \ud83d\udcc8 Largest Page Increases');
+              md.push('');
+              md.push('| Page | Increase |');
+              md.push('|---|---|');
+              for (const inc of increases) {
+                md.push('| ' + inc.page + ' | +' + (inc.delta / 1024).toFixed(1) + ' KB |');
+              }
+            }
+
+            // --- Largest decreases (top 3) ---
+            const decreases = deltas.filter(function (d) { return d.delta < 0; }).sort(function (a, b) { return a.delta - b.delta; }).slice(0, 3);
+            if (decreases.length > 0) {
+              md.push('');
+              md.push('### \ud83d\udcc9 Largest Page Decreases');
+              md.push('');
+              md.push('| Page | Decrease |');
+              md.push('|---|---|');
+              for (const dec of decreases) {
+                md.push('| ' + dec.page + ' | ' + (dec.delta / 1024).toFixed(1) + ' KB |');
+              }
+            }
+          }
+
+          // --- Config limits from .bundle-limits.json ---
+          let configLimits = {};
+          try {
+            configLimits = JSON.parse(fs.readFileSync('.bundle-limits.json', 'utf8'));
+          } catch (_) {}
+          if (configLimits.maxPageBundle) {
+            md.push('');
+            md.push('### \u2699\ufe0f Configured Limits');
+            md.push('');
+            md.push('| Metric | Limit |');
+            md.push('|---|---|');
+            if (configLimits.maxPageBundle) md.push('| Max page bundle (gzipped) | ' + configLimits.maxPageBundle + ' KB |');
+            if (configLimits.maxMainBundle) md.push('| Max main bundle (gzipped) | ' + configLimits.maxMainBundle + ' KB |');
+            if (configLimits.maxTotalGzipped) md.push('| Max total (gzipped) | ' + configLimits.maxTotalGzipped + ' KB |');
+            md.push('| Hard page threshold (raw) | ' + THRESHOLD_KB + ' KB |');
+          }
+
+          // --- Exceeding threshold ---
+          if (exceeding.length > 0) {
+            md.push('');
+            md.push('### \ud83d\udeab Pages Exceeding Threshold');
+            md.push('');
+            md.push('The following page(s) exceed the ' + THRESHOLD_KB + ' KB raw size limit:');
+            md.push('');
+            for (const { page, sizeKB } of exceeding) {
+              md.push('- **' + page + '**: ' + sizeKB + ' KB');
+            }
+          }
+
+          // Artifact link
+          md.push('');
+          md.push('---');
+          md.push('');
+          md.push('> Interactive HTML bundle report is available as a workflow artifact.');
+          md.push('> [Download bundle report](./../../actions/runs/' + (process.env.GITHUB_RUN_ID || '') + ')');
+
+          fs.writeFileSync('bundle-report.md', md.join('\n'), 'utf8');
+
+          // Write summary JSON for threshold check
+          const summary = {
+            exceeding: exceeding.map(function (p) { return { page: p.page, sizeKB: p.sizeKB }; }),
+            totalSizeKB: totalCurrentKB,
+          };
+          fs.writeFileSync('bundle-summary.json', JSON.stringify(summary), 'utf8');
+          "
+        env:
+          GITHUB_RUN_ID: ${{ github.run_id }}
+
+      - name: Comment PR with bundle report
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            const report = fs.readFileSync("bundle-report.md", "utf8");
+
+            // Find an existing bot comment to update (avoid duplicates)
+            const { data: comments } = await github.rest.issues.listComments({
+              ...context.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botIdentifier = "Bundle Size Report";
+            const existing = comments.find(
+              (c) =>
+                c.user.type === "Bot" &&
+                c.body &&
+                c.body.includes(botIdentifier),
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                ...context.repo,
+                comment_id: existing.id,
+                body: report,
+              });
+              core.info("Updated existing bundle report comment.");
+            } else {
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: context.issue.number,
+                body: report,
+              });
+              core.info("Created new bundle report comment.");
+            }
+
+      - name: Check 200 KB page chunk threshold
+        id: threshold
+        run: |
+          node -e "
+          const summary = JSON.parse(require('fs').readFileSync('bundle-summary.json', 'utf8'));
+          const THRESHOLD_KB = 200;
+
+          if (summary.exceeding && summary.exceeding.length > 0) {
+            const messages = summary.exceeding.map(
+              function (p) { return '  - ' + p.page + ': ' + p.sizeKB + ' KB (max: ' + THRESHOLD_KB + ' KB)'; }
+            );
+            console.error('FAIL: Bundle size threshold exceeded!');
+            console.error('The following page chunks exceed ' + THRESHOLD_KB + ' KB:');
+            messages.forEach(function (m) { console.error(m); });
+            process.exit(1);
+          } else {
+            console.log('All page chunks are within the ' + THRESHOLD_KB + ' KB threshold.');
+          }
+          "
+
+      - name: Upload interactive bundle report
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-report
+          path: .next/analyze/
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Upload bundle stats for baseline comparison
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-stats
+          path: bundle-sizes.json
+          retention-days: 14
+          if-no-files-found: warn

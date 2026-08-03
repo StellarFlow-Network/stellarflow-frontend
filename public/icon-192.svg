@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0a0f1e"/>
+      <stop offset="100%" stop-color="#1b2a3b"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#39ff14"/>
+      <stop offset="100%" stop-color="#99dc1b"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="32" fill="url(#bg)"/>
+  <g transform="translate(96,96)" fill="none" stroke="url(#glow)" stroke-width="2.5">
+    <circle r="52" opacity="0.3"/>
+    <circle r="36" opacity="0.5"/>
+    <circle r="20" opacity="0.7"/>
+    <circle r="8" fill="url(#glow)" stroke="none"/>
+  </g>
+  <g transform="translate(96,96)" stroke="url(#glow)" stroke-width="2" opacity="0.6">
+    <line x1="0" y1="-52" x2="0" y2="-36"/>
+    <line x1="0" y1="36" x2="0" y2="52"/>
+    <line x1="-52" y1="0" x2="-36" y2="0"/>
+    <line x1="36" y1="0" x2="52" y2="0"/>
+    <line x1="-37" y1="-37" x2="-25" y2="-25"/>
+    <line x1="25" y1="25" x2="37" y2="37"/>
+    <line x1="25" y1="-25" x2="37" y2="-37"/>
+    <line x1="-37" y1="37" x2="-25" y2="25"/>
+  </g>
+  <text x="96" y="174" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#39ff14" opacity="0.8">StellarFlow</text>
+</svg>

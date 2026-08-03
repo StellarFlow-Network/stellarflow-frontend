@@ -59,11 +59,10 @@ export function useValidatorBatch(
       return data;
     },
     initialData,
-// Keep previous data while loading new batched results.
+    // Keep previous data while loading new batched results and avoid focus refetches
+    // during rapid UI interactions.
     refetchOnWindowFocus: false,
     placeholderData: (previousData) => previousData,
-    // Do not refetch on window focus to keep data stable during rapid UI interactions.
-    refetchOnWindowFocus: false,
     staleTime: cacheConfig.staleTime,
     gcTime: cacheConfig.gcTime,
   });

@@ -1,0 +1,200 @@
+name: Vercel CI — Preview & Production
+
+# ─────────────────────────────────────────────
+# Triggers
+#   • pull_request  → preview deployment
+#   • push tag v*   → production deployment
+# ─────────────────────────────────────────────
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    tags:
+      - "v*"
+
+# Cancel in-flight runs for the same PR / branch so we don't waste minutes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+
+# ─────────────────────────────────────────────
+# Job 1 — Quality checks (lint · typecheck · test)
+# Runs on every PR and every version tag push.
+# ─────────────────────────────────────────────
+jobs:
+  quality:
+    name: Quality checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (ESLint)
+        run: npm run lint
+
+      - name: Type-check (tsc --noEmit)
+        run: npx tsc --noEmit
+
+      - name: Unit tests
+        run: npm run test
+
+# ─────────────────────────────────────────────
+# Job 2 — Vercel Preview Deployment (pull requests only)
+# Deploys to a per-PR preview environment on Vercel.
+# Outputs the deployment URL for use in the comment job.
+# ─────────────────────────────────────────────
+  preview:
+    name: Vercel — Preview deployment
+    runs-on: ubuntu-latest
+    needs: quality
+    # Only run on pull-request events, not on tag pushes.
+    if: github.event_name == 'pull_request'
+    outputs:
+      preview_url: ${{ steps.deploy.outputs.preview_url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel environment (preview)
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build project (preview)
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy to Vercel (preview)
+        id: deploy
+        run: |
+          PREVIEW_URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          echo "preview_url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
+
+# ─────────────────────────────────────────────
+# Job 3 — Vercel Production Deployment (version tags only)
+# Deploys to the Vercel production target when a v* tag is pushed.
+# ─────────────────────────────────────────────
+  production:
+    name: Vercel — Production deployment
+    runs-on: ubuntu-latest
+    needs: quality
+    # Only run when the trigger is a version tag, not on PRs.
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel environment (production)
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build project (production)
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy to Vercel (production)
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+# ─────────────────────────────────────────────
+# Job 4 — Post preview URL as a PR comment
+# Runs only on pull requests, after the preview deployment succeeds.
+# Uses github-script to find-or-update an existing bot comment so the
+# PR thread stays clean (no duplicate comments on re-runs).
+# ─────────────────────────────────────────────
+  comment:
+    name: Post preview URL comment
+    runs-on: ubuntu-latest
+    needs: preview
+    # Only runs when the preview job ran (i.e. on pull_request events).
+    if: github.event_name == 'pull_request'
+    # Needs write permission to create/update issue comments.
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Find existing preview comment
+        uses: actions/github-script@v7
+        id: find-comment
+        with:
+          script: |
+            const marker = '<!-- vercel-preview-comment -->';
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.includes(marker));
+            return existing ? existing.id : null;
+
+      - name: Create or update preview URL comment
+        uses: actions/github-script@v7
+        env:
+          PREVIEW_URL: ${{ needs.preview.outputs.preview_url }}
+        with:
+          script: |
+            const marker = '<!-- vercel-preview-comment -->';
+            const sha     = context.payload.pull_request.head.sha.substring(0, 7);
+            const body    = [
+              marker,
+              '## 🔍 Vercel Preview Deployment',
+              '',
+              `| | |`,
+              `|---|---|`,
+              `| **Preview URL** | [${process.env.PREVIEW_URL}](${process.env.PREVIEW_URL}) |`,
+              `| **Commit** | \`${sha}\` |`,
+              `| **Status** | ✅ Ready |`,
+              '',
+              '_This comment is updated automatically on every push to this PR._',
+            ].join('\n');
+
+            const commentId = ${{ steps.find-comment.outputs.result }};
+
+            if (commentId) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: commentId,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }

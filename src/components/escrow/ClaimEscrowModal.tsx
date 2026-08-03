@@ -5,6 +5,7 @@ import OptimizedDialog from "@/app/components/OptimizedDialog";
 import { useRAFInterval } from "@/app/hooks/useRAFInterval";
 import Icon from "@/components/icons/Icon";
 import { ICON_IDS } from "@/components/icons/iconIds";
+import { useToast } from "@/components/ui/ToastQueue";
 import { formatCountdown, validatePreimageHex } from "@/lib/hexValidation";
 
 export interface ClaimEscrowModalProps {
@@ -35,6 +36,7 @@ export function ClaimEscrowModal({
   onClaimSuccess,
   onClaimError,
 }: ClaimEscrowModalProps) {
+  const { addToast, updateToast } = useToast();
   const [preimage, setPreimage] = useState("");
   const [touched, setTouched] = useState(false);
   const [remainingMs, setRemainingMs] = useState(() =>
@@ -55,20 +57,20 @@ export function ClaimEscrowModal({
 
   useEffect(() => {
     if (!isOpen) return;
-    updateRemaining();
+    const initialSyncTimer = window.setTimeout(updateRemaining, 0);
+    return () => window.clearTimeout(initialSyncTimer);
   }, [isOpen, updateRemaining]);
 
   useRAFInterval(updateRemaining, 1000, isOpen);
 
-  useEffect(() => {
-    if (!isOpen) {
-      setPreimage("");
-      setTouched(false);
-      setSubmitError(null);
-      setTxHash(null);
-      setIsSubmitting(false);
-    }
-  }, [isOpen]);
+  const handleClose = useCallback(() => {
+    setPreimage("");
+    setTouched(false);
+    setSubmitError(null);
+    setTxHash(null);
+    setIsSubmitting(false);
+    onClose();
+  }, [onClose]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -81,8 +83,18 @@ export function ClaimEscrowModal({
     }
 
     setIsSubmitting(true);
+    const toastId = addToast({
+      title: "Escrow claim submitted",
+      description: "Submitting your HTLC claim to the network.",
+      status: "submitted",
+    });
 
     try {
+      updateToast(toastId, {
+        status: "processing",
+        title: "Escrow claim processing",
+        description: "Your claim transaction is being prepared and sent.",
+      });
       const { claimEscrow } = await import("@/lib/escrowOps");
       const { txHash: hash } = await claimEscrow({
         contractId,
@@ -90,11 +102,22 @@ export function ClaimEscrowModal({
       });
 
       setTxHash(hash);
+      updateToast(toastId, {
+        status: "confirmed",
+        title: "Escrow claim confirmed",
+        description: "Your claim was confirmed on-chain.",
+        txHash: hash,
+      });
       onClaimSuccess?.(hash);
     } catch (err) {
       const error =
         err instanceof Error ? err : new Error("Failed to claim escrow funds.");
       setSubmitError(error.message);
+      updateToast(toastId, {
+        status: "failed",
+        title: "Escrow claim failed",
+        description: error.message,
+      });
       onClaimError?.(error);
     } finally {
       setIsSubmitting(false);
@@ -104,7 +127,7 @@ export function ClaimEscrowModal({
   return (
     <OptimizedDialog
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="Claim HTLC Escrow"
       size="lg"
     >

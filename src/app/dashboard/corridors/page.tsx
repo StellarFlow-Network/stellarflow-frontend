@@ -2,7 +2,9 @@
 
 import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
+import { CorridorProvider } from "@/context/CorridorContext";
 import { useCorridorMetricsWithFallback } from "../../hooks/useCorridorMetrics";
+import LiquidityDepthChart from "./LiquidityDepthChart";
 
 const CorridorSpreadTable = dynamic(() => import("./CorridorSpreadTable"), {
   ssr: false,
@@ -23,6 +25,7 @@ export default function CorridorMonitorPage() {
   }, [bids, asks]);
 
   return (
+    <CorridorProvider>
     <div className="min-h-screen bg-neutral-950 text-neutral-100 p-6 font-sans selection:bg-lime-500 selection:text-black">
       {/* Header Container */}
       <div className="mb-8 border-b border-neutral-800 pb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -109,6 +112,8 @@ export default function CorridorMonitorPage() {
               </span>
             </div>
 
+            <LiquidityDepthChart bids={bids} asks={asks} activePair={activePair} />
+
             {/* Asks (Sells) Table Area */}
             <div className="space-y-1 mb-4 flex flex-col-reverse">
               {asks.map((ask, index) => (
@@ -176,5 +181,6 @@ export default function CorridorMonitorPage() {
         </div>
       </div>
     </div>
+    </CorridorProvider>
   );
 }

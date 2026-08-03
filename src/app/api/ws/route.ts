@@ -169,13 +169,74 @@ function simulatePriceUpdates() {
   }, 2000 + Math.random() * 3000) // Random interval between 2-5 seconds
 }
 
+// Generate one side of a synthetic order book radiating out from `midPrice`.
+// Each level's `total` is the cumulative amount from the top of book down to
+// that level, so the client can size depth bars without re-summing.
+function generateOrderBookLevels(
+  midPrice: number,
+  side: 'bid' | 'ask',
+  levels = 10,
+) {
+  const result: { price: number; amount: number; total: number }[] = []
+  let total = 0
+
+  for (let i = 0; i < levels; i++) {
+    const step = midPrice * 0.0008 * (i + 1)
+    const price = side === 'bid' ? midPrice - step : midPrice + step
+    const amount = Math.round((50 + Math.random() * 950) * 100) / 100
+    total = Math.round((total + amount) * 100) / 100
+
+    result.push({
+      price: Math.round(price * 1e6) / 1e6,
+      amount,
+      total,
+    })
+  }
+
+  return result
+}
+
+// Simulate order book depth updates for demo purposes — broadcasts to the
+// same per-asset subscriber set used by price updates, distinguished by
+// `type: 'orderbook_update'`.
+function simulateOrderBookUpdates() {
+  const assets = ASSET_SYMBOL_LIST
+
+  setInterval(() => {
+    assets.forEach((assetId) => {
+      const subscribers = assetSubscriptions.get(assetId)
+      if (subscribers && subscribers.size > 0) {
+        const basePrice = ASSET_BASE_PRICES[assetId]
+        const variation = (Math.random() - 0.5) * 0.02 // ±1% variation
+        const midPrice = basePrice * (1 + variation)
+
+        const update = {
+          type: 'orderbook_update',
+          assetId,
+          data: {
+            assetPair: assetId,
+            bids: generateOrderBookLevels(midPrice, 'bid'),
+            asks: generateOrderBookLevels(midPrice, 'ask'),
+            timestamp: Date.now(),
+          },
+          timestamp: Date.now(),
+        }
+
+        subscribers.forEach((ws) => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify(update))
+          }
+        })
+      }
+    })
+  }, 1500 + Math.random() * 2000) // Random interval between 1.5-3.5 seconds
+}
+
 // Start simulation after a delay
 setTimeout(simulatePriceUpdates, 1000)
+setTimeout(simulateOrderBookUpdates, 1200)
 
 export async function GET(_request: NextRequest) {
   // This is a placeholder - WebSocket upgrade happens in the Next.js server
   return new NextResponse('WebSocket endpoint', { status: 200 })
 }
-
-// Export for use in server.js or custom server setup
-export { getWebSocketServer, assetSubscriptions }

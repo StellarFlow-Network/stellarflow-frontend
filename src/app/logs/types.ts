@@ -1,3 +1,4 @@
+import type { XdrFields } from './worker-types';
 export type { XdrFields } from './worker-types';
 import type { FuseResultMatch } from 'fuse.js';
 

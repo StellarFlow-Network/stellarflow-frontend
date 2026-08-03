@@ -5,6 +5,9 @@ import Icon from '@/components/icons/Icon';
 import { ICON_IDS } from '@/components/icons/iconIds';
 import { useDebounce } from '../hooks/useDebounce';
 import { useRafThrottle } from '../hooks/useRafThrottle';
+import { openPushPreferencesModal } from '@/components/notifications';
+import { loadPreferences } from '@/services/notifications';
+import { useTransactionAudio } from '@/hooks/useTransactionAudio';
 
 interface Settings {
   emailReports: boolean;
@@ -27,15 +30,22 @@ const TOGGLE_STYLES = {
 
 export default function SettingsPage() {
   const [showKey, setShowKey] = useState(false);
+  const { isEnabled: soundEffectsEnabled, toggle: toggleSoundEffects } = useTransactionAudio();
   const [settings, setSettings] = useState<Settings>({
     emailReports: true,
-    pushNotifications: true,
+    pushNotifications: false,
     publicStatusPage: false,
     multiSigApproval: false,
     sessionTimeout: '15 Minutes',
   });
   const [savedSettings, setSavedSettings] = useState<Settings>({ ...settings });
   const [isPending, setIsPending] = useState(false);
+
+  useEffect(() => {
+    const prefs = loadPreferences();
+    setSettings((prev) => ({ ...prev, pushNotifications: prefs.enabled }));
+    setSavedSettings((prev) => ({ ...prev, pushNotifications: prefs.enabled }));
+  }, []);
 
   const debouncedSettings = useDebounce(settings, 500);
 
@@ -58,6 +68,10 @@ export default function SettingsPage() {
   }, [debouncedSettings, hasChanges, isPending]);
 
   const handleToggle = (key: keyof Settings) => {
+    if (key === 'pushNotifications') {
+      openPushPreferencesModal();
+      return;
+    }
     setSettings(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
@@ -136,16 +150,23 @@ export default function SettingsPage() {
             <ToggleItem 
               icon={<Icon id={ICON_IDS.smartphone} size={18} />} 
               title="Push Notifications" 
-              description="Alerts for Oracle Kill Switch and high-volatility events."
+              description="Opt in to browser alerts for swaps, limit orders, remittances, and governance votes."
               enabled={settings.pushNotifications}
               onToggle={() => handleToggle('pushNotifications')}
             />
-            <ToggleItem 
-              icon={<Icon id={ICON_IDS.globe} size={18} />} 
-              title="Public Status Page" 
+            <ToggleItem
+              icon={<Icon id={ICON_IDS.globe} size={18} />}
+              title="Public Status Page"
               description="Automatically update the status.stellarflow.io page."
               enabled={settings.publicStatusPage}
               onToggle={() => handleToggle('publicStatusPage')}
+            />
+            <ToggleItem
+              icon={<Icon id={ICON_IDS.volume2} size={18} />}
+              title="Sound Effects"
+              description="Play a chime when a transaction confirms or fails. Off by default."
+              enabled={soundEffectsEnabled}
+              onToggle={toggleSoundEffects}
             />
           </div>
         </section>

@@ -46,7 +46,7 @@ export const CorridorAssetIcon = React.memo(function CorridorAssetIcon({
       strokeLinejoin="round"
       className={className}
     >
-      <use xlink:href={`${CORRIDOR_SPRITE}#${symbolId}`} />
+      <use href={`${CORRIDOR_SPRITE}#${symbolId}`} />
     </svg>
   );
 });
@@ -80,7 +80,7 @@ export const CorridorSpriteIcon = React.memo(function CorridorSpriteIcon({
       strokeLinejoin="round"
       className={className}
     >
-      <use xlink:href={`${CORRIDOR_SPRITE}#${symbolId}`} />
+      <use href={`${CORRIDOR_SPRITE}#${symbolId}`} />
     </svg>
   );
 });

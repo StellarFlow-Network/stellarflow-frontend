@@ -37,3 +37,21 @@ export interface PriceData {
   confidenceScore: number;
   metadata?: unknown; // Using unknown as per guardrail (no 'any')
 }
+
+/** Single price/size level in an order book side. `total` is the cumulative
+ * size from the top of the book through this level (depth-chart friendly). */
+export interface OrderBookLevel {
+  price: number;
+  amount: number;
+  total: number;
+}
+
+/** Live order book snapshot for one asset pair, pushed over the price WebSocket feed. */
+export interface OrderBookSnapshot {
+  assetPair: AssetSymbol;
+  /** Highest-to-lowest priced buy levels. */
+  bids: OrderBookLevel[];
+  /** Lowest-to-highest priced sell levels. */
+  asks: OrderBookLevel[];
+  timestamp: number; // Unix timestamp
+}

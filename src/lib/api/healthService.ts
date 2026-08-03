@@ -31,3 +31,7 @@ export async function fetchBatchedHealth(): Promise<HealthBatchResponse> {
     };
   }
 }
+
+export type HealthStatusBatch = HealthBatchResponse;
+
+export const getHealthStatusBatch = fetchBatchedHealth;

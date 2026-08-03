@@ -36,6 +36,8 @@ export interface ProposalListProps {
   proposals: ProposalRecord[];
   /** Filter applied externally (e.g. tab selection). Defaults to "all". */
   filter?: "all" | "active" | "archived";
+  /** Called when the user clicks Vote on an active proposal. */
+  onVote?: (proposal: ProposalRecord) => void;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -188,6 +190,7 @@ interface ProposalRowProps {
   proposal: ProposalRecord & { shortenedAddress: string };
   ledgersRemaining: number;
   isHydrated: boolean;
+  onVote?: (proposal: ProposalRecord & { shortenedAddress: string }) => void;
 }
 
 function proposalRowAreEqual(prev: ProposalRowProps, next: ProposalRowProps): boolean {
@@ -197,7 +200,8 @@ function proposalRowAreEqual(prev: ProposalRowProps, next: ProposalRowProps): bo
     prev.proposal.votesFor === next.proposal.votesFor &&
     prev.proposal.votesAgainst === next.proposal.votesAgainst &&
     prev.ledgersRemaining === next.ledgersRemaining &&
-    prev.isHydrated === next.isHydrated
+    prev.isHydrated === next.isHydrated &&
+    prev.onVote === next.onVote
   );
 }
 
@@ -205,6 +209,7 @@ const ProposalRow = React.memo(function ProposalRow({
   proposal,
   ledgersRemaining,
   isHydrated,
+  onVote,
 }: ProposalRowProps) {
   return (
     <div
@@ -256,14 +261,27 @@ const ProposalRow = React.memo(function ProposalRow({
             quorumThreshold={proposal.quorumThreshold}
           />
 
-          <button
-            className="p-2 bg-[#0d1117] border border-gray-700 text-gray-400 rounded-lg shrink-0 self-end md:self-auto relative overflow-hidden"
-            aria-label={`View proposal ${proposal.id}`}
-            style={{ transition: "border-color 150ms ease" }}
-          >
-            <span className="absolute inset-0 bg-gray-800 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none" />
-            <Icon id={ICON_IDS.chevronRight} size={18} className="relative z-10" />
-          </button>
+          {proposal.status === "Active" ? (
+            <button
+              type="button"
+              onClick={() => onVote?.(proposal)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium shrink-0 self-end md:self-auto relative overflow-hidden hover:bg-blue-700 transition-colors"
+              aria-label={`Vote on proposal ${proposal.id}`}
+            >
+              <span className="absolute inset-0 bg-blue-700 opacity-0 transition-opacity duration-150 pointer-events-none" />
+              <Icon id={ICON_IDS.gavel} size={16} className="relative z-10" />
+              <span className="relative z-10">Vote</span>
+            </button>
+          ) : (
+            <button
+              className="p-2 bg-[#0d1117] border border-gray-700 text-gray-400 rounded-lg shrink-0 self-end md:self-auto relative overflow-hidden"
+              aria-label={`View proposal ${proposal.id}`}
+              style={{ transition: "border-color 150ms ease" }}
+            >
+              <span className="absolute inset-0 bg-gray-800 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none" />
+              <Icon id={ICON_IDS.chevronRight} size={18} className="relative z-10" />
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -294,7 +312,7 @@ function EmptyState({ filter }: { filter: ProposalListProps["filter"] }) {
 // ProposalList — main export
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function ProposalList({ proposals, filter = "all" }: ProposalListProps) {
+export function ProposalList({ proposals, filter = "all", onVote }: ProposalListProps) {
   const isHydrated = useIsHydrated();
 
   // Pre-compute shortened proposer addresses at ingestion time
@@ -362,6 +380,7 @@ export function ProposalList({ proposals, filter = "all" }: ProposalListProps) {
           proposal={proposal}
           ledgersRemaining={ledgerCounts[proposal.id] ?? proposal.endsInLedgers}
           isHydrated={isHydrated}
+          onVote={onVote}
         />
       ))}
     </div>

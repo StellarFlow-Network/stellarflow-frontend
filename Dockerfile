@@ -1,44 +1,46 @@
-# Stage 1: Install dependencies and build the Next.js application
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS base
 
-# Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json (or yarn.lock)
-COPY package.json yarn.lock ./
+RUN apk add --no-cache libc6-compat
 
-# Install build tools for native modules like `iltorb` (used by shrink-ray-current)
-# if you are using a custom server with shrink-ray-current.
-# Otherwise, this step is not needed.
-RUN apk add --no-cache python3 make g++
+FROM base AS deps
 
-# Install dependencies
-RUN yarn install --frozen-lockfile
+COPY package.json package-lock.json ./
+RUN npm ci
 
-# Copy the rest of the application code
+FROM base AS builder
+
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_DISABLE_PWA=true
+ENV NEXT_OUTPUT_MODE=standalone
+
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build the Next.js application
-# NEXT_TELEMETRY_DISABLED=1 disables Next.js telemetry during build
-RUN NEXT_TELEMETRY_DISABLED=1 yarn build
+# Use the raw Next.js production build here instead of the repository's
+# custom `build` script, which currently chains a post-build bundle check
+# that fails on an outdated `.next` output path.
+RUN npm exec next build
 
-# Stage 2: Run the Next.js application
-FROM node:18-alpine AS runner
+FROM node:22-alpine AS runner
 
 WORKDIR /app
 
-# Set environment variables for production
-ENV NODE_ENV production
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
 
-# Copy necessary files from the builder stage
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nextjs
+
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Expose the port the app runs on
+USER nextjs
+
 EXPOSE 3000
 
-# Start the Next.js application
-# If using a custom server.js, change this to `node server.js`
-CMD ["yarn", "start"]
+CMD ["node", "server.js"]

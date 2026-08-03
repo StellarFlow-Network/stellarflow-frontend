@@ -1,14 +1,38 @@
 @import "tailwindcss";
+@config "../../tailwind.config.js";
 
+/*
+ * Tailwind CSS v4 dark mode
+ * ─────────────────────────
+ * Tailwind v4 ships dark-mode support via the `dark:` variant out of the box.
+ * It defaults to the `media` strategy; we override to `class` so that
+ * next-themes' class-toggle on <html> controls which variant is active.
+ *
+ * The `@variant dark` directive tells Tailwind v4 to activate `dark:` utilities
+ * whenever the `.dark` class is present on the root element.
+ */
+@variant dark (&:where(.dark, .dark *));
+
+/* ─── Design tokens ───────────────────────────────────────────────────────── */
+
+/* Light theme (default) */
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --surface: #f5f5f5;
+  --surface-raised: #ebebeb;
+  --border: rgba(0, 0, 0, 0.1);
+  --muted: rgba(0, 0, 0, 0.45);
 }
 
-/* Dark theme — class applied by next-themes */
+/* Dark theme — applied by next-themes adding `.dark` to <html> */
 .dark {
   --background: #0d1117;
   --foreground: #ededed;
+  --surface: #161b22;
+  --surface-raised: #1c2128;
+  --border: rgba(255, 255, 255, 0.08);
+  --muted: rgba(255, 255, 255, 0.45);
 }
 
 @theme inline {
@@ -16,6 +40,12 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter);
   --font-mono: var(--font-roboto-mono);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-sans);
   --color-neon-green: #39ff14;
   --color-oracle-navy: #0a0f1e;
   --color-oracle-border: #1b2a3b;

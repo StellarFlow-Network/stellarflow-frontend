@@ -90,7 +90,7 @@ function openDb(): Promise<IDBDatabase> {
 async function withStore<T>(
   storeName: StoreName,
   mode: IDBTransactionMode,
-  fn: (store: IDBObjectStore) => IDBRequest<unknown> | IDBRequest<unknown>[],
+  fn: (store: IDBObjectStore) => IDBRequest<any> | IDBRequest<any>[],
 ): Promise<T> {
   const db = await openDb();
   return new Promise<T>((resolve, reject) => {

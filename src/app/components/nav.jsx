@@ -8,6 +8,7 @@ import Icon from "@/components/icons/Icon";
 import { ICON_IDS } from "@/components/icons/iconIds";
 import { useProgressBar } from "./TopLoadingBar";
 import dynamic from "next/dynamic";
+import MobileMenu from "@/components/navigation/MobileMenu";
 
 // Lazily load the wallet connect button + WalletProvider.
 // WalletProvider pulls in the entire wallet context + @stellar/freighter-api
@@ -27,6 +28,13 @@ const WalletConnectButton = dynamic(
   }
 );
 
+// RPC health pill polls Horizon/Soroban on an interval — keep it out of the
+// initial nav chunk and off the critical path for first contentful paint.
+const RpcHealthIndicator = dynamic(
+  () => import("@/components/rpc/RpcHealthIndicator").then((m) => m.RpcHealthIndicator),
+  { ssr: false, loading: () => null },
+);
+
 const Nav = memo(() => {
   const hasAnomaly = true;
   const router = useRouter();
@@ -37,6 +45,7 @@ const Nav = memo(() => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex flex-nowrap items-center justify-between gap-3">
         {/* Left Side: Logo + Title */}
         <div className="flex-1 min-w-0 flex items-center gap-3 overflow-hidden">
+          <MobileMenu />
           {/* StellarFlow Logo — optimized WebP with next/image (Issue #46) */}
           <div className="shrink-0" style={{ aspectRatio: "1 / 1", width: 48, height: 48 }}>
             <OptimizedImage
@@ -58,11 +67,12 @@ const Nav = memo(() => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <RpcHealthIndicator className="hidden sm:block" />
           <WalletConnectButton />
 
           <button
             aria-label="System anomaly alerts"
-            className="relative p-2 rounded-xl hover:bg-zinc-800 transition-colors high-frequency-badge"
+            className="relative p-2 rounded-xl hover:bg-zinc-800 transition-colors high-frequency-badge hidden md:inline-flex"
             onClick={() =>
               alert("View current system anomalies (implement dashboard logic)")
             }
@@ -87,14 +97,14 @@ const Nav = memo(() => {
               if (pathname !== '/admin/settings') router.prefetch('/admin/settings')
             }}
             aria-label="Admin settings"
-            className="p-2 rounded-xl hover:bg-zinc-800 transition-colors"
+            className="p-2 rounded-xl hover:bg-zinc-800 transition-colors hidden md:inline-flex"
           >
             <Icon id={ICON_IDS.user} size={20} className="text-slate-200" />
           </Link>
 
           <button
             aria-label="Sign out"
-            className="p-2 rounded-xl hover:bg-zinc-800 transition-colors"
+            className="p-2 rounded-xl hover:bg-zinc-800 transition-colors hidden md:inline-flex"
             onClick={() => alert("Sign out (implement)")}
           >
             <Icon id={ICON_IDS.logOut} size={20} className="text-slate-200" />

@@ -10,6 +10,13 @@ export const cacheProfiles = {
 
   // Periodic audit checks that don't need constant updates
   validatorAudit: getCacheOptions('MEDIUM_INTERVAL'),
+
+  // Settlement history for swaps/liquidity/remittances — changes on user
+  // action rather than a timer, so a medium staleness window is sufficient.
+  transactionHistory: getCacheOptions('MEDIUM_INTERVAL'),
+
+  // Aggregate wallet/LP/vault balances backing the portfolio dashboard.
+  portfolioSummary: getCacheOptions('MEDIUM_INTERVAL'),
 } as const;
 
 export type CacheProfile = keyof typeof cacheProfiles;
