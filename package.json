@@ -11,6 +11,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node scripts/test-lang-cache.js",
+    "analyze": "cross-env ANALYZE=true npm run build",
+    "verify:fonts": "node scripts/verify-font-config.js"
     "test:e2e": "playwright test",
     "test:visual": "playwright test e2e/visual.spec.ts",
     "test:visual:update": "playwright test e2e/visual.spec.ts --update-snapshots",

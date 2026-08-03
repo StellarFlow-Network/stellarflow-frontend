@@ -1,6 +1,6 @@
 import "@/config/env";
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { inter, robotoMono } from "./fonts";
 import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { ProgressBarProvider } from "./components/TopLoadingBar";
@@ -117,6 +117,7 @@ export default async function RootLayout({
         />
       </head>
       <body
+        className={`${inter.variable} ${robotoMono.variable} antialiased`}
         className={`${geistSans.variable} antialiased font-sans flex flex-col min-h-screen`}
       >
         <SvgSprite />
