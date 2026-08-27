@@ -1,6 +1,7 @@
 {
   "maxMainBundle": 250,
   "maxPageBundle": 100,
+  "maxIndividualChunkRaw": 200,
   "maxTotalGzipped": 500,
   "maxIndividualGzipped": 100,
   "maxCssTotalGzipped": 25

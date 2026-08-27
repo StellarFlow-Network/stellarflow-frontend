@@ -1,187 +1,94 @@
-'use client';
+"use client";
 
-import React, { useState, useMemo } from 'react';
+import { useMemo, useState } from "react";
 
-// Tailwind is assumed to be used for styling based on typical Next.js setups
+function calculateImpermanentLoss(priceRatio: number) {
+  if (!Number.isFinite(priceRatio) || priceRatio <= 0) return -100;
+  return ((2 * Math.sqrt(priceRatio)) / (1 + priceRatio) - 1) * 100;
+}
 
 export function ILCalculator() {
-  // States for the price changes in percentage
-  const [assetAChange, setAssetAChange] = useState<number>(0);
-  const [assetBChange, setAssetBChange] = useState<number>(0);
+  const [assetAChange, setAssetAChange] = useState(0);
+  const [assetBChange, setAssetBChange] = useState(0);
+  const [initialInvestment, setInitialInvestment] = useState(1000);
 
-  // Initial investment amount for demonstration
-  const [initialInvestment, setInitialInvestment] = useState<number>(1000);
-
-  // Calculate IL and values
-  const { ilPercentage, hodlValue, lpValue, riskLevel } = useMemo(() => {
-    // Price ratio calculation: new price of A relative to B divided by old price of A relative to B
-    const ratioA = 1 + assetAChange / 100;
-    const ratioB = 1 + assetBChange / 100;
-    
-    // Prevent division by zero if an asset goes to -100% (worthless)
-    let priceRatio = 1;
-    if (ratioB > 0) {
-      priceRatio = ratioA / ratioB;
-    }
-
-    // Impermanent loss formula: 2 * sqrt(ratio) / (1 + ratio) - 1
-    // If an asset goes to 0 (-100%), IL is effectively -100% (all value lost relative to holding the other asset)
-    let il = 0;
-    if (ratioA <= 0 || ratioB <= 0) {
-      il = -1;
-    } else {
-      il = (2 * Math.sqrt(priceRatio)) / (1 + priceRatio) - 1;
-    }
-
-    const ilPercentage = il * 100;
-
-    // HODL value (50/50 split initially)
-    const initialA = initialInvestment / 2;
-    const initialB = initialInvestment / 2;
-    const hodlValue = initialA * Math.max(0, ratioA) + initialB * Math.max(0, ratioB);
-
-    // LP value
-    const lpValue = hodlValue * (1 + il);
-
-    // Risk level based on absolute IL
-    const absIl = Math.abs(ilPercentage);
-    let riskLevel = 'Low';
-    if (absIl >= 20) riskLevel = 'High';
-    else if (absIl >= 5) riskLevel = 'Medium';
-
-    return { ilPercentage, hodlValue, lpValue, riskLevel };
+  const result = useMemo(() => {
+    const ratioA = Math.max(0, 1 + assetAChange / 100);
+    const ratioB = Math.max(0, 1 + assetBChange / 100);
+    const priceRatio = ratioB === 0 ? 0 : ratioA / ratioB;
+    const ilPercentage = calculateImpermanentLoss(priceRatio);
+    const hodlValue = (initialInvestment / 2) * (ratioA + ratioB);
+    const lpValue = hodlValue * (1 + ilPercentage / 100);
+    return { priceRatio, ilPercentage, hodlValue, lpValue };
   }, [assetAChange, assetBChange, initialInvestment]);
 
-  const getRiskBadgeColor = (level: string) => {
-    switch (level) {
-      case 'High': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case 'Medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      default: return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-    }
-  };
+  const curve = useMemo(() => {
+    const points = Array.from({ length: 41 }, (_, index) => {
+      const ratio = Math.pow(4, index / 20 - 1);
+      const x = 10 + (index / 40) * 280;
+      const y = 150 - Math.max(0, Math.abs(calculateImpermanentLoss(ratio))) * 1.25;
+      return `${x.toFixed(1)},${Math.max(12, y).toFixed(1)}`;
+    });
+    return points.join(" ");
+  }, []);
+
+  const risk = Math.abs(result.ilPercentage) >= 20 ? "High" : Math.abs(result.ilPercentage) >= 5 ? "Medium" : "Low";
+  const field = (label: string, value: number, setValue: (value: number) => void) => (
+    <label className="block text-sm text-gray-700 dark:text-gray-300">
+      <span className="mb-2 block font-medium">{label}</span>
+      <div className="flex items-center gap-2">
+        <input
+          type="number"
+          value={value}
+          onChange={(event) => setValue(Number(event.target.value) || 0)}
+          className="w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 dark:border-gray-600"
+          aria-label={label}
+        />
+        <span>%</span>
+      </div>
+    </label>
+  );
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-100 dark:border-gray-700">
-      <div className="flex justify-between items-center mb-6">
+    <section className="mx-auto max-w-3xl rounded-xl border border-gray-200 bg-white p-6 shadow-md dark:border-gray-700 dark:bg-gray-800">
+      <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Impermanent Loss Calculator</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Estimate potential IL based on asset price divergence.
-          </p>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Project loss from price-ratio divergence before joining a pool.</p>
         </div>
-        <div className={`px-3 py-1 rounded-full text-xs font-semibold ${getRiskBadgeColor(riskLevel)}`}>
-          {riskLevel} Volatility Risk
-        </div>
-      </div>
+        <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800 dark:bg-blue-900 dark:text-blue-200">{risk} risk</span>
+      </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-        <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Initial Investment ($)
-            </label>
-            <input
-              type="number"
-              value={initialInvestment}
-              onChange={(e) => setInitialInvestment(Number(e.target.value) || 0)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              min="0"
-            />
-          </div>
-
-          <div>
-            <div className="flex justify-between mb-1">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Asset A Price Change
-              </label>
-              <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                {assetAChange > 0 ? '+' : ''}{assetAChange}%
-              </span>
-            </div>
-            <input
-              type="range"
-              min="-50"
-              max="200"
-              value={assetAChange}
-              onChange={(e) => setAssetAChange(Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
-            />
-            <div className="flex justify-between text-xs text-gray-400 mt-1">
-              <span>-50%</span>
-              <span>0%</span>
-              <span>+200%</span>
-            </div>
-          </div>
-
-          <div>
-            <div className="flex justify-between mb-1">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Asset B Price Change
-              </label>
-              <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                {assetBChange > 0 ? '+' : ''}{assetBChange}%
-              </span>
-            </div>
-            <input
-              type="range"
-              min="-50"
-              max="200"
-              value={assetBChange}
-              onChange={(e) => setAssetBChange(Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
-            />
-            <div className="flex justify-between text-xs text-gray-400 mt-1">
-              <span>-50%</span>
-              <span>0%</span>
-              <span>+200%</span>
-            </div>
+      <div className="grid gap-8 md:grid-cols-2">
+        <div className="space-y-5">
+          {field("Asset A price change", assetAChange, setAssetAChange)}
+          {field("Asset B price change", assetBChange, setAssetBChange)}
+          <label className="block text-sm text-gray-700 dark:text-gray-300">
+            <span className="mb-2 block font-medium">Initial investment</span>
+            <input type="number" min="0" value={initialInvestment} onChange={(event) => setInitialInvestment(Number(event.target.value) || 0)} className="w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 dark:border-gray-600" />
+          </label>
+          <div className="rounded-md bg-blue-50 p-3 text-sm text-blue-900 dark:bg-blue-900/20 dark:text-blue-200">
+            <strong>How it works:</strong> AMMs rebalance your 50/50 deposit as prices move. Compared with simply holding both assets, that rebalancing creates impermanent loss; fees may offset it.
           </div>
         </div>
 
-        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-700 flex flex-col justify-center">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
-            Results
-          </h3>
-          
-          <div className="space-y-4">
-            <div className="flex justify-between items-end">
-              <span className="text-sm text-gray-500 dark:text-gray-400">Impermanent Loss</span>
-              <span className="text-xl font-bold text-red-500">
-                {ilPercentage.toFixed(2)}%
-              </span>
-            </div>
-
-            <div className="flex justify-between items-end">
-              <span className="text-sm text-gray-500 dark:text-gray-400">HODL Value (50/50)</span>
-              <span className="text-lg font-semibold text-gray-700 dark:text-gray-300">
-                ${hodlValue.toFixed(2)}
-              </span>
-            </div>
-
-            <div className="flex justify-between items-end">
-              <span className="text-sm text-gray-500 dark:text-gray-400">LP Value</span>
-              <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                ${lpValue.toFixed(2)}
-              </span>
-            </div>
-
-            <div className="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex justify-between items-end">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Loss vs HODL</span>
-                <span className="text-lg font-bold text-red-500">
-                  -${Math.max(0, hodlValue - lpValue).toFixed(2)}
-                </span>
-              </div>
-            </div>
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
+          <h3 className="mb-2 font-semibold text-gray-800 dark:text-gray-200">Loss curve</h3>
+          <svg viewBox="0 0 300 160" className="h-40 w-full" role="img" aria-label="Impermanent loss curve by price ratio">
+            <line x1="10" y1="150" x2="290" y2="150" stroke="currentColor" opacity=".3" />
+            <polyline points={curve} fill="none" stroke="#3b82f6" strokeWidth="3" />
+            <circle cx={10 + Math.min(280, Math.max(0, (Math.log2(Math.max(result.priceRatio, 0.25)) + 2) / 4 * 280))} cy={150 - Math.min(138, Math.abs(result.ilPercentage) * 1.25)} r="5" fill="#ef4444" />
+          </svg>
+          <div className="space-y-3">
+            <div className="flex justify-between"><span>Impermanent loss</span><strong className="text-red-500">{result.ilPercentage.toFixed(2)}%</strong></div>
+            <div className="flex justify-between"><span>HODL value</span><strong>${result.hodlValue.toFixed(2)}</strong></div>
+            <div className="flex justify-between"><span>LP value</span><strong>${result.lpValue.toFixed(2)}</strong></div>
+            <div className="flex justify-between border-t border-gray-200 pt-3 dark:border-gray-700"><span>Difference</span><strong className="text-red-500">-${Math.max(0, result.hodlValue - result.lpValue).toFixed(2)}</strong></div>
           </div>
         </div>
       </div>
-      
-      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md">
-        <p className="text-sm text-blue-800 dark:text-blue-300">
-          <strong>Note:</strong> Impermanent loss is the difference between holding tokens in an AMM liquidity pool versus holding them in your wallet. It only becomes "permanent" if you withdraw your liquidity while the price divergence exists.
-        </p>
-      </div>
-    </div>
+    </section>
   );
 }
+
+export default ILCalculator;
