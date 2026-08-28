@@ -57,3 +57,20 @@ export const getLogCount = async (): Promise<number> => {
   }
 };
 
+export const downloadBugReportLog = async (): Promise<void> => {
+  const logs = await readIndexedLogs();
+  if (!logs) return;
+  const report = logs.map(log => (function scrub(v:any, k=''): any {
+    if (typeof v === 'string' && (/(privatekey|seed|mnemonic|password|passphrase|secret|token|apikey|credential|email|phone|ssn|dateofbirth|fullname|firstname|lastname)/i.test(k) || /^0x[a-fA-F0-9]{64}$/.test(v))) return '[REDACTED]';
+    if (Array.isArray(v)) return v.map(x => scrub(x, k));
+    if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([a,b]) => [a, scrub(b,a)]));
+    return v;
+  })(log));
+  const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `bug-report-${Date.now()}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+};

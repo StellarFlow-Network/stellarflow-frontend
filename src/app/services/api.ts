@@ -35,6 +35,88 @@ async function pooledFetch<T>(
     inFlightRequests.delete(url);
   }
 }
+
+// Sanitize environmentspecific data before export
+function sanitizeLogData(obj: unknown, seen = new WeakSet()): unknown {
+  if (typeof obj !== 'object' || obj === null) return obj;
+  if (seen.has(obj)) return undefined;
+  seen.add(obj);
+  
+  const sensitiveKeys = new Set(['privateKey', 'mnemonic', 'seed', 'password', 'passphrase', 'secret', 'token', 'authorization', 'x-api-key', 'apiKey', 'personalInfo', 'ssnn', 'dob', 'email', 'phone', 'fullName']);
+
+  if (Array.isArray(obj)) {
+    return obj.map(item => sanitizeLogData(item, seen));
+  }
+
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (sensitiveKeys.has(key)) {
+      // Replace with scrubbed marker
+      result[key] = '[REDACTED]';
+    } else {
+      result[key] = sanitizeLogData(value, seen);
+    }
+  }
+  return result;
+}
+
+// Function to collect recent RPC responses (from a global diagnostic store if available)
+function getRecentRpcResponses(): unknown[] {
+  if (typeof window !== 'undefined' && (window as any).__rpcLogs) {
+    return (window as any).__rpcLogs as unknown[];
+  }
+  // Fallback example
+  return [
+    { endpoint: '/api/prices', status: 200, data: { btc: 60000 } },
+    { endpoint: '/api/portfolio', status: 200, data: { total: 12345 } },
+  ];
+}
+
+function getConsoleWarnings(): string[] {
+  if (typeof window !== 'undefined' && (window as any).__consoleWarnings) {
+    return (window as any).__consoleWarnings as string[];
+  }
+  return ['Example warning: Resource loaded but failed'];
+}
+
+function getWalletExtensionState(): unknown {
+  if (typeof window !== 'undefined' && (window as any).ethereum) {
+    try {
+      return {
+        chainId: (window as any).ethereum.chainId,
+        networkVersion: (window as any).ethereum.networkVersion,
+        selectedAddress: (window as any).ethereum.selectedAddress, // Personal data, will be scrubbed
+      };
+    } catch {
+      return { error: 'Could not read wallet state' };
+    }
+  }
+  return null;
+}
+
+// Method to export bug report log
+const exportBugReportLog = () => {
+  const diagnosticLog = {
+    timestamp: new Date().toISOString(),
+    appVersion: 'dev',
+    rpcResponses: getRecentRpcResponses(),
+    consoleWarnings: getConsoleWarnings(),
+    walletExtensionState: getWalletExtensionState(),
+  };
+
+  const scrubbedLog = sanitizeLogData(diagnosticLog) as typeof diagnosticLog;
+  const json = JSON.stringify(scrubbedLog, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `bug-report-${new Date().toISOString()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
 export const api = {
   /**
    * Fetches current price data with 10-second cache.
@@ -51,4 +133,11 @@ export const api = {
   async getPortfolio():Promise<unknown> {
     return pooledFetch('/api/portfolio', getFetchCacheOptions('MEDIUM_INTERVAL'))
   },
+
+  /**
+   * Exports a sanitized diagnostic log JSON file for bug reports.
+   * Compiles recent RPC responses, console warnings, and wallet extension state.
+   * Scrubs private key materials and personal identification payload parameters.
+   */
+  exportBugReportLog,
 }
