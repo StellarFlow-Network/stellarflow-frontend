@@ -35,6 +35,44 @@ async function pooledFetch<T>(
     inFlightRequests.delete(url);
   }
 }
+
+export function exportTransactionsToCsv(transactions: any[]): void {
+  if (!Array.isArray(transactions) || transactions.length === 0) {
+    return;
+  }
+
+  const headers = ['Date', 'Tx Hash', 'Type', 'Amount', 'Asset', 'Status'];
+  const escapeCsvField = (value: unknown): string => {
+    const str = String(value ?? '');
+    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+      return `""${str.replace(/"/g, '"''}"`;
+    }
+    return str;
+  };
+  const csvRows = [headers.join(',')];
+  for (const tx of transactions) {
+    csvRows.push([
+      escapeCsvField(tx.date),
+      escapeCsvField(tx.txHash || tx.hash),
+      escapeCsvField(tx.type),
+      escapeCsvField(tx.amount),
+      escapeCsvField(tx.asset),
+      escapeCsvField(tx.status),
+    ].join(','));
+  }
+
+  const csvContent = csvRows.join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'activity.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 export const api = {
   /**
    * Fetches current price data with 10-second cache.
