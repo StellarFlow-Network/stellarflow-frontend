@@ -35,7 +35,7 @@
     "@types/ws": "^8.18.1",
     "chart.js": "^4.5.1",
     "dompurify": "^3.4.14",
-    "framer-motion": "^12.38.0",
+    "framer-motion": "^13.1.1",
     "fuse.js": "^7.3.0",
     "isomorphic-dompurify": "^3.19.0",
     "jspdf": "^4.2.1",
