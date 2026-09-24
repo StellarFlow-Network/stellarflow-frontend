@@ -7,6 +7,7 @@ import { useWalletState } from "@/app/hooks/useWalletState";
 import { useSlippageTolerance } from "@/app/hooks/useSlippageTolerance";
 import WalletConnectButton from "@/app/components/WalletConnectButton";
 import OptimizedDialog from "@/app/components/OptimizedDialog";
+import { MotionButton, MotionCard, SuccessConfetti } from "@/components/ui/MotionPrimitives";
 
 interface PathRecord {
   source_amount: string;
@@ -39,6 +40,7 @@ export default function SwapPage() {
   const [selectedPath, setSelectedPath] = useState<PathRecord | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [transactionPrepared, setTransactionPrepared] = useState(false);
   const [slippageDialogOpen, setSlippageDialogOpen] = useState<boolean>(false);
 
   // Common tokens list (could be fetched from an API or config)
@@ -145,6 +147,7 @@ export default function SwapPage() {
 
     try {
       setIsLoading(true);
+      setTransactionPrepared(false);
       const server = new Horizon.Server(horizonUrl);
       const account = await server.loadAccount(wallet.publicKey);
       
@@ -171,7 +174,8 @@ export default function SwapPage() {
         .build();
 
       // In a real app, you'd sign this transaction with the wallet
-      setError("Transaction prepared! In production, this would be signed and submitted to the network.");
+      setError(null);
+      setTransactionPrepared(true);
     } catch (err) {
       console.error("Transaction failed:", err);
       setError(err instanceof Error ? err.message : "Transaction failed");
@@ -186,7 +190,8 @@ export default function SwapPage() {
         <h1 className="text-3xl font-bold mb-2">Swap & Send</h1>
         <p className="text-gray-400 mb-8">Send Token A, receiver gets Token B automatically via Stellar Path Payments</p>
         
-        <div className="bg-gray-900 rounded-2xl p-6 shadow-xl space-y-6">
+        <MotionCard className="relative bg-gray-900 rounded-2xl p-6 shadow-xl space-y-6">
+          <SuccessConfetti show={transactionPrepared} />
           {/* Wallet Connection */}
           <div className="flex justify-end">
             <WalletConnectButton />
@@ -228,7 +233,7 @@ export default function SwapPage() {
               value={destinationAddress}
               onChange={(e) => setDestinationAddress(e.target.value)}
               placeholder="G..."
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="micro-interaction-input w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -241,7 +246,7 @@ export default function SwapPage() {
                 value={destAmount}
                 onChange={(e) => setDestAmount(e.target.value)}
                 placeholder="0.00"
-                className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="micro-interaction-input flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <select
                 onChange={(e) => {
@@ -271,12 +276,12 @@ export default function SwapPage() {
               <p className="text-sm font-medium text-gray-300">Slippage Tolerance</p>
               <p className="text-xs text-gray-500">Max slippage you're willing to accept</p>
             </div>
-            <button
+            <MotionButton
               onClick={() => setSlippageDialogOpen(true)}
               className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition-colors"
             >
               {slippagePercent}%
-            </button>
+            </MotionButton>
           </div>
 
           {/* Error Display */}
@@ -287,14 +292,14 @@ export default function SwapPage() {
           )}
 
           {/* Swap Button */}
-          <button
+          <MotionButton
             onClick={handleSwap}
             disabled={isLoading || !wallet?.connected || !selectedPath}
             className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 py-4 rounded-xl font-semibold text-lg transition-colors"
           >
             {isLoading ? "Loading..." : !wallet?.connected ? "Connect Wallet to Swap" : "Swap & Send"}
-          </button>
-        </div>
+          </MotionButton>
+        </MotionCard>
 
         {/* Path Breakdown - only show if we have a selected path */}
         {selectedPath && pathHops.length > 0 && (
@@ -340,7 +345,7 @@ export default function SwapPage() {
             <h3 className="text-xl font-semibold mb-4">Set Slippage Tolerance</h3>
             <div className="grid grid-cols-4 gap-2 mb-4">
               {[0.1, 0.5, 1.0, 2.0].map(percent => (
-                <button
+                <MotionButton
                   key={percent}
                   onClick={() => {
                     setSlippagePercent(percent);
@@ -349,7 +354,7 @@ export default function SwapPage() {
                   className={`py-2 rounded-lg ${slippagePercent === percent ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}
                 >
                   {percent}%
-                </button>
+                </MotionButton>
               ))}
             </div>
           </div>
