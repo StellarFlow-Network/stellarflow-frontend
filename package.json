@@ -29,7 +29,7 @@
     "@stellar/stellar-sdk": "^17.0.1",
     "@tanstack/react-query": "^5.100.5",
     "@tanstack/react-query-persist-client": "^5.100.5",
-    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-table": "^9.2.4",
     "@tanstack/react-virtual": "^3.13.24",
     "@types/leaflet": "^1.9.21",
     "@types/ws": "^8.18.1",
