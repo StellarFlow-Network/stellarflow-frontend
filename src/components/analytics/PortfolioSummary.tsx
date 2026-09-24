@@ -15,6 +15,8 @@ import PortfolioAllocationChart from "./PortfolioAllocationChart";
 import PortfolioHistoryChart from "./PortfolioHistoryChart";
 import WalletBalanceBreakdown from "./WalletBalanceBreakdown";
 import AssetBreakdownStackedBar from "./AssetBreakdownStackedBar";
+import { SkeletonCard } from "@/components/skeletons/SkeletonCard";
+import { SkeletonChart } from "@/components/skeletons/SkeletonChart";
 
 function formatUsd(value: number): string {
   return value.toLocaleString(undefined, {
@@ -43,6 +45,26 @@ export default function PortfolioSummary() {
   const goToVaults = useCallback(() => router.push("/staking"), [router]);
   const goToPools = useCallback(() => router.push("/pools"), [router]);
 
+  // Show skeletons during initial load
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        {/* Net worth header skeleton */}
+        <SkeletonCard variant="stats" count={1} />
+
+        {/* History + Allocation skeletons */}
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+          <div className="xl:col-span-2">
+            <SkeletonChart variant="portfolio" height={300} showTimeframes />
+          </div>
+          <div>
+            <SkeletonChart variant="allocation" height={300} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* ── Net worth header ─────────────────────────────────────────────── */}
@@ -54,7 +76,7 @@ export default function PortfolioSummary() {
             </span>
             <div className="mt-1 flex items-baseline gap-3">
               <span className="font-mono text-4xl font-bold text-neutral-100">
-                {isLoading ? "—" : formatUsd(totalNetWorthUsd)}
+                {formatUsd(totalNetWorthUsd)}
               </span>
               <span
                 className={`font-mono text-sm font-semibold ${
