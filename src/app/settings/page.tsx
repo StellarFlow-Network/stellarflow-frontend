@@ -15,6 +15,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { useDebounce } from '../hooks/useDebounce';
+import { NotificationPreferencesDrawer } from '../components/NotificationPreferencesDrawer';
 
 interface Settings {
   emailReports: boolean;
@@ -37,6 +38,7 @@ const TOGGLE_STYLES = {
 
 export default function SettingsPage() {
   const [showKey, setShowKey] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [settings, setSettings] = useState<Settings>({
     emailReports: true,
     pushNotifications: true,
@@ -148,6 +150,7 @@ export default function SettingsPage() {
               description="Alerts for Oracle Kill Switch and high-volatility events."
               enabled={settings.pushNotifications}
               onToggle={() => handleToggle('pushNotifications')}
+              onConfigure={() => setIsDrawerOpen(true)}
             />
             <ToggleItem 
               icon={<Globe size={18} />} 
@@ -208,11 +211,16 @@ export default function SettingsPage() {
           </button>
         </div>
       </div>
+
+      <NotificationPreferencesDrawer 
+        isOpen={isDrawerOpen} 
+        onClose={() => setIsDrawerOpen(false)} 
+      />
     </div>
   );
 }
 
-function ToggleItem({ icon, title, description, enabled, onToggle }: { icon: React.ReactNode, title: string, description: string, enabled: boolean, onToggle: () => void }) {
+function ToggleItem({ icon, title, description, enabled, onToggle, onConfigure }: { icon: React.ReactNode, title: string, description: string, enabled: boolean, onToggle: () => void, onConfigure?: () => void }) {
   const trackClasses = enabled ? TOGGLE_STYLES.enabled.track : TOGGLE_STYLES.disabled.track;
   const knobClasses = enabled ? TOGGLE_STYLES.enabled.knob : TOGGLE_STYLES.disabled.knob;
 
@@ -223,6 +231,14 @@ function ToggleItem({ icon, title, description, enabled, onToggle }: { icon: Rea
         <div>
           <p className="text-sm font-medium">{title}</p>
           <p className="text-xs text-gray-500">{description}</p>
+          {onConfigure && enabled && (
+            <button 
+              onClick={onConfigure}
+              className="mt-2 text-xs text-blue-400 hover:text-blue-300 transition-colors font-medium"
+            >
+              Configure preferences →
+            </button>
+          )}
         </div>
       </div>
       <button
