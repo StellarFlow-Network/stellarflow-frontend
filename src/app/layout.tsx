@@ -14,6 +14,8 @@ import { InstallBanner } from "./components/InstallBanner";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { SwUpdateBanner } from "@/components/pwa/SwUpdateBanner";
 import { ScreenLockProvider } from "@/components/security/ScreenLockModal";
+import { SessionTimeoutManager } from "@/components/security/SessionTimeoutManager";
+import { WalletSessionProvider } from "@/context/WalletContext";
 import { GasFeeProvider } from "@/components/gas-fee";
 import { headers } from "next/headers";
 import { AccessibilityProvider } from "@/context/AccessibilityContext";
@@ -143,7 +145,11 @@ export default async function RootLayout({
                         <RpcFailoverMonitor />
                         <PushNotificationRoot>
                           <ErrorBoundary tags={{ section: "root" }}>
-                            <ScreenLockProvider>{children}</ScreenLockProvider>
+                            <WalletSessionProvider>
+                              <SessionTimeoutManager>
+                                <ScreenLockProvider>{children}</ScreenLockProvider>
+                              </SessionTimeoutManager>
+                            </WalletSessionProvider>
                           </ErrorBoundary>
                         </PushNotificationRoot>
                       </ToastProvider>

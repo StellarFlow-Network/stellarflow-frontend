@@ -10,6 +10,7 @@ import { loadPreferences } from '@/services/notifications';
 import { useTransactionAudio } from '@/hooks/useTransactionAudio';
 import { useHapticFeedback } from '@/hooks/useHapticFeedback';
 import { useScreenLock, ScreenLockModal } from '@/components/security/ScreenLockModal';
+import { AutoLockSettings } from '@/components/security/AutoLockSettings';
 import { useTransactionHistoryWithFallback } from '@/app/hooks/useTransactionHistory';
 import { exportTransactionsToCsv, type TaxPlatform } from '@/utils/csvExport';
 import { useToast } from '@/components/ui/ToastQueue';
@@ -215,6 +216,9 @@ export default function SettingsPage() {
             </p>
           </div>
         </section>
+
+        {/* Auto-Lock Security Settings */}
+        <AutoLockSettings />
 
         <section className="bg-[#161b22] border border-gray-800 rounded-xl p-6">
           <div className="flex justify-between items-center mb-6">
