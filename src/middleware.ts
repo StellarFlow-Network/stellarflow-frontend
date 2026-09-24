@@ -17,6 +17,7 @@ export function middleware(request: NextRequest): NextResponse {
   const scriptDev = isDev ? " 'unsafe-eval'" : "";
   const nextPublicApiUrl = process.env.NEXT_PUBLIC_API_URL;
   const apiUrls = nextPublicApiUrl ? ` ${nextPublicApiUrl}` : '';
+  const isEmbedRoute = pathname === '/embed/swap';
 
   const connectSrc = [
     "'self'",
@@ -49,7 +50,7 @@ export function middleware(request: NextRequest): NextResponse {
     object-src 'none';
     base-uri 'self';
     form-action 'self';
-    frame-ancestors 'none';
+    frame-ancestors ${isEmbedRoute ? '*' : "'none'"};
     upgrade-insecure-requests;
   `.replace(/\s{2,}/g, ' ').trim();
 
