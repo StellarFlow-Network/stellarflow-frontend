@@ -1,0 +1,94 @@
+name: Playwright E2E Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-e2e:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright Browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright OS dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Build Next.js app
+        run: npm run build
+
+      # Visual regression baselines (Issue #603): persisted as a CI artifact
+      # cache keyed on the spec file's contents so a first run auto-creates
+      # baselines and every subsequent run diffs against them.
+      - name: Cache visual regression baselines
+        uses: actions/cache@v4
+        with:
+          path: e2e/visual.spec.ts-snapshots
+          key: visual-snapshots-${{ runner.os }}-${{ hashFiles('e2e/visual.spec.ts') }}
+
+      - name: Start Next.js app
+        run: |
+          npm run start > /tmp/stellarflow-next.log 2>&1 &
+          echo $! > /tmp/stellarflow-next.pid
+
+      - name: Wait for app
+        run: |
+          for _ in $(seq 1 60);
+          do
+            if curl -fsS http://localhost:3000 >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Next.js app did not become ready in time"
+          cat /tmp/stellarflow-next.log
+          exit 1
+
+      - name: Run Playwright E2E tests for core user swaps and visual regressions
+        run: npx playwright test
+        env:
+          PLAYWRIGHT_TEST_BASE_URL: http://localhost:3000
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Stop Next.js app
+        if: always()
+        run: |
+          if [ -f /tmp/stellarflow-next.pid ]; then
+            kill "$(cat /tmp/stellarflow-next.pid)" || true
+          fi
+
+      - name: Upload visual diff artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-diffs
+          path: test-results/
+          retention-days: 7

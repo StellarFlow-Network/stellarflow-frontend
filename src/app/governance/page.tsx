@@ -1,159 +1,294 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
-import { 
-  Vote, 
-  FilePlus, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
-  Users, 
-  Search, 
-  RefreshCw, 
-  ChevronRight, 
-  Wallet 
-} from 'lucide-react';
-import { useTransformedCustomAddressField } from '@/app/hooks/useTransformedData';
-import { useRAFInterval } from '@/app/hooks/useRAFInterval';
-
-// --- Types ---
-interface Proposal {
-  id: string;
-  title: string;
-  proposer: string;
-  status: 'Active' | 'Passed' | 'Defeated' | 'Queue';
-  votesFor: number;
-  votesAgainst: number;
-  quorumThreshold: number;
-  endsInLedgers: number;
-}
+import React, { useState } from 'react';
+import { WalletProvider, useWallet, useWalletStatus, useWalletActions } from '@/app/hooks/useWalletState';
+import Icon from '@/components/icons/Icon';
+import { ICON_IDS } from '@/components/icons/iconIds';
+import { ProposalList, type ProposalRecord, type ProposalStatus } from '@/components/governance/ProposalList';
+import { DelegateDirectory } from '@/components/governance/DelegateDirectory';
+import ProposalCreationModal, { type ProposalSubmission } from '@/components/governance/ProposalCreationModal';
+import type { Delegate } from '@/types/delegation';
 
 // --- Mock Data ---
-const MOCK_PROPOSALS: Proposal[] = [
+const MOCK_PROPOSALS: ProposalRecord[] = [
   { id: 'SFP-12', title: 'Whitelist West African GHS/XLM Asset Pair Feed', proposer: 'GA5THZLKMNPQRSXYZABCDEFGHIJKLMNBC9A', status: 'Active', votesFor: 785000, votesAgainst: 120000, quorumThreshold: 60, endsInLedgers: 4200 },
   { id: 'SFP-11', title: 'Adjust Global Deviation Threshold from 2.5% to 1.8%', proposer: 'GBC2VHZLKMNPQRSXYZABCDEFGHIJKLMLOPA', status: 'Active', votesFor: 450000, votesAgainst: 410000, quorumThreshold: 60, endsInLedgers: 1150 },
   { id: 'SFP-10', title: 'Upgrade Core Contract WASM to Release Version v1.2.0', proposer: 'GDRTVHZLKMNPQRSXYZABCDEFGHIJKLM1122', status: 'Passed', votesFor: 1200000, votesAgainst: 15000, quorumThreshold: 75, endsInLedgers: 0 },
-  { id: 'SFP-09', title: 'Increase Relayer Missed-Heartbeat Penalty Weight by 2%', proposer: 'GCXXVHZLKMNPQRSXYZABCDEFGHIJKLM7766', status: 'Defeated', votesFor: 110000, votesAgainst: 920000, quorumThreshold: 50, endsInLedgers: 0 },
+  { id: 'SFP-09', title: 'Increase Relayer Missed-Heartbeat Penalty Weight by 2%', proposer: 'GCXXVHZLKMNPQRSXYZABCDEFGHIJKLM7766', status: 'Rejected', votesFor: 110000, votesAgainst: 920000, quorumThreshold: 50, endsInLedgers: 0 },
+  { id: 'SFP-08', title: 'Deploy Oracle Aggregator Contract v2 on Mainnet', proposer: 'GAABVHZLKMNPQRSXYZABCDEFGHIJKLM3300', status: 'Executed', votesFor: 980000, votesAgainst: 22000, quorumThreshold: 75, endsInLedgers: 0 },
 ];
 
-export default function GovernancePage() {
-  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'archived'>('all');
+// --- Mock Delegates ---
+const MOCK_DELEGATES: Delegate[] = [
+  {
+    id: 'del-001',
+    name: 'Stellar Africa Foundation',
+    address: 'GA5THZLKMNPQRSXYZABCDEFGHIJKLMNBC9A',
+    platformStatement: 'Advocating for African blockchain adoption with a focus on cross-border payment rails and financial inclusion across the continent.',
+    totalDelegatedPower: 1250000,
+    delegatorCount: 847,
+    votingHistory: [
+      { proposalId: 'SFP-12', proposalTitle: 'Whitelist West African GHS/XLM Asset Pair Feed', voteType: 'For', votingPower: 1250000, timestamp: '2026-07-20T10:30:00Z', transactionHash: 'abc123def' },
+      { proposalId: 'SFP-11', proposalTitle: 'Adjust Global Deviation Threshold from 2.5% to 1.8%', voteType: 'For', votingPower: 1180000, timestamp: '2026-07-15T14:00:00Z', transactionHash: 'ghi456jkl' },
+      { proposalId: 'SFP-10', proposalTitle: 'Upgrade Core Contract WASM to Release Version v1.2.0', voteType: 'For', votingPower: 1220000, timestamp: '2026-07-01T08:00:00Z', transactionHash: 'mno789pqr' },
+    ],
+    tags: ['community', 'africa', 'governance'],
+    joinedAt: '2025-03-15T00:00:00Z',
+    avatarUrl: undefined,
+  },
+  {
+    id: 'del-002',
+    name: 'OracleOps Collective',
+    address: 'GBC2VHZLKMNPQRSXYZABCDEFGHIJKLMLOPA',
+    platformStatement: 'A team of independent oracle operators ensuring data integrity and uptime for StellarFlow price feeds. Committed to technical excellence and decentralization.',
+    totalDelegatedPower: 890000,
+    delegatorCount: 523,
+    votingHistory: [
+      { proposalId: 'SFP-11', proposalTitle: 'Adjust Global Deviation Threshold from 2.5% to 1.8%', voteType: 'Against', votingPower: 890000, timestamp: '2026-07-16T09:00:00Z', transactionHash: 'stu012vwx' },
+      { proposalId: 'SFP-10', proposalTitle: 'Upgrade Core Contract WASM to Release Version v1.2.0', voteType: 'For', votingPower: 870000, timestamp: '2026-07-02T11:00:00Z', transactionHash: 'yza345bcd' },
+      { proposalId: 'SFP-09', proposalTitle: 'Increase Relayer Missed-Heartbeat Penalty Weight by 2%', voteType: 'For', votingPower: 850000, timestamp: '2026-06-20T15:30:00Z', transactionHash: 'efg678hij' },
+    ],
+    tags: ['infrastructure', 'oracle', 'security'],
+    joinedAt: '2025-06-01T00:00:00Z',
+  },
+  {
+    id: 'del-003',
+    name: 'Governance Guild Africa',
+    address: 'GDRTVHZLKMNPQRSXYZABCDEFGHIJKLM1122',
+    platformStatement: 'Focused on protocol governance, parameter tuning, and ensuring that African voices are represented in every on-chain vote. We research, debate, and vote.',
+    totalDelegatedPower: 670000,
+    delegatorCount: 412,
+    votingHistory: [
+      { proposalId: 'SFP-12', proposalTitle: 'Whitelist West African GHS/XLM Asset Pair Feed', voteType: 'For', votingPower: 670000, timestamp: '2026-07-21T08:00:00Z', transactionHash: 'klm901nop' },
+      { proposalId: 'SFP-10', proposalTitle: 'Upgrade Core Contract WASM to Release Version v1.2.0', voteType: 'For', votingPower: 650000, timestamp: '2026-07-03T12:00:00Z', transactionHash: 'qrs234tuv' },
+    ],
+    tags: ['governance', 'community', 'africa'],
+    joinedAt: '2025-01-10T00:00:00Z',
+  },
+  {
+    id: 'del-004',
+    name: 'NodeGuardians Security',
+    address: 'GCXXVHZLKMNPQRSXYZABCDEFGHIJKLM7766',
+    platformStatement: 'Security-first delegation pool. We audit every proposal for potential attack vectors, slashing risks, and contract vulnerabilities before casting our vote.',
+    totalDelegatedPower: 450000,
+    delegatorCount: 298,
+    votingHistory: [
+      { proposalId: 'SFP-11', proposalTitle: 'Adjust Global Deviation Threshold from 2.5% to 1.8%', voteType: 'Against', votingPower: 450000, timestamp: '2026-07-17T10:00:00Z', transactionHash: 'wxy567zab' },
+      { proposalId: 'SFP-09', proposalTitle: 'Increase Relayer Missed-Heartbeat Penalty Weight by 2%', voteType: 'For', votingPower: 440000, timestamp: '2026-06-21T16:00:00Z', transactionHash: 'cde890fgh' },
+      { proposalId: 'SFP-08', proposalTitle: 'Deploy Oracle Aggregator Contract v2 on Mainnet', voteType: 'For', votingPower: 430000, timestamp: '2026-06-10T09:00:00Z', transactionHash: 'ijk123lmn' },
+    ],
+    tags: ['security', 'infrastructure'],
+    joinedAt: '2025-09-22T00:00:00Z',
+  },
+  {
+    id: 'del-005',
+    name: 'Pan-African Validators Union',
+    address: 'GAABVHZLKMNPQRSXYZABCDEFGHIJKLM3300',
+    platformStatement: 'A collective of validators across Africa working to decentralize consensus power. We believe in transparent, accountable delegation with regular community reports.',
+    totalDelegatedPower: 2100000,
+    delegatorCount: 1205,
+    votingHistory: [
+      { proposalId: 'SFP-12', proposalTitle: 'Whitelist West African GHS/XLM Asset Pair Feed', voteType: 'For', votingPower: 2100000, timestamp: '2026-07-19T14:30:00Z', transactionHash: 'opq456rst' },
+      { proposalId: 'SFP-11', proposalTitle: 'Adjust Global Deviation Threshold from 2.5% to 1.8%', voteType: 'For', votingPower: 2050000, timestamp: '2026-07-14T11:00:00Z', transactionHash: 'uvw789xyz' },
+      { proposalId: 'SFP-10', proposalTitle: 'Upgrade Core Contract WASM to Release Version v1.2.0', voteType: 'For', votingPower: 2080000, timestamp: '2026-07-01T07:00:00Z', transactionHash: 'abc012def' },
+      { proposalId: 'SFP-09', proposalTitle: 'Increase Relayer Missed-Heartbeat Penalty Weight by 2%', voteType: 'Abstain', votingPower: 2060000, timestamp: '2026-06-19T13:00:00Z', transactionHash: 'ghi345jkl' },
+      { proposalId: 'SFP-08', proposalTitle: 'Deploy Oracle Aggregator Contract v2 on Mainnet', voteType: 'For', votingPower: 2100000, timestamp: '2026-06-09T10:00:00Z', transactionHash: 'mno678pqr' },
+    ],
+    tags: ['community', 'africa', 'infrastructure', 'governance'],
+    joinedAt: '2024-11-05T00:00:00Z',
+  },
+];
 
-  // Pre-compute shortened addresses on data ingestion to avoid render-time string slicing
-  const transformedProposals = useMemo(
-    () => useTransformedCustomAddressField(MOCK_PROPOSALS, 'proposer'),
-    []
-  );
+const GovernanceWalletControlContent = React.memo(function GovernanceWalletControlContent({
+  onCreateProposal,
+}: {
+  onCreateProposal: () => void;
+}) {
+  const { wallet } = useWallet();
+  const { isChecking } = useWalletStatus();
+  const { refreshWalletState } = useWalletActions();
 
-  // Live ledger countdown — one shared RAF tick every ~5 s (Stellar avg ledger time)
-  const [ledgerCounts, setLedgerCounts] = useState<Record<string, number>>(
-    () => Object.fromEntries(MOCK_PROPOSALS.map(p => [p.id, p.endsInLedgers]))
-  );
-
-  useRAFInterval(() => {
-    setLedgerCounts(prev => {
-      const next = { ...prev };
-      for (const id in next) {
-        if (next[id] > 0) next[id] -= 1;
-      }
-      return next;
-    });
-  }, 5000);
+  const walletStatus = wallet?.connected
+    ? wallet.publicKey
+      ? `${wallet.publicKey.slice(0, 4)}...${wallet.publicKey.slice(-4)}`
+      : 'Connected'
+    : 'No wallet connected';
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
-      
-      {/* --- Header Section --- */}
+    <div className="flex flex-col gap-3">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <p className="text-sm text-gray-500 mb-1">Admin / Consensus</p>
           <h1 className="text-3xl font-bold tracking-tight">Governance & Proposals</h1>
         </div>
-        <div className="flex gap-3">
-          <button className="flex items-center gap-2 bg-[#161b22] border border-gray-800 hover:bg-gray-800 text-gray-300 px-4 py-2 rounded-lg transition-all text-sm font-medium">
-            <Wallet size={16} className="text-purple-400" />
-            Connect Freighter Wallet
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={() => refreshWalletState()}
+            disabled={isChecking}
+            className="flex items-center gap-2 bg-[#161b22] border border-gray-800 text-gray-300 px-4 py-2 rounded-lg text-sm font-medium relative overflow-hidden"
+            style={{ transition: 'transform 150ms ease, box-shadow 150ms ease' }}
+          >
+            <span className="absolute inset-0 bg-gray-800 opacity-0 hover:opacity-100 transition-opacity duration-150 pointer-events-none" />
+            <span className="relative z-10 flex items-center gap-2">
+              <Icon id={ICON_IDS.wallet} size={16} className="text-purple-400" />
+              {wallet?.connected ? walletStatus : 'Connect Freighter Wallet'}
+            </span>
           </button>
-          <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all text-sm font-medium">
-            <FilePlus size={16} />
+        <button
+          onClick={onCreateProposal}
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium relative overflow-hidden"
+          style={{ transition: 'transform 150ms ease, box-shadow 150ms ease' }}
+        >
+          <span className="absolute inset-0 bg-blue-700 opacity-0 transition-opacity duration-150 pointer-events-none" />
+          <span className="relative z-10 flex items-center gap-2">
+            <Icon id={ICON_IDS.filePlus} size={16} />
             Submit New Proposal
-          </button>
+          </span>
+        </button>
         </div>
       </div>
 
-      {/* --- Consensus Statistics Rows --- */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <StatCard title="Total Staking Power" value="2.85M SF" icon={<Vote className="text-blue-400" />} subtitle="Active voting weights" />
-        <StatCard title="Active Ballots" value="2 Proposals" icon={<Clock className="text-yellow-500" />} subtitle="Awaiting validation signatures" />
-        <StatCard title="Voter Turnout Avg" value="74.2%" icon={<Users className="text-green-400" />} subtitle="High network coordinator interest" />
-        <StatCard title="Passing Invariants" value="100%" icon={<CheckCircle className="text-emerald-400" />} subtitle="All parameters safe" />
+      <div className="mb-3 text-sm text-gray-400">
+        Active wallet status: <span className="text-white">{walletStatus}</span>
       </div>
+    </div>
+  );
+});
 
-      {/* --- Filtering Tabs --- */}
+function GovernanceWalletControl({
+  onCreateProposal,
+}: {
+  onCreateProposal: () => void;
+}) {
+  return (
+    <WalletProvider>
+      <GovernanceWalletControlContent onCreateProposal={onCreateProposal} />
+    </WalletProvider>
+  );
+}
+
+export default function GovernancePage() {
+  const [section, setSection] = useState<'proposals' | 'delegates'>('proposals');
+  const [activeTab, setActiveTab] = useState<'all' | ProposalStatus>('all');
+  const [voteTarget, setVoteTarget] = useState<ProposalRecord | null>(null);
+  const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
+  const [proposals, setProposals] = useState<ProposalRecord[]>(MOCK_PROPOSALS);
+  const [walletBalance, setWalletBalance] = useState(120000);
+  const minimumThreshold = 250000;
+
+  const TABS: { key: typeof activeTab; label: string }[] = [
+    { key: 'all',      label: 'All Ballots' },
+    { key: 'Active',   label: 'Active' },
+    { key: 'Passed',   label: 'Passed' },
+    { key: 'Rejected', label: 'Rejected' },
+    { key: 'Executed', label: 'Executed' },
+  ];
+
+  const SECTION_SWITCHER: { key: typeof section; label: string; icon: keyof typeof ICON_IDS }[] = [
+    { key: 'proposals', label: 'Proposals', icon: 'vote' },
+    { key: 'delegates', label: 'Delegates', icon: 'users' },
+  ];
+
+  const handleProposalSubmit = (proposal: ProposalSubmission) => {
+    const nextProposal: ProposalRecord = {
+      id: `SFP-${Date.now().toString().slice(-3)}`,
+      title: proposal.title,
+      description: proposal.description,
+      proposer: 'Connected Wallet',
+      status: 'Active',
+      votesFor: 0,
+      votesAgainst: 0,
+      quorumThreshold: 60,
+      endsInLedgers: 1440,
+    };
+
+    setProposals((current) => [nextProposal, ...current]);
+    setWalletBalance((current) => Math.max(0, current - 1000));
+    setIsProposalModalOpen(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
+
+      {/* Header */}
+      <GovernanceWalletControl onCreateProposal={() => setIsProposalModalOpen(true)} />
+
+      {/* Stats — context-aware based on section */}
+      {section === 'proposals' ? (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <StatCard title="Total Staking Power" value="2.85M SF" icon={<Icon id={ICON_IDS.vote} size={20} className="text-blue-400" />} subtitle="Active voting weights" />
+          <StatCard title="Active Ballots" value="2 Proposals" icon={<Icon id={ICON_IDS.clock} size={20} className="text-yellow-500" />} subtitle="Awaiting validation signatures" />
+          <StatCard title="Voter Turnout Avg" value="74.2%" icon={<Icon id={ICON_IDS.users} size={20} className="text-green-400" />} subtitle="High network coordinator interest" />
+          <StatCard title="Passing Invariants" value="100%" icon={<Icon id={ICON_IDS.checkCircle} size={20} className="text-emerald-400" />} subtitle="All parameters safe" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <StatCard title="Registered Delegates" value="5 Delegates" icon={<Icon id={ICON_IDS.users} size={20} className="text-blue-400" />} subtitle="Trusted community representatives" />
+          <StatCard title="Total Delegated" value="5.36M XLM" icon={<Icon id={ICON_IDS.coins} size={20} className="text-yellow-500" />} subtitle="Voting power delegated" />
+          <StatCard title="Avg Delegators" value="657 / Delegate" icon={<Icon id={ICON_IDS.vote} size={20} className="text-green-400" />} subtitle="Community participation" />
+          <StatCard title="Proposals Voted" value="100% Coverage" icon={<Icon id={ICON_IDS.checkCircle} size={20} className="text-emerald-400" />} subtitle="All active proposals covered" />
+        </div>
+      )}
+
+      {/* Section Switcher (Proposals / Delegates) */}
       <div className="flex border-b border-gray-800 mb-6 gap-6">
-        <button onClick={() => setActiveTab('all')} className={`pb-3 text-sm font-medium capitalize transition-all ${activeTab === 'all' ? 'text-blue-400 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-300'}`}>All Ballots</button>
-        <button onClick={() => setActiveTab('active')} className={`pb-3 text-sm font-medium capitalize transition-all ${activeTab === 'active' ? 'text-blue-400 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-300'}`}>Active</button>
-        <button onClick={() => setActiveTab('archived')} className={`pb-3 text-sm font-medium capitalize transition-all ${activeTab === 'archived' ? 'text-blue-400 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-300'}`}>Archived</button>
+        {SECTION_SWITCHER.map(({ key, label, icon }) => (
+          <button
+            key={key}
+            onClick={() => setSection(key)}
+            className={`flex items-center gap-2 pb-3 text-sm font-medium relative ${
+              section === key
+                ? 'text-blue-400 border-b-2 border-blue-500'
+                : 'text-gray-500'
+            }`}
+          >
+            {section !== key && (
+              <span className="absolute inset-0 bg-white/4 opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none" />
+            )}
+            <Icon id={ICON_IDS[icon]} size={16} />
+            <span className="relative z-10">{label}</span>
+          </button>
+        ))}
       </div>
 
-      {/* --- Proposal List Suite --- */}
-      <div className="space-y-4">
-        {transformedProposals.map((proposal) => {
-          const totalVotes = proposal.votesFor + proposal.votesAgainst;
-          const forPercentage = totalVotes > 0 ? (proposal.votesFor / totalVotes) * 100 : 0;
-          
-          return (
-            <div key={proposal.id} className="bg-[#161b22] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-colors group">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                
-                {/* Proposal Text Meta */}
-                <div className="space-y-2 max-w-2xl">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono font-bold text-gray-500 uppercase tracking-tight">{proposal.id}</span>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border ${
-                      proposal.status === 'Active' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
-                      proposal.status === 'Passed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                      'bg-red-500/10 text-red-400 border-red-500/20'
-                    }`}>
-                      {proposal.status}
-                    </span>
-                    {proposal.status === 'Active' && (
-                      <span className="text-xs text-gray-500 flex items-center gap-1 font-mono">
-                        <Clock size={12} /> ~{(ledgerCounts[proposal.id] ?? 0).toLocaleString()} ledgers remaining
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-100 group-hover:text-blue-400 transition-colors">{proposal.title}</h3>
-                  {/* PERFORMANCE OPTIMIZATION: Use pre-computed shortened address instead of runtime string slicing */}
-                  <p className="text-xs text-gray-500 font-mono">Proposed by authority wallet: <span className="text-gray-400">{proposal.shortenedAddress}</span></p>
-                </div>
+      {/* Conditional Content */}
+      {section === 'proposals' ? (
+        <>
+          {/* Proposal Filtering Tabs */}
+          <div className="flex border-b border-gray-800 mb-6 gap-6">
+            {TABS.map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setActiveTab(key)}
+                className={`pb-3 text-sm font-medium capitalize relative ${
+                  activeTab === key
+                    ? 'text-blue-400 border-b-2 border-blue-500'
+                    : 'text-gray-500'
+                }`}
+              >
+                {activeTab !== key && (
+                  <span className="absolute inset-0 bg-white/4 opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none" />
+                )}
+                <span className="relative z-10">{label}</span>
+              </button>
+            ))}
+          </div>
 
-                {/* Progress Indicators and Actions */}
-                <div className="flex flex-col md:flex-row items-start md:items-center gap-6 lg:min-w-[320px]">
-                  <div className="w-full space-y-1.5">
-                    <div className="flex justify-between text-xs font-mono">
-                      <span className="text-emerald-400 font-bold">For: {forPercentage.toFixed(1)}%</span>
-                      <span className="text-red-400 font-bold">Against: {(100 - forPercentage).toFixed(1)}%</span>
-                    </div>
-                    {/* Voting Ratio Track Bar */}
-                    <div className="w-full bg-red-950/40 h-2 rounded-full overflow-hidden flex border border-gray-800">
-                      <div className="bg-emerald-500 h-full" style={{ width: `${forPercentage}%` }} />
-                    </div>
-                    <div className="text-[10px] text-gray-500 font-mono text-right">
-                      Quorum Target Required: {proposal.quorumThreshold}%
-                    </div>
-                  </div>
+          {/* Proposal List */}
+          <ProposalList proposals={proposals} filter={activeTab} />
+        </>
+      ) : (
+        /* Delegate Directory */
+        <DelegateDirectory delegates={MOCK_DELEGATES} />
+      )}
 
-                  <button className="p-2 bg-[#0d1117] group-hover:bg-gray-800 border border-gray-700 text-gray-400 rounded-lg shrink-0 self-end md:self-auto transition-colors">
-                    <ChevronRight size={18} />
-                  </button>
-                </div>
-
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <ProposalCreationModal
+        isOpen={isProposalModalOpen}
+        onClose={() => setIsProposalModalOpen(false)}
+        onSubmit={handleProposalSubmit}
+        walletBalance={walletBalance}
+        minimumThreshold={minimumThreshold}
+      />
 
     </div>
   );

@@ -1,21 +1,42 @@
 {
-  "name": "StellarFlow Dashboard",
+  "name": "StellarFlow Network Dashboard",
   "short_name": "StellarFlow",
-  "description": "StellarFlow Network Dashboard",
+  "description": "StellarFlow Network Dashboard — monitor relayers, contracts, logs, and network health in real time.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "any",
+  "background_color": "#0a0f1e",
+  "theme_color": "#39ff14",
+  "categories": ["finance", "networking", "utilities"],
+  "lang": "en",
+  "dir": "ltr",
   "icons": [
+    {
+      "src": "/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
-  ]
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
 }

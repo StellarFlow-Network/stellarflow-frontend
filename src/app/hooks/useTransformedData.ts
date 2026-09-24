@@ -1,32 +1,28 @@
 /**
  * Data Transformation Hooks
  * Pre-processes data payloads with cached address shortenings
- * Eliminates string slicing from render loops
+ * Eliminates render-time string slicing inside table loops.
  */
 
-import { shortenAddress } from '@/utils/addressUtils';
+import {
+  shortenAddress,
+  withShortenedAddresses,
+  withShortenedAddressField,
+} from '@/utils/addressUtils';
 import type { Relayer, Contract } from '@/types';
 
 /**
  * Transform relayer data with pre-computed shortened addresses
- * Apply immediately upon data fetch to avoid render-time processing
  */
 export function useTransformedRelayers(relayers: Relayer[]): (Relayer & { shortenedAddress: string })[] {
-  return relayers.map((relayer) => ({
-    ...relayer,
-    shortenedAddress: relayer.shortenedAddress || shortenAddress(relayer.address),
-  }));
+  return withShortenedAddresses(relayers);
 }
 
 /**
  * Transform contract data with pre-computed shortened addresses
- * Apply immediately upon data fetch to avoid render-time processing
  */
 export function useTransformedContracts(contracts: Contract[]): (Contract & { shortenedAddress: string })[] {
-  return contracts.map((contract) => ({
-    ...contract,
-    shortenedAddress: contract.shortenedAddress || shortenAddress(contract.address),
-  }));
+  return withShortenedAddresses(contracts);
 }
 
 /**
@@ -48,8 +44,5 @@ export function useTransformedCustomAddressField<
   T extends Record<K, string>,
   K extends string = 'address'
 >(items: T[], addressFieldName: K): Array<T & { shortenedAddress: string }> {
-  return items.map((item) => ({
-    ...item,
-    shortenedAddress: shortenAddress(item[addressFieldName]),
-  }));
+  return withShortenedAddressField(items, addressFieldName as keyof T);
 }

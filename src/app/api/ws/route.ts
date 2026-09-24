@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { WebSocketServer, WebSocket } from 'ws'
+import {
+  ASSET_SYMBOL_LIST,
+  ASSET_BASE_PRICES,
+  ASSET_DECIMALS,
+} from '@/config/assetSymbols'
 
 // Store active connections and subscriptions
 const connections = new Map<WebSocket, Set<string>>()
 const assetSubscriptions = new Map<string, Set<WebSocket>>()
+const payoutSubscriptions = new Map<string, Set<WebSocket>>()
+const payoutConnections = new Map<WebSocket, Set<string>>()
 
 let wss: WebSocketServer | null = null
 
@@ -11,23 +18,23 @@ let wss: WebSocketServer | null = null
 function getWebSocketServer() {
   if (!wss) {
     wss = new WebSocketServer({ noServer: true })
-    
+
     wss.on('connection', (ws: WebSocket) => {
       console.log('New WebSocket connection established')
       connections.set(ws, new Set())
-      
+
       // Send initial connection confirmation
       ws.send(JSON.stringify({
         type: 'connection',
         status: 'connected',
         timestamp: Date.now()
       }))
-      
+
       ws.on('message', (message: string) => {
         try {
           const data = JSON.parse(message)
           handleMessage(ws, data)
-        } catch (error) {
+        } catch (error: unknown) {
           console.error('Invalid message format:', error)
           ws.send(JSON.stringify({
             type: 'error',
@@ -35,13 +42,13 @@ function getWebSocketServer() {
           }))
         }
       })
-      
+
       ws.on('close', () => {
         console.log('WebSocket connection closed')
         cleanupConnection(ws)
       })
-      
-      ws.on('error', (error) => {
+
+      ws.on('error', (error: unknown) => {
         console.error('WebSocket error:', error)
         cleanupConnection(ws)
       })
@@ -49,26 +56,30 @@ function getWebSocketServer() {
   }
   return wss
 }
-
-function handleMessage(ws: WebSocket, data: any) {
+interface SocketMessage {
+  type: "subscribe" | "unsubscribe" | "subscribePayout" | "unsubscribePayout";
+  assetIds?: string[];
+  payoutIds?: string[];
+}
+function handleMessage(ws: WebSocket, data: SocketMessage) {
   const { type, assetIds } = data
-  
+
   switch (type) {
     case 'subscribe':
       if (Array.isArray(assetIds)) {
         const subscribedAssets = connections.get(ws) || new Set()
-        
-        assetIds.forEach(assetId => {
+
+        assetIds.forEach((assetId: string) => {
           subscribedAssets.add(assetId)
-          
+
           if (!assetSubscriptions.has(assetId)) {
             assetSubscriptions.set(assetId, new Set())
           }
           assetSubscriptions.get(assetId)!.add(ws)
         })
-        
+
         connections.set(ws, subscribedAssets)
-        
+
         ws.send(JSON.stringify({
           type: 'subscription_confirmed',
           assetIds,
@@ -76,14 +87,14 @@ function handleMessage(ws: WebSocket, data: any) {
         }))
       }
       break
-      
+
     case 'unsubscribe':
       if (Array.isArray(assetIds)) {
         const subscribedAssets = connections.get(ws) || new Set()
-        
-        assetIds.forEach(assetId => {
+
+        assetIds.forEach((assetId: string) => {
           subscribedAssets.delete(assetId)
-          
+
           const subscribers = assetSubscriptions.get(assetId)
           if (subscribers) {
             subscribers.delete(ws)
@@ -92,11 +103,54 @@ function handleMessage(ws: WebSocket, data: any) {
             }
           }
         })
-        
+
         connections.set(ws, subscribedAssets)
       }
       break
-      
+
+    case 'subscribePayout':
+      if (Array.isArray(data.payoutIds)) {
+        const subscribedPayouts = payoutConnections.get(ws) || new Set()
+
+        data.payoutIds.forEach((payoutId: string) => {
+          subscribedPayouts.add(payoutId)
+
+          if (!payoutSubscriptions.has(payoutId)) {
+            payoutSubscriptions.set(payoutId, new Set())
+          }
+          payoutSubscriptions.get(payoutId)!.add(ws)
+        })
+
+        payoutConnections.set(ws, subscribedPayouts)
+
+        ws.send(JSON.stringify({
+          type: 'payout_subscription_confirmed',
+          payoutIds: data.payoutIds,
+          timestamp: Date.now()
+        }))
+      }
+      break
+
+    case 'unsubscribePayout':
+      if (Array.isArray(data.payoutIds)) {
+        const subscribedPayouts = payoutConnections.get(ws) || new Set()
+
+        data.payoutIds.forEach((payoutId: string) => {
+          subscribedPayouts.delete(payoutId)
+
+          const subscribers = payoutSubscriptions.get(payoutId)
+          if (subscribers) {
+            subscribers.delete(ws)
+            if (subscribers.size === 0) {
+              payoutSubscriptions.delete(payoutId)
+            }
+          }
+        })
+
+        payoutConnections.set(ws, subscribedPayouts)
+      }
+      break
+
     default:
       ws.send(JSON.stringify({
         type: 'error',
@@ -108,7 +162,7 @@ function handleMessage(ws: WebSocket, data: any) {
 function cleanupConnection(ws: WebSocket) {
   const subscribedAssets = connections.get(ws)
   if (subscribedAssets) {
-    subscribedAssets.forEach(assetId => {
+    subscribedAssets.forEach((assetId: string) => {
       const subscribers = assetSubscriptions.get(assetId)
       if (subscribers) {
         subscribers.delete(ws)
@@ -119,21 +173,37 @@ function cleanupConnection(ws: WebSocket) {
     })
     connections.delete(ws)
   }
+
+  const subscribedPayouts = payoutConnections.get(ws)
+  if (subscribedPayouts) {
+    subscribedPayouts.forEach((payoutId: string) => {
+      const subscribers = payoutSubscriptions.get(payoutId)
+      if (subscribers) {
+        subscribers.delete(ws)
+        if (subscribers.size === 0) {
+          payoutSubscriptions.delete(payoutId)
+        }
+      }
+    })
+    payoutConnections.delete(ws)
+  }
 }
 
 // Simulate price updates for demo purposes
 function simulatePriceUpdates() {
-  const assets = ['NGN-XLM', 'USD-XLM', 'EUR-XLM']
-  
+  // Use the interned symbol list — single allocation, reference-equal at all
+  // lookup sites.  No inline string literals needed here or downstream.
+  const assets = ASSET_SYMBOL_LIST
+
   setInterval(() => {
-    assets.forEach(assetId => {
+    assets.forEach((assetId) => {
       const subscribers = assetSubscriptions.get(assetId)
       if (subscribers && subscribers.size > 0) {
-        // Generate realistic price updates
-        const basePrice = assetId === 'NGN-XLM' ? 750 : assetId === 'USD-XLM' ? 0.12 : 0.13
+        // O(1) map lookup replaces chained ternary conditionals.
+        const basePrice = ASSET_BASE_PRICES[assetId]
         const variation = (Math.random() - 0.5) * 0.02 // ±1% variation
         const newPrice = basePrice * (1 + variation)
-        
+
         const update = {
           type: Math.random() > 0.7 ? 'delta_update' : 'price_update',
           assetId,
@@ -141,15 +211,15 @@ function simulatePriceUpdates() {
             id: assetId,
             assetPair: assetId,
             price: newPrice,
-            decimals: assetId === 'NGN-XLM' ? 2 : 6,
+            decimals: ASSET_DECIMALS[assetId],
             source: 'stellarflow-oracle',
             timestamp: Date.now(),
             confidenceScore: 0.95 + Math.random() * 0.04
           },
           timestamp: Date.now()
         }
-        
-        subscribers.forEach(ws => {
+
+        subscribers.forEach((ws) => {
           if (ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify(update))
           }
@@ -159,13 +229,102 @@ function simulatePriceUpdates() {
   }, 2000 + Math.random() * 3000) // Random interval between 2-5 seconds
 }
 
+// Generate one side of a synthetic order book radiating out from `midPrice`.
+// Each level's `total` is the cumulative amount from the top of book down to
+// that level, so the client can size depth bars without re-summing.
+function generateOrderBookLevels(
+  midPrice: number,
+  side: 'bid' | 'ask',
+  levels = 10,
+) {
+  const result: { price: number; amount: number; total: number }[] = []
+  let total = 0
+
+  for (let i = 0; i < levels; i++) {
+    const step = midPrice * 0.0008 * (i + 1)
+    const price = side === 'bid' ? midPrice - step : midPrice + step
+    const amount = Math.round((50 + Math.random() * 950) * 100) / 100
+    total = Math.round((total + amount) * 100) / 100
+
+    result.push({
+      price: Math.round(price * 1e6) / 1e6,
+      amount,
+      total,
+    })
+  }
+
+  return result
+}
+
+// Simulate order book depth updates for demo purposes — broadcasts to the
+// same per-asset subscriber set used by price updates, distinguished by
+// `type: 'orderbook_update'`.
+function simulateOrderBookUpdates() {
+  const assets = ASSET_SYMBOL_LIST
+
+  setInterval(() => {
+    assets.forEach((assetId) => {
+      const subscribers = assetSubscriptions.get(assetId)
+      if (subscribers && subscribers.size > 0) {
+        const basePrice = ASSET_BASE_PRICES[assetId]
+        const variation = (Math.random() - 0.5) * 0.02 // ±1% variation
+        const midPrice = basePrice * (1 + variation)
+
+        const update = {
+          type: 'orderbook_update',
+          assetId,
+          data: {
+            assetPair: assetId,
+            bids: generateOrderBookLevels(midPrice, 'bid'),
+            asks: generateOrderBookLevels(midPrice, 'ask'),
+            timestamp: Date.now(),
+          },
+          timestamp: Date.now(),
+        }
+
+        subscribers.forEach((ws) => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify(update))
+          }
+        })
+      }
+    })
+  }, 1500 + Math.random() * 2000) // Random interval between 1.5-3.5 seconds
+}
+
 // Start simulation after a delay
 setTimeout(simulatePriceUpdates, 1000)
+setTimeout(simulateOrderBookUpdates, 1200)
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   // This is a placeholder - WebSocket upgrade happens in the Next.js server
   return new NextResponse('WebSocket endpoint', { status: 200 })
 }
 
-// Export for use in server.js or custom server setup
-export { getWebSocketServer, assetSubscriptions }
+export async function POST(request: NextRequest) {
+  try {
+    const payload = await request.json()
+    const { transactionId, status, error } = payload
+    if (!transactionId || !status) {
+      return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
+    }
+    const subscribers = payoutSubscriptions.get(transactionId)
+    if (subscribers) {
+      const update = {
+        type: 'payout_status_update',
+        transactionId,
+        status,
+        error: error || null,
+        timestamp: Date.now()
+      }
+      subscribers.forEach((ws) => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify(update))
+        }
+      })
+    }
+    return NextResponse.json({ received: true })
+  } catch {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+  }
+}

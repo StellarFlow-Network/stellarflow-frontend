@@ -39,5 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# bundle analysis
+.bundle-report.json
+.bundle-report.baseline.json
 .env.local
 

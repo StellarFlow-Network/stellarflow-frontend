@@ -73,3 +73,18 @@ export const CONTRACT_HEALTH_ICON_VARIANTS = {
 export const getBalanceColorClass = (balanceXLM: number): string => {
   return balanceXLM < 200 ? 'text-yellow-500 font-bold' : 'text-gray-300';
 };
+
+// --- Governance Proposal Status Variants ---
+export const PROPOSAL_STATUS_BADGE_VARIANTS = {
+  Active:   'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+  Passed:   'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  Executed: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  Rejected: 'bg-red-500/10 text-red-400 border-red-500/20',
+} as const;
+
+export const PROPOSAL_STATUS_DOT_VARIANTS = {
+  Active:   'bg-yellow-400',
+  Passed:   'bg-emerald-400',
+  Executed: 'bg-blue-400',
+  Rejected: 'bg-red-400',
+} as const;

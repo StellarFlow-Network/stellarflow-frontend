@@ -14,3 +14,5 @@ function requireEnv(name: string): string {
 export const env = {
   NEXT_PUBLIC_API_URL: requireEnv("NEXT_PUBLIC_API_URL"),
 } as const;
+
+export const COMMIT_SHA = process.env.NEXT_PUBLIC_COMMIT_SHA ?? 'dev';

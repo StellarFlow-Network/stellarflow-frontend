@@ -9,7 +9,7 @@ export const MetricCardSkeleton = React.memo(function MetricCardSkeleton({ count
   return (
     <>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="bg-[#0A121E] border border-[#1B2A3B] rounded-xl p-6 shadow-lg">
+        <div key={i} style={{ contain: "layout paint" }} className="bg-[#0A121E] border border-[#1B2A3B] rounded-xl p-6 shadow-lg">
           <div className="flex flex-col gap-2">
             {/* Label block */}
             <Shimmer className="h-4 w-32 rounded-md" />

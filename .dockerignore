@@ -1,0 +1,11 @@
+.git
+.github
+.kiro
+.next
+.vscode
+coverage
+dist
+docs
+node_modules
+npm-debug.log*
+*.md

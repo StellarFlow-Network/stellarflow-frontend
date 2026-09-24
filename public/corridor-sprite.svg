@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <defs>
+    <symbol id="icon-corridor-exchange" viewBox="0 0 24 24">
+      <path d="M16 3h5v5"/>
+      <path d="M8 3H3v5"/>
+      <path d="M12 22v-8.3a4 4 0 0 0 1.172-2.872L21 3"/>
+      <path d="m3 3 7.828 7.828A4 4 0 0 1 12 13.7V22"/>
+    </symbol>
+    <symbol id="corridor-asset-usd" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M16 8.5c0-1.5-1.5-2.5-3.5-2.5S9 7 9 8.5s1.5 2.5 3.5 2.5 3.5 1 3.5 2.5S13 16 11 16 7.5 15 7.5 13"/>
+      <line x1="12" y1="6" x2="12" y2="7"/>
+      <line x1="12" y1="17" x2="12" y2="18"/>
+    </symbol>
+    <symbol id="corridor-asset-ngn" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M8 9v6"/>
+      <path d="M8 12h4"/>
+      <path d="M16 9v6"/>
+    </symbol>
+    <symbol id="corridor-asset-xlm" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M12 7l1.8 5.5h3.7L14.5 16l1.1 3.5L12 17.5 8.4 19.5 9.5 16 6.5 12.5h3.7L12 7z"/>
+    </symbol>
+    <symbol id="corridor-asset-kes" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M8 8h6a2 2 0 1 1 0 4H8"/>
+      <path d="M8 8v8"/>
+      <path d="M14 12h3"/>
+    </symbol>
+    <symbol id="corridor-asset-ghs" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M9 8h6"/>
+      <path d="M12 8v8"/>
+      <path d="M9 16h6"/>
+    </symbol>
+  </defs>
+</svg>

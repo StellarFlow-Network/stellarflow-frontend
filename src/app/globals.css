@@ -1,21 +1,90 @@
 @import "tailwindcss";
+@config "../../tailwind.config.js";
 
+/*
+ * Tailwind CSS v4 dark mode
+ * ─────────────────────────
+ * Tailwind v4 ships dark-mode support via the `dark:` variant out of the box.
+ * It defaults to the `media` strategy; we override to `class` so that
+ * next-themes' class-toggle on <html> controls which variant is active.
+ *
+ * The `@variant dark` directive tells Tailwind v4 to activate `dark:` utilities
+ * whenever the `.dark` class is present on the root element.
+ */
+@variant dark (&:where(.dark, .dark *));
+
+/* ─── Design tokens ───────────────────────────────────────────────────────── */
+
+/* Light theme (default) */
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --surface: #f5f5f5;
+  --surface-raised: #ebebeb;
+  --border: rgba(0, 0, 0, 0.1);
+  --muted: rgba(0, 0, 0, 0.45);
+  --control: #ffffff;
+  --control-hover: #f5f5f5;
 }
 
-/* Dark theme — class applied by next-themes */
+/* Dark theme — applied by next-themes adding `.dark` to <html> */
 .dark {
   --background: #0d1117;
   --foreground: #ededed;
+  --surface: #161b22;
+  --surface-raised: #1c2128;
+  --border: rgba(255, 255, 255, 0.08);
+  --muted: rgba(255, 255, 255, 0.45);
+  --control: #161b22;
+  --control-hover: #1c2128;
+}
+
+/* WCAG AAA-oriented option: normal text is pure white on black, with yellow
+   reserved for emphasis and focus so contrast does not depend on hue. */
+.high-contrast {
+  --background: #000000;
+  --foreground: #ffffff;
+  --surface: #000000;
+  --surface-raised: #1a1a1a;
+  --border: #ffffff;
+  --muted: #ffffff;
+}
+
+.high-contrast body {
+  background: #000000;
+  color: #ffffff;
+}
+
+.high-contrast a,
+.high-contrast button,
+.high-contrast input,
+.high-contrast select,
+.high-contrast textarea,
+.high-contrast [tabindex]:not([tabindex="-1"]) {
+  border-color: #ffffff;
+}
+
+/* Keep keyboard focus visible even when a component supplies its own styles. */
+:where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 3px solid #ffff00;
+  outline-offset: 3px;
+}
+
+.high-contrast :where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline-color: #ffff00;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-control: var(--control);
+  --color-control-hover: var(--control-hover);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: var(--font-geist-sans);
   --color-neon-green: #39ff14;
   --color-oracle-navy: #0a0f1e;
   --color-oracle-border: #1b2a3b;
@@ -24,8 +93,11 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
   overflow-x: hidden;
+  transition:
+    background-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .content-visibility-auto {
@@ -36,21 +108,70 @@ body {
 .wallet-btn {
   background-color: #d9f99d;
   color: #1f2937;
+  position: relative;
+}
+
+.wallet-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: #bef574;
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+  pointer-events: none;
+  will-change: opacity;
 }
 
 .wallet-btn:hover {
-  background-color: #bef574;
   transform: translateY(-2px);
   box-shadow: 0 10px 15px -3px rgb(185 249 124 / 0.4);
+}
+
+.wallet-btn:hover::before {
+  opacity: 1;
+}
+
+.status-ping { animation: status-ping 1s ease-out infinite; transform: translateZ(0); will-change: transform, opacity; }
+.status-pulse { animation: status-pulse 1.2s ease-in-out infinite; transform: translateZ(0); will-change: transform, opacity; }
+@keyframes status-ping { 0% { transform: scale(.8); opacity: .3; } 100% { transform: scale(1.25); opacity: 0; } }
+@keyframes status-pulse { 0%, 100% { transform: scale(.95); opacity: .3; } 50% { transform: scale(1); opacity: 1; } }
+
+.micro-interaction-input {
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.micro-interaction-input:focus {
+  border-color: rgb(96 165 250 / 0.9);
+  box-shadow: 0 0 0 1px rgb(96 165 250 / 0.55), 0 0 22px rgb(59 130 246 / 0.18);
+}
+
+.stellar-confetti {
+  position: absolute;
+  top: -0.75rem;
+  width: 0.4rem;
+  height: 0.8rem;
+  border-radius: 0.125rem;
+  animation: stellar-confetti-fall 850ms cubic-bezier(.2,.7,.3,1) both;
+}
+
+@keyframes stellar-confetti-fall {
+  from { opacity: 0; transform: translateY(0) rotate(0deg); }
+  20% { opacity: 1; }
+  to { opacity: 0; transform: translateY(7rem) rotate(260deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-ping,
+  .status-pulse,
+  .stellar-confetti { animation: none; }
+  .micro-interaction-input { transition: none; }
 }
 
 /* ─── Admin Tab Bar ──────────────────────────────────────── */
 
 .admin-tabbar-wrapper {
   width: 100%;
-  background: rgba(10, 10, 10, 0.65);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: #0a0a0a;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   padding-left: 1.5rem;
   padding-right: 1.5rem;
@@ -99,9 +220,27 @@ body {
   outline: none;
 }
 
+.admin-tab {
+  position: relative;
+}
+
+.admin-tab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.04);
+  opacity: 0;
+  transition: opacity 250ms ease;
+  pointer-events: none;
+  will-change: opacity;
+}
+
 .admin-tab:hover {
   color: rgba(255, 255, 255, 0.75);
-  background: rgba(255, 255, 255, 0.04);
+}
+
+.admin-tab:hover::before {
+  opacity: 1;
 }
 
 .admin-tab:focus-visible {
@@ -116,9 +255,23 @@ body {
   color: #99dc1b;
 }
 
+.admin-tab--active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(153, 220, 27, 0.06);
+  opacity: 0;
+  transition: opacity 250ms ease;
+  pointer-events: none;
+  will-change: opacity;
+}
+
 .admin-tab--active:hover {
   color: #99dc1b;
-  background: rgba(153, 220, 27, 0.06);
+}
+
+.admin-tab--active:hover::after {
+  opacity: 1;
 }
 
 /* ── Cyber Lime underline indicator ── */
@@ -154,4 +307,257 @@ body {
   transform: translateX(-50%) scaleX(1);
   background: rgba(255, 255, 255, 0.15);
   box-shadow: none;
+}
+
+/* ─── GPU-Accelerated Status Animations ──────────────────── */
+
+@keyframes status-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes status-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.animate-status-pulse {
+  animation: status-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-status-ping {
+  animation: status-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.gpu-layer {
+  will-change: opacity, transform;
+  transform: translateZ(0);
+}
+/* ─────────────────────────────────────────────────────────────
+   HARDWARE-ACCELERATED EXPANSION/COLLAPSE ANIMATIONS
+   
+   Replace height-based animations with GPU-accelerated transform/opacity.
+   These utilities lift animation processing away from the main thread,
+   preventing layout recalculation loops during structural expansion.
+   ───────────────────────────────────────────────────────────────── */
+
+/** 
+ * Expandable container — Applies layout containment and will-change optimization
+ * Isolates animation from affecting sibling layout calculations
+ */
+.expandable-container {
+  contain: layout style paint;
+  will-change: transform, opacity;
+}
+
+/**
+ * Expandable content wrapper — Transform-origin positioned at top
+ * Ensures scaleY animation expands downward, not from center
+ */
+.expandable-content {
+  transform-origin: top;
+  will-change: transform, opacity;
+}
+
+/**
+ * Animation utilities for indicator icons (chevrons, arrows)
+ * Rotate is GPU-accelerated via transform, not affecting layout
+ */
+.expandable-indicator {
+  display: inline-flex;
+  will-change: transform;
+  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.expandable-indicator.rotated {
+  transform: rotate(180deg);
+}
+
+/**
+
+ * Performance optimization for high-density grids
+ * Prevents cascading layout recalculation during multi-row expansion
+ */
+.expandable-grid-item {
+  contain: content layout;
+}
+
+.expandable-grid-header {
+  cursor: pointer;
+  position: relative;
+  user-select: none;
+}
+
+.expandable-grid-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: rgba(28, 33, 40, 0.5);
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+  pointer-events: none;
+  will-change: opacity;
+}
+
+.expandable-grid-header:hover::before {
+  opacity: 1;
+}
+
+/* CSS variable-based scaling for dynamic animations */
+.dynamic-scale-x {
+  transform: scaleX(var(--scale-x, 1));
+  transform-origin: left;
+  will-change: transform;
+  contain: strict;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   LAYOUT CONTAINMENT FOR HIGH-FREQUENCY UPDATING WIDGETS
+   
+   These utilities apply contain: strict to prevent text shifts and
+   badge updates from causing layout recalculation ripples across
+   adjacent dashboard blocks.
+   ───────────────────────────────────────────────────────────────── */
+
+/**
+ * High-frequency status badges — Apply strict containment
+ * Prevents status text changes (active/paused/offline) from causing
+ * layout shifts that ripple to sibling elements
+ */
+.high-frequency-badge {
+  display: inline-flex;
+  contain: strict;
+  will-change: contents;
+  min-width: min-content;
+  line-height: 1.2;
+}
+
+/**
+ * Real-time metric indicators — Health bars, latency, success rates
+ * Isolates progress bar animations and numeric updates from affecting
+ * adjacent table cells or grid items
+ */
+.metric-indicator {
+  contain: strict;
+  will-change: transform;
+  overflow: hidden;
+}
+
+/**
+ * Node status cell — Table cell container for real-time data
+ * Prevents frequent numeric updates (rewards, latency, success rate)
+ * from causing layout thrashing across entire table rows
+ */
+.node-status-cell {
+  contain: layout style;
+  will-change: contents;
+}
+
+/**
+ * Stat card widget — Dashboard metrics that update in real-time
+ * Isolates value changes from affecting adjacent stat cards
+ */
+.stat-card-widget {
+  contain: layout style paint;
+  will-change: contents;
+  overflow: hidden;
+}
+
+/**
+ * Voting ratio indicator — Real-time vote tally progress
+ * Strict containment prevents vote percentage changes from
+ * affecting layout of adjacent proposal metadata
+ */
+.voting-ratio-indicator {
+  contain: strict;
+  will-change: transform;
+  line-height: 1;
+}
+
+/**
+ * Numeric value container — Any frequently updating number
+ * Prevents font rendering changes (10 → 100%) from causing reflow
+ */
+.numeric-value {
+  contain: layout;
+  font-variant-numeric: tabular-nums;
+  will-change: contents;
+}
+
+/**
+ * Dashboard status widget — high-frequency metric cards and badge shells
+ * Restricts style recalculation to the widget bounds on the validator audit page.
+ */
+.dashboard-status-widget {
+  contain: layout paint;
+}
+
+/**
+ * Validator heartbeat cell — active-node pulse and uptime updates
+ * Isolates compositor-driven status animations from the document canvas.
+ */
+.validator-heartbeat-cell {
+  contain: layout paint;
+  will-change: opacity, transform;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   CUSTOM SLIDER STYLES FOR VOTING POWER CALCULATOR
+   ───────────────────────────────────────────────────────────────── */
+
+/**
+ * Custom slider thumb styling for better visual feedback
+ */
+.slider-thumb::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 2px solid #1f2937;
+}
+
+.slider-thumb::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.7);
+}
+
+.slider-thumb::-webkit-slider-thumb:active {
+  transform: scale(1.05);
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.9);
+}
+
+.slider-thumb::-moz-range-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 2px solid #1f2937;
+}
+
+.slider-thumb::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.7);
+}
+
+.slider-thumb::-moz-range-thumb:active {
+  transform: scale(1.05);
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.9);
 }

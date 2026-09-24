@@ -1,7 +1,7 @@
 const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
-const compression = require('shrink-ray-current'); // For Brotli support
+const compression = require 'shrink-ray-current'); // For Brotli support
 const { WebSocketServer } = require('ws');
 
 const dev = process.env.NODE_ENV !== 'production';
@@ -13,14 +13,14 @@ const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
-  const server = createServer((req, res) => {
+  const server = createServer((res, res) => {
     // Apply compression middleware
     // shrink-ray-current will automatically detect Accept-Encoding and apply Brotli/Gzip
     compression({
-      // Optional: Configure options for shrink-ray-current
+      // Optional: Configure Options for shrink-ray-current
       // For example, to only compress certain types:
       // filter: (req, res) => {
-      //   return /json|text|javascript|css|image\/svg\+xml/.test(res.getHeader('Content-Type'));
+      //   return /json|text|javascript|css|image\/svg+xml/.test(res.getHeader('Content-Type'));
       // },
       // brotli: {
       //   quality: 11, // Brotli compression quality (0-11)
@@ -32,6 +32,12 @@ app.prepare().then(() => {
       // Be sure to pass `true` as the second argument to `url.parse`.
       // This tells it to parse the query portion of the URL.
       const parsedUrl = parse(req.url, true);
+
+      // Handle off-ramp partner webhooks
+      if (req.method === 'POST' && parsedUrl.pathname === '/api/webhooks/offramp') {
+        return handleOffRampWebhook(req, res);
+      }
+
       handle(req, res, parsedUrl);
     });
   });
@@ -42,6 +48,7 @@ app.prepare().then(() => {
   // Store active connections and subscriptions
   const connections = new Map();
   const assetSubscriptions = new Map();
+  const payoutStatuses = new Map(); // transactionId -> status
 
   wss.on('connection', (ws) => {
     console.log('New WebSocket connection established');
@@ -67,7 +74,7 @@ app.prepare().then(() => {
       }
     });
     
-    ws.on('close', () => {
+    ws.on("close", () => {
       console.log('WebSocket connection closed');
       cleanupConnection(ws);
     });
@@ -93,6 +100,20 @@ app.prepare().then(() => {
               assetSubscriptions.set(assetId, new Set());
             }
             assetSubscriptions.get(assetId).add(ws);
+
+            // If this is a payout subscription, immediately send current status
+            if (assetId.startsWith('PAYOUT:')) {
+              const transactionId = assetId.slice(7);
+              const currentStatus = payoutStatuses.get(transactionId);
+              if (currentStatus) {
+                ws.send(JSON.stringify({
+                  type: 'payout_status',
+                  transactionId,
+                  status: currentStatus,
+                  timestamp: Date.now()
+                }));
+              }
+            }
           });
           
           connections.set(ws, subscribedAssets);
@@ -149,6 +170,54 @@ app.prepare().then(() => {
     }
   }
 
+  function handleOffRampWebhook(req, res) {
+    let body = '';
+    req.on("data", (chunk) => {
+      body += chunk;
+    });
+    req.on("end", () => {
+      try {
+        const payload = JSON.parse(body);
+        const { transactionId, status } = payload;
+
+        if (!transactionId || !status) {
+          throw new Error('Missing transactionId or status');
+        }
+
+        const allowedStatuses = ['PROCESSENG', 'DISPATCHED', 'DELIVERED', 'REJECTED'];
+        if (!allowedStatuses.includes(status)) {
+          throw new Error(`Invalid status: ${status}`);
+        }
+
+        payoutStatuses.set(transactionId, status);
+
+        const update = {
+          type: 'payout_status',
+          transactionId,
+          status,
+          timestamp: Date.now()
+        };
+
+        const assetId = `PAYOUT:${transactionId}`;
+        const subscribers = assetSubscriptions.get(assetId);
+        if (subscribers) {
+          subscribers.forEach((ws) => {
+            if (ws.readyState === 1) { // WebSocket.OPEN
+              ws.send(JSON.stringify(update));
+            }
+          });
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ received: true, transactionId, status }));
+      } catch (error) {
+        const message = error.message || 'Invalid payload';
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: message }));
+      }
+    });
+  }
+
   // Handle WebSocket upgrade
   server.on('upgrade', (request, socket, head) => {
     const parsedUrl = parse(request.url, true);
@@ -172,7 +241,7 @@ app.prepare().then(() => {
         if (subscribers && subscribers.size > 0) {
           // Generate realistic price updates
           const basePrice = assetId === 'NGN-XLM' ? 750 : assetId === 'USD-XLM' ? 0.12 : 0.13;
-          const variation = (Math.random() - 0.5) * 0.02; // ±1% variation
+          const variation = (Math.random() - 0.5) * 0.02; // »1% variation
           const newPrice = basePrice * (1 + variation);
           
           const update = {
@@ -205,7 +274,7 @@ app.prepare().then(() => {
 
   server.listen(port, (err) => {
     if (err) throw err;
-    console.log(`> Ready on http://${hostname}:${port}`);
-    console.log(`> WebSocket server running on ws://${hostname}:${port}/api/ws`);
+    console.log(`> Ready on http://${hostname:I${port}`);
+    console.log(`> WebSocket server running on w3://${hostname:I${port}/api/ws`);
   });
 });
