@@ -309,11 +309,16 @@ export default function SettingsPage() {
           </div>
         </main>
       </div>
+
+      <NotificationPreferencesDrawer 
+        isOpen={isDrawerOpen} 
+        onClose={() => setIsDrawerOpen(false)} 
+      />
     </div>
   );
 }
 
-function ToggleItem({ icon, title, description, enabled, onToggle }: { icon: React.ReactNode, title: string, description: string, enabled: boolean, onToggle: () => void }) {
+function ToggleItem({ icon, title, description, enabled, onToggle, onConfigure }: { icon: React.ReactNode, title: string, description: string, enabled: boolean, onToggle: () => void, onConfigure?: () => void }) {
   const trackClasses = enabled ? TOGGLE_STYLES.enabled.track : TOGGLE_STYLES.disabled.track;
   const knobClasses = enabled ? TOGGLE_STYLES.enabled.knob : TOGGLE_STYLES.disabled.knob;
 
@@ -325,6 +330,14 @@ function ToggleItem({ icon, title, description, enabled, onToggle }: { icon: Rea
         <div>
           <p className="text-sm font-medium">{title}</p>
           <p className="text-xs text-gray-500">{description}</p>
+          {onConfigure && enabled && (
+            <button 
+              onClick={onConfigure}
+              className="mt-2 text-xs text-blue-400 hover:text-blue-300 transition-colors font-medium"
+            >
+              Configure preferences →
+            </button>
+          )}
         </div>
       </div>
       <div className="relative z-10">
