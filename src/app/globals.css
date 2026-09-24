@@ -136,6 +136,37 @@ body {
 @keyframes status-ping { 0% { transform: scale(.8); opacity: .3; } 100% { transform: scale(1.25); opacity: 0; } }
 @keyframes status-pulse { 0%, 100% { transform: scale(.95); opacity: .3; } 50% { transform: scale(1); opacity: 1; } }
 
+.micro-interaction-input {
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.micro-interaction-input:focus {
+  border-color: rgb(96 165 250 / 0.9);
+  box-shadow: 0 0 0 1px rgb(96 165 250 / 0.55), 0 0 22px rgb(59 130 246 / 0.18);
+}
+
+.stellar-confetti {
+  position: absolute;
+  top: -0.75rem;
+  width: 0.4rem;
+  height: 0.8rem;
+  border-radius: 0.125rem;
+  animation: stellar-confetti-fall 850ms cubic-bezier(.2,.7,.3,1) both;
+}
+
+@keyframes stellar-confetti-fall {
+  from { opacity: 0; transform: translateY(0) rotate(0deg); }
+  20% { opacity: 1; }
+  to { opacity: 0; transform: translateY(7rem) rotate(260deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-ping,
+  .status-pulse,
+  .stellar-confetti { animation: none; }
+  .micro-interaction-input { transition: none; }
+}
+
 /* ─── Admin Tab Bar ──────────────────────────────────────── */
 
 .admin-tabbar-wrapper {
@@ -530,4 +561,3 @@ body {
   transform: scale(1.05);
   box-shadow: 0 0 16px rgba(59, 130, 246, 0.9);
 }
-
