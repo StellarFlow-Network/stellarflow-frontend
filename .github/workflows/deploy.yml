@@ -111,6 +111,9 @@ jobs:
       - name: Verify zero broken links
         run: npm run check:links
 
+      - name: Install headless Chromium (hydration check)
+        run: npx playwright install --with-deps chromium
+
       - name: Verify zero SSR hydration mismatches
         run: npm run check:hydration
 
