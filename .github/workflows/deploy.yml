@@ -1,33 +1,45 @@
-name: Vercel CI — Preview & Production
+name: Static Export & Deploy
 
 # ─────────────────────────────────────────────
-# Triggers
-#   • pull_request  → preview deployment
-#   • push tag v*   → production deployment
+# Issue #1016 — Automated Next.js static page export & deployment pipeline.
+#
+# pull_request → quality checks + static export build + link/hydration checks
+# push to main → same checks, then deploy out/ to S3, invalidate CloudFront,
+#                run post-deployment smoke tests and notify Slack.
+#
+# Required repository configuration:
+#   Vars:  AWS_REGION, S3_BUCKET, CLOUDFRONT_DISTRIBUTION_ID, CLOUDFRONT_URL
+#   Secrets: AWS_ROLE_ARN (OIDC), SLACK_WEBHOOK_URL
 # ─────────────────────────────────────────────
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    branches: [ main ]
   push:
-    tags:
-      - "v*"
+    branches: [ main ]
+  workflow_dispatch:
 
-# Cancel in-flight runs for the same PR / branch so we don't waste minutes.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
 
 env:
   NODE_VERSION: "24"
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+  S3_BUCKET: ${{ vars.S3_BUCKET }}
+  DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
+  CLOUDFRONT_URL: ${{ vars.CLOUDFRONT_URL }}
 
-# ─────────────────────────────────────────────
-# Job 1 — Quality checks (lint · typecheck · test)
-# Runs on every PR and every version tag push.
-# ─────────────────────────────────────────────
 jobs:
+  # ───────────────────────────────────────────
+  # Job 1 — Quality gates (lint · typecheck · unit tests)
+  # ───────────────────────────────────────────
   quality:
     name: Quality checks
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
@@ -40,7 +52,13 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          # package-lock.json is missing optional platform entries, so a strict
+          # `npm ci` cannot resolve; fall back to a full install.
+          if ! npm ci --no-audit --no-fund; then
+            echo "::warning::npm ci failed — falling back to npm install"
+            npm install --no-audit --no-fund
+          fi
 
       - name: Lint (ESLint)
         run: npm run lint
@@ -51,21 +69,15 @@ jobs:
       - name: Unit tests
         run: npm run test
 
-# ─────────────────────────────────────────────
-# Job 2 — Vercel Preview Deployment (pull requests only)
-# Deploys to a per-PR preview environment on Vercel.
-# Outputs the deployment URL for use in the comment job.
-# ─────────────────────────────────────────────
-  preview:
-    name: Vercel — Preview deployment
+  # ───────────────────────────────────────────
+  # Job 2 — Static export build + verification
+  #   `next build` with output: export → out/
+  #   then: zero broken links + zero hydration mismatches
+  # ───────────────────────────────────────────
+  static-export:
+    name: Static export build
     runs-on: ubuntu-latest
-    needs: quality
-    # Only run on pull-request events, not on tag pushes.
-    if: github.event_name == 'pull_request' && env.VERCEL_TOKEN != ''
-    env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-    outputs:
-      preview_url: ${{ steps.deploy.outputs.preview_url }}
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
@@ -78,33 +90,204 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
-        run: npm ci
-
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
-
-      - name: Pull Vercel environment (preview)
-        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Build project (preview)
-        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Deploy to Vercel (preview)
-        id: deploy
         run: |
-          PREVIEW_URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
-          echo "preview_url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
+          if ! npm ci --no-audit --no-fund; then
+            echo "::warning::npm ci failed — falling back to npm install"
+            npm install --no-audit --no-fund
+          fi
 
-# ─────────────────────────────────────────────
-# Job 3 — Vercel Production Deployment (version tags only)
-# Deploys to the Vercel production target when a v* tag is pushed.
-# ─────────────────────────────────────────────
-  production:
-    name: Vercel — Production deployment
+      - name: Build static export (next build → out/)
+        run: npm run build:export
+
+      - name: Verify zero broken links
+        run: npm run check:links
+
+      - name: Verify zero SSR hydration mismatches
+        run: npm run check:hydration
+
+      - name: Upload static export artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-export
+          path: out/
+          retention-days: 7
+          if-no-files-found: error
+
+  # ───────────────────────────────────────────
+  # Job 3 — Deploy static assets to S3 and invalidate CloudFront
+  # Runs only for pushes to main (i.e. after merge) or manual dispatch.
+  # ───────────────────────────────────────────
+  deploy:
+    name: Deploy to S3 + CloudFront
     runs-on: ubuntu-latest
-    needs: quality
-    # Only run when the trigger is a version tag, not on PRs.
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    timeout-minutes: 15
+    needs: [quality, static-export]
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      invalidation_seconds: ${{ steps.invalidate.outputs.seconds }}
+      invalidation_id: ${{ steps.invalidate.outputs.invalidation_id }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download static export artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: static-export
+          path: out
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Verify deployment prerequisites
+        run: |
+          if [ -z "$S3_BUCKET" ]; then echo "::error::S3_BUCKET repository variable is not set"; exit 1; fi
+          if [ -z "$DISTRIBUTION_ID" ]; then echo "::error::CLOUDFRONT_DISTRIBUTION_ID repository variable is not set"; exit 1; fi
+          test -f out/index.html || { echo "::error::out/index.html missing from the artifact"; exit 1; }
+          echo "Deploying $(find out -name '*.html' | wc -l) HTML pages to s3://$S3_BUCKET"
+
+      # Static exports are directories (`/dashboard/index.html`), so the viewer
+      # request is rewritten before it hits S3: `/dashboard` → `/dashboard/index.html`.
+      - name: Publish CloudFront URL rewrite function
+        id: cf-function
+        run: |
+          FUNCTION_NAME=stellarflow-static-index-rewrite
+          cat > /tmp/cf-rewrite.js <<'EOF'
+          function handler(event) {
+            var request = event.request;
+            var uri = request.uri;
+            if (uri.indexOf('.') === -1) {
+              request.uri = uri.slice(-1) === '/' ? uri + 'index.html' : uri + '/index.html';
+            }
+            return request;
+          }
+          EOF
+
+          ETAG=$(aws cloudfront list-functions \
+            --query "Functions.Items[?Name=='${FUNCTION_NAME}'].ETag | [0]" --output text 2>/dev/null || true)
+
+          if [ -z "$ETAG" ] || [ "$ETAG" = "None" ]; then
+            aws cloudfront create-function \
+              --name "$FUNCTION_NAME" \
+              --function-config Comment="StellarFlow static export index.html rewrite" Runtime=cloudfront-js-2.0 \
+              --function-code file:///tmp/cf-rewrite.js \
+              --query "Function.FunctionMetadata.FunctionARN" --output text > /tmp/cf-arn.txt
+          else
+            aws cloudfront update-function \
+              --name "$FUNCTION_NAME" --if-match "$ETAG" \
+              --function-code file:///tmp/cf-rewrite.js > /dev/null
+            CODE_ETAG=$(aws cloudfront get-function --name "$FUNCTION_NAME" --query "ETag" --output text)
+            aws cloudfront update-function \
+              --name "$FUNCTION_NAME" --if-match "$CODE_ETAG" \
+              --function-config Comment="StellarFlow static export index.html rewrite" Runtime=cloudfront-js-2.0 \
+              --function-code file:///tmp/cf-rewrite.js \
+              --query "Function.FunctionMetadata.FunctionARN" --output text > /tmp/cf-arn.txt
+          fi
+
+          cat /tmp/cf-arn.txt
+          echo "arn=$(cat /tmp/cf-arn.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Associate rewrite function with the distribution
+        run: |
+          python3 - "$DISTRIBUTION_ID" "$(cat /tmp/cf-arn.txt)" <<'PY'
+          import json, subprocess, sys
+
+          distribution_id, function_arn = sys.argv[1], sys.argv[2]
+
+          def aws(*args):
+              return subprocess.check_output(["aws", *args], text=True)
+
+          config = json.loads(aws("cloudfront", "get-distribution-config",
+                                  "--id", distribution_id,
+                                  "--query", "DistributionConfig", "--output", "json"))
+          etag = json.loads(aws("cloudfront", "get-distribution-config",
+                                "--id", distribution_id,
+                                "--query", "ETag", "--output", "json"))
+
+          behavior = config["DefaultCacheBehavior"]
+          associations = behavior.setdefault("FunctionAssociations", {"Quantity": 0, "Items": []})
+          items = [i for i in associations.get("Items", [])
+                   if i.get("DataType") != "function-request"]
+          items.append({"DataType": "function-request", "FunctionARN": function_arn})
+          associations["Items"] = items
+          associations["Quantity"] = len(items)
+
+          aws("cloudfront", "update-distribution",
+              "--id", distribution_id,
+              "--if-match", etag,
+              "--distribution-config", json.dumps(config))
+          print(f"Associated {function_arn} with {distribution_id}")
+          PY
+
+      - name: Sync static assets to S3
+        run: |
+          # 1. Content-hashed build assets → cache forever.
+          aws s3 sync out/ "s3://${S3_BUCKET}/" \
+            --exclude "*" --include "_next/static/*" \
+            --cache-control "public, max-age=31536000, immutable"
+
+          # 2. HTML pages and public assets → short TTL (invalidated below).
+          aws s3 sync out/ "s3://${S3_BUCKET}/" \
+            --exclude "_next/*" \
+            --cache-control "public, max-age=300, must-revalidate" \
+            --content-type "text/html; charset=utf-8"
+
+          # 3. Catch-all pass removes objects that no longer exist in the export.
+          aws s3 sync out/ "s3://${S3_BUCKET}/" --delete
+
+      - name: Invalidate CloudFront cache (must finish < 60s)
+        id: invalidate
+        run: |
+          START=$(date +%s)
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id "$DISTRIBUTION_ID" --paths "/*" \
+            --query "Invalidation.Id" --output text)
+          echo "Invalidation ${INVALIDATION_ID} created"
+
+          while true; do
+            STATUS=$(aws cloudfront get-invalidation \
+              --distribution-id "$DISTRIBUTION_ID" \
+              --invalidation-id "$INVALIDATION_ID" \
+              --query "Invalidation.Status" --output text)
+            ELAPSED=$(( $(date +%s) - START ))
+
+            if [ "$STATUS" = "Completed" ]; then
+              break
+            fi
+            if [ "$ELAPSED" -ge 90 ]; then
+              echo "::error::CloudFront invalidation ${INVALIDATION_ID} still ${STATUS} after ${ELAPSED}s"
+              exit 1
+            fi
+            sleep 3
+          done
+
+          echo "Invalidation completed in ${ELAPSED}s"
+          echo "seconds=${ELAPSED}" >> "$GITHUB_OUTPUT"
+          echo "invalidation_id=${INVALIDATION_ID}" >> "$GITHUB_OUTPUT"
+
+          # Acceptance criterion: invalidation completes within 1 minute.
+          if [ "$ELAPSED" -ge 60 ]; then
+            echo "::error::CloudFront invalidation took ${ELAPSED}s — must be under 60s"
+            exit 1
+          fi
+
+  # ───────────────────────────────────────────
+  # Job 4 — Post-deployment smoke tests
+  # Asserts core routes are served by CloudFront after the invalidation.
+  # ───────────────────────────────────────────
+  smoke-test:
+    name: Post-deployment smoke tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [deploy]
+    if: needs.deploy.result == 'success'
 
     steps:
       - name: Checkout repository
@@ -114,91 +297,57 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Run smoke tests against the deployment
+        env:
+          SMOKE_BASE_URL: ${{ env.CLOUDFRONT_URL }}
+        run: node scripts/smoke-test.js --base-url "$SMOKE_BASE_URL"
 
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
-
-      - name: Pull Vercel environment (production)
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Build project (production)
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Deploy to Vercel (production)
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
-
-# ─────────────────────────────────────────────
-# Job 4 — Post preview URL as a PR comment
-# Runs only on pull requests, after the preview deployment succeeds.
-# Uses github-script to find-or-update an existing bot comment so the
-# PR thread stays clean (no duplicate comments on re-runs).
-# ─────────────────────────────────────────────
-  comment:
-    name: Post preview URL comment
+  # ───────────────────────────────────────────
+  # Job 5 — Post-deployment Slack notification
+  # ───────────────────────────────────────────
+  notify:
+    name: Notify Slack
     runs-on: ubuntu-latest
-    needs: preview
-    # Only runs when the preview job ran (i.e. on pull_request events).
-    if: github.event_name == 'pull_request' && env.VERCEL_TOKEN != ''
-    # Needs write permission to create/update issue comments.
-    permissions:
-      pull-requests: write
+    needs: [quality, static-export, deploy, smoke-test]
+    if: always() && github.event_name != 'pull_request'
     env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
     steps:
-      - name: Find existing preview comment
-        uses: actions/github-script@v7
-        id: find-comment
-        with:
-          script: |
-            const marker = '<!-- vercel-preview-comment -->';
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            const existing = comments.find(c => c.body.includes(marker));
-            return existing ? existing.id : null;
-
-      - name: Create or update preview URL comment
-        uses: actions/github-script@v7
+      - name: Compose notification
+        id: compose
         env:
-          PREVIEW_URL: ${{ needs.preview.outputs.preview_url }}
+          QUALITY: ${{ needs.quality.result }}
+          EXPORT: ${{ needs.static-export.result }}
+          DEPLOY: ${{ needs.deploy.result }}
+          SMOKE: ${{ needs.smoke-test.result }}
+          INVALIDATION: ${{ needs.deploy.outputs.invalidation_seconds }}
+        run: |
+          if [ "$QUALITY" = "failure" ] || [ "$EXPORT" = "failure" ]; then
+            STATUS="❌ build failed"
+          elif [ "$DEPLOY" = "failure" ]; then
+            STATUS="❌ deployment failed"
+          elif [ "$SMOKE" = "failure" ]; then
+            STATUS="❌ smoke tests failed after deploy"
+          elif [ "$DEPLOY" = "success" ] && [ "$SMOKE" = "success" ]; then
+            STATUS="✅ deployed successfully"
+          else
+            STATUS="✅ checks passed (no deploy for this ref)"
+          fi
+
+          {
+            echo "status=${STATUS}"
+            echo "invalidation=${INVALIDATION:-n/a}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Send Slack message
+        if: ${{ env.SLACK_WEBHOOK_URL != '' }}
+        uses: slackapi/slack-github-action@v2.1.0
         with:
-          script: |
-            const marker = '<!-- vercel-preview-comment -->';
-            const sha     = context.payload.pull_request.head.sha.substring(0, 7);
-            const body    = [
-              marker,
-              '## 🔍 Vercel Preview Deployment',
-              '',
-              `| | |`,
-              `|---|---|`,
-              `| **Preview URL** | [${process.env.PREVIEW_URL}](${process.env.PREVIEW_URL}) |`,
-              `| **Commit** | \`${sha}\` |`,
-              `| **Status** | ✅ Ready |`,
-              '',
-              '_This comment is updated automatically on every push to this PR._',
-            ].join('\n');
-
-            const commentId = ${{ steps.find-comment.outputs.result }};
-
-            if (commentId) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: commentId,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body,
-              });
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "*StellarFlow Frontend* ${{ steps.compose.outputs.status }}\nBranch: `${{ github.ref_name }}` — <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|view run>\nCloudFront invalidation: ${{ steps.compose.outputs.invalidation }}s"
             }
