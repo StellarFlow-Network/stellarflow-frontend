@@ -22,6 +22,7 @@ import { AccessibilityProvider } from "@/context/AccessibilityContext";
 import { HapticProvider } from "@/components/providers/HapticProvider";
 import { PushNotificationRoot } from "@/components/notifications";
 import { RpcFailoverMonitor } from "./components/providers/RpcFailoverMonitor";
+import { NetworkProvider } from "./components/providers/NetworkProvider";
 import { CommandPalette } from "@/components/command-palette";
 
 export const metadata: Metadata = {
@@ -46,7 +47,13 @@ export const metadata: Metadata = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode; }>) {
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
+  // The CSP nonce is injected by middleware, which only runs on the Node
+  // server. Static export (`output: export`) has no middleware, and calling
+  // `headers()` there would make every route (including /_not-found) dynamic.
+  const nonce =
+    process.env.NEXT_OUTPUT_MODE === "export"
+      ? undefined
+      : ((await headers()).get("x-nonce") ?? undefined);
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -147,7 +154,9 @@ export default async function RootLayout({
                           <ErrorBoundary tags={{ section: "root" }}>
                             <WalletSessionProvider>
                               <SessionTimeoutManager>
-                                <ScreenLockProvider>{children}</ScreenLockProvider>
+                                <ScreenLockProvider>
+                                  <NetworkProvider>{children}</NetworkProvider>
+                                </ScreenLockProvider>
                               </SessionTimeoutManager>
                             </WalletSessionProvider>
                           </ErrorBoundary>

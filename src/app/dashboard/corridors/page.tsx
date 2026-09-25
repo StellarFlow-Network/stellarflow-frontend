@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { CorridorProvider } from "@/context/CorridorContext";
+import { TelemetryProvider } from "@/context/TelemetryContext";
 import { useCorridorMetricsWithFallback } from "../../hooks/useCorridorMetrics";
 import LiquidityDepthChart from "./LiquidityDepthChart";
 
@@ -25,6 +26,7 @@ export default function CorridorMonitorPage() {
   }, [bids, asks]);
 
   return (
+    <TelemetryProvider>
     <CorridorProvider>
     <div className="min-h-screen bg-neutral-950 text-neutral-100 p-6 font-sans selection:bg-lime-500 selection:text-black">
       {/* Header Container */}
@@ -182,5 +184,6 @@ export default function CorridorMonitorPage() {
       </div>
     </div>
     </CorridorProvider>
+    </TelemetryProvider>
   );
 }

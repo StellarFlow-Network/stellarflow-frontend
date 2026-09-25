@@ -110,7 +110,7 @@ export default function Page() {
             <a data-tour="tour-swap" href="/" className="transition-colors hover:text-foreground">
               Swap workspace
             </a>
-            <a data-tour="tour-liquidity" href="/pools/1" className="transition-colors hover:text-foreground">
+            <a data-tour="tour-liquidity" href="/pools/xlm-usdc" className="transition-colors hover:text-foreground">
               Liquidity pools
             </a>
             <a data-tour="tour-remittance" href="/remittance" className="transition-colors hover:text-foreground">

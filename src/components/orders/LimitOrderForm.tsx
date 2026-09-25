@@ -219,24 +219,6 @@ export function LimitOrderForm({
     [aggregatedBids, aggregatedAsks],
   );
 
-  const handleBookSelection = useCallback(
-    (level: OrderBookLevel, side: "bid" | "ask") => {
-      setRawPrice(formatPrice(level.price, decimals));
-      setRawAmount(level.amount.toFixed(6));
-      setSubmitError(null);
-      setSubmitSuccess(null);
-      setTouchedPrice(true);
-      setTouchedAmount(true);
-
-      if (side === "bid") {
-        setSubmitSuccess(`Bid level ${level.price.toFixed(decimals)} prefilled.`);
-      } else {
-        setSubmitSuccess(`Ask level ${level.price.toFixed(decimals)} prefilled.`);
-      }
-    },
-    [decimals],
-  );
-
   // ── Form state ────────────────────────────────────────────────────────────
   const [rawPrice, setRawPrice] = useState("");
   const [rawAmount, setRawAmount] = useState("");
@@ -285,6 +267,24 @@ export function LimitOrderForm({
     wallet?.connected === true;
 
   const decimals = DEFAULT_DECIMALS;
+
+  const handleBookSelection = useCallback(
+    (level: OrderBookLevel, side: "bid" | "ask") => {
+      setRawPrice(formatPrice(level.price, decimals));
+      setRawAmount(level.amount.toFixed(6));
+      setSubmitError(null);
+      setSubmitSuccess(null);
+      setTouchedPrice(true);
+      setTouchedAmount(true);
+
+      if (side === "bid") {
+        setSubmitSuccess(`Bid level ${level.price.toFixed(decimals)} prefilled.`);
+      } else {
+        setSubmitSuccess(`Ask level ${level.price.toFixed(decimals)} prefilled.`);
+      }
+    },
+    [decimals],
+  );
 
   // ── Load active orders ────────────────────────────────────────────────────
   const loadOrders = useCallback(async () => {

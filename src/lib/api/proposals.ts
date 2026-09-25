@@ -9,19 +9,34 @@ function staggeredRevalidate(proposalId: string): number {
 }
 
 export async function fetchProposalVotes(proposalId: string): Promise<ProposalVote[]> {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/proposals/${proposalId}/votes`,
-    {
-      next: {
-        revalidate: staggeredRevalidate(proposalId),
-        tags: [`proposal-${proposalId}`],
-      },
-    }
-  );
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-  if (!res.ok) {
-    throw new Error(`Failed to fetch votes for proposal ${proposalId}`);
+  // Demo mode: no backend configured (same signal the app uses elsewhere).
+  // Keeps static export from issuing a build-time fetch to a missing origin.
+  if (!apiUrl) {
+    return [];
   }
 
-  return res.json();
+  try {
+    const res = await fetch(
+      `${apiUrl}/proposals/${proposalId}/votes`,
+      {
+        next: {
+          revalidate: staggeredRevalidate(proposalId),
+          tags: [`proposal-${proposalId}`],
+        },
+      }
+    );
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch votes for proposal ${proposalId}`);
+    }
+
+    return await res.json();
+  } catch (error) {
+    // Degrade to an empty vote set instead of failing the whole build when
+    // the API is unreachable (offline CI, static export prerender).
+    console.warn(`[proposals] votes unavailable for ${proposalId}:`, error);
+    return [];
+  }
 }

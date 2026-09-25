@@ -6,10 +6,11 @@ import { fetchProposalVotes } from '@/lib/api/proposals';
 
 export const revalidate = 60;
 
-export const dynamicParams = true;
-
+// `output: export` requires at least one generated route for a dynamic path,
+// and arbitrary proposal ids cannot be enumerated for a static host. Ship the
+// demo instance; votes resolve client-side/demo as `NEXT_PUBLIC_API_URL` allows.
 export async function generateStaticParams() {
-  return [];
+  return [{ id: 'demo' }];
 }
 
 interface ProposalHistoryPageProps {

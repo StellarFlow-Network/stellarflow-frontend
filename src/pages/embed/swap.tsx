@@ -1,4 +1,4 @@
-import type { GetServerSideProps, NextPage } from 'next';
+import type { NextPage } from 'next';
 import { useEffect, useMemo, useState } from 'react';
 
 type Theme = 'dark' | 'light';
@@ -43,13 +43,37 @@ function isValidAccent(value: string): boolean {
   return /^#[\da-f]{3}(?:[\da-f]{3})?$/i.test(value);
 }
 
-const EmbedSwapPage: NextPage<EmbedProps> = ({
-  inputCurrency,
-  outputCurrency,
-  theme,
-  accentColor,
-  nonce,
-}) => {
+const DEFAULT_EMBED_PROPS: EmbedProps = {
+  inputCurrency: 'XLM',
+  outputCurrency: 'USDC',
+  theme: 'dark',
+  accentColor: '#39ff14',
+  nonce: '',
+};
+
+const EmbedSwapPage: NextPage<EmbedProps> = () => {
+  // Static export has no server to read the query string (this page used to
+  // rely on getServerSideProps). Options are resolved client-side after mount
+  // so the prerendered markup stays deterministic for hydration.
+  const [embedProps, setEmbedProps] = useState<EmbedProps>(DEFAULT_EMBED_PROPS);
+  const { inputCurrency, outputCurrency, theme, accentColor, nonce } = embedProps;
+
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    const requestedTheme = (query.get('theme') ?? 'dark').toLowerCase();
+    const requestedAccent = query.get('accentColor') ?? '#39ff14';
+
+    setEmbedProps({
+      inputCurrency: query.get('inputCurrency') ?? DEFAULT_EMBED_PROPS.inputCurrency,
+      outputCurrency: query.get('outputCurrency') ?? DEFAULT_EMBED_PROPS.outputCurrency,
+      theme: requestedTheme === 'light' ? 'light' : 'dark',
+      accentColor: isValidAccent(requestedAccent)
+        ? requestedAccent
+        : DEFAULT_EMBED_PROPS.accentColor,
+      nonce: '',
+    });
+  }, []);
+
   const input = useMemo(() => getToken(inputCurrency, TOKENS.XLM), [inputCurrency]);
   const output = useMemo(() => getToken(outputCurrency, TOKENS.USDC), [outputCurrency]);
   const [amount, setAmount] = useState('');
@@ -194,20 +218,6 @@ const styles: Record<string, React.CSSProperties> = {
   secondaryButton: { border: '1px solid', borderRadius: 8, background: 'transparent', padding: '7px 10px', fontSize: 12 },
   status: { fontSize: 12, minHeight: 18, margin: '12px 0 0' },
   footer: { fontSize: 11, textAlign: 'center', margin: '14px 0 0' },
-};
-
-export const getServerSideProps: GetServerSideProps<EmbedProps> = async ({ query, req }) => {
-  const requestedTheme = typeof query.theme === 'string' ? query.theme.toLowerCase() : 'dark';
-  const requestedAccent = typeof query.accentColor === 'string' ? query.accentColor : '#39ff14';
-  return {
-    props: {
-      inputCurrency: typeof query.inputCurrency === 'string' ? query.inputCurrency : 'XLM',
-      outputCurrency: typeof query.outputCurrency === 'string' ? query.outputCurrency : 'USDC',
-      theme: requestedTheme === 'light' ? 'light' : 'dark',
-      accentColor: isValidAccent(requestedAccent) ? requestedAccent : '#39ff14',
-      nonce: typeof req.headers['x-nonce'] === 'string' ? req.headers['x-nonce'] : '',
-    },
-  };
 };
 
 export default EmbedSwapPage;

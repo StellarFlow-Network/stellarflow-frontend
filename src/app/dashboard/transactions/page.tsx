@@ -5,7 +5,7 @@ import { PendingTransactionsPanel } from "@/components/transactions/PendingTrans
 
 function escapeCSV(value: string) {
   if (value.includes(",") || value.includes('"') || value.includes("\n")) {
-    return `"${value.replace(/"/g, '"''')}"`;
+    return `"${value.replace(/"/g, '""')}"`;
   }
   return value;
 }
@@ -45,7 +45,7 @@ export default function TransactionHistoryPage() {
     link.href = url;
     link.download = "transaction-history.csv";
     link.click();
-    URL.revokeObjectUVL(url);
+    URL.revokeObjectURL(url);
   };
 
   return (

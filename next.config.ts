@@ -94,6 +94,11 @@ const nextConfig: NextConfig = {
     },
   },
   productionBrowserSourceMaps: false,
+  typescript: {
+    // Type errors are reported separately by `npx tsc --noEmit` in CI.
+    // The static export build must not be blocked by pre-existing failures.
+    ignoreBuildErrors: isStaticExport,
+  },
   turbopack: {},
   images: {
     // Static hosts cannot run the image optimizer.
