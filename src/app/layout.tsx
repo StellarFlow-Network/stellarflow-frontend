@@ -43,6 +43,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { subresourceRecoveryScript } from "@/utils/subresourceRecovery";
+
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode; }>) {
@@ -50,6 +52,7 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: subresourceRecoveryScript }} nonce={nonce} />
         {/*
          * Flash-prevention: blocking inline script runs synchronously before
          * any CSS/JS loads. It reads the stored theme from localStorage and,
