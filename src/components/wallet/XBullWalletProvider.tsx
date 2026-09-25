@@ -201,6 +201,15 @@ export function XBullWalletProvider({
     boolean | null
   >(null);
 
+  // ── Polling helpers ────────────────────────────────────────────────────
+
+  const stopPolling = useCallback(() => {
+    if (pollIntervalRef.current !== null) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+  }, []);
+
   // ── Extension detection on open ────────────────────────────────────────
   useEffect(() => {
     if (!isOpen) return;
@@ -240,15 +249,6 @@ export function XBullWalletProvider({
       stopPolling();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ── Polling helpers ────────────────────────────────────────────────────
-
-  const stopPolling = useCallback(() => {
-    if (pollIntervalRef.current !== null) {
-      clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
-    }
   }, []);
 
   /**

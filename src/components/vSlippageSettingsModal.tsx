@@ -20,13 +20,6 @@ export const SlippageSettingsModal: React.FC<SlippageSettingsModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
 
-  useEffect(() => {
-    setCustomValue(slippage.toString());
-    validateSlippage(slippage);
-  }, [slippage]);
-
-  if (!isOpen) return null;
-
   const validateSlippage = (val: number) => {
     setError(null);
     setWarning(null);
@@ -37,6 +30,13 @@ export const SlippageSettingsModal: React.FC<SlippageSettingsModalProps> = ({
       setWarning('Your transaction may be frontrun');
     }
   };
+
+  useEffect(() => {
+    setCustomValue(slippage.toString());
+    validateSlippage(slippage);
+  }, [slippage]);
+
+  if (!isOpen) return null;
 
   const handleCustomChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const valStr = e.target.value;

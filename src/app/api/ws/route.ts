@@ -3,8 +3,13 @@ import { WebSocketServer, WebSocket } from 'ws'
 import {
   ASSET_SYMBOL_LIST,
   ASSET_BASE_PRICES,
-  ASSET_DECIMALS,
+  ASSET_DECIMALS
 } from '@/config/assetSymbols'
+
+// Static export only supports GET handlers marked as static; the placeholder
+// GET below is prerendered at build time. The live socket server only exists
+// when the custom Node server (server.js) runs.
+export const dynamic = 'force-static'
 
 // Store active connections and subscriptions
 const connections = new Map<WebSocket, Set<string>>()

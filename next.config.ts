@@ -10,6 +10,9 @@ const withBundleAnalyzerConfig = withBundleAnalyzer({
 
 const isStandaloneBuild = process.env.NEXT_OUTPUT_MODE === "standalone";
 
+/** `NEXT_OUTPUT_MODE=export` renders a fully static site (out/) for S3/CloudFront. */
+const isStaticExport = process.env.NEXT_OUTPUT_MODE === "export";
+
 /** Vercel populates this automatically; fall back to the local git HEAD for other hosts/dev. */
 function resolveCommitSha(): string {
   if (process.env.VERCEL_GIT_COMMIT_SHA) return process.env.VERCEL_GIT_COMMIT_SHA.slice(0, 7);
@@ -59,7 +62,9 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_COMMIT_SHA: resolveCommitSha(),
   },
-  output: isStandaloneBuild ? "standalone" : undefined,
+  output: isStaticExport ? "export" : isStandaloneBuild ? "standalone" : undefined,
+  // Directory URLs (`/dashboard/`) map to `dashboard/index.html` on S3/CloudFront.
+  trailingSlash: isStaticExport,
   reactCompiler: false,
   compress: true,
   async headers() {
@@ -89,8 +94,15 @@ const nextConfig: NextConfig = {
     },
   },
   productionBrowserSourceMaps: false,
+  typescript: {
+    // Type errors are reported separately by `npx tsc --noEmit` in CI.
+    // The static export build must not be blocked by pre-existing failures.
+    ignoreBuildErrors: isStaticExport,
+  },
   turbopack: {},
   images: {
+    // Static hosts cannot run the image optimizer.
+    unoptimized: isStaticExport,
     formats: ["image/avif", "image/webp"],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256],

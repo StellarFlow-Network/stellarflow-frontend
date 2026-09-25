@@ -38,13 +38,13 @@ export default function GovernanceCalculatorPage() {
             
             <nav className="flex items-center gap-4 text-sm">
               <Link 
-                href="/governance/proposals" 
+                href="/governance" 
                 className="text-gray-400 hover:text-gray-200 transition-colors"
               >
                 Proposals
               </Link>
               <Link 
-                href="/governance/delegates" 
+                href="/governance" 
                 className="text-gray-400 hover:text-gray-200 transition-colors"
               >
                 Delegates
@@ -162,7 +162,7 @@ export default function GovernanceCalculatorPage() {
 
           <div className="flex items-center justify-center gap-6 text-sm">
             <Link
-              href="/governance/docs"
+              href="/docs"
               className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
             >
               View Documentation
@@ -170,7 +170,7 @@ export default function GovernanceCalculatorPage() {
             </Link>
             
             <Link
-              href="/governance/faq"
+              href="/docs"
               className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
             >
               Governance FAQ

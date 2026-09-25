@@ -3,12 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import type { CorridorMetrics } from "../../hooks/useCorridorMetrics";
-import { corridorPairToId } from "@/lib/corridorId";
-import {
-  CorridorAssetIcon,
-  CorridorSpriteIcon,
-  parseCorridorPairCodes,
-} from "./CorridorAssetIcon";
+import { corridorPairToId, parseCorridorPairCodes } from "@/lib/corridorId";
+import { CorridorAssetIcon, CorridorSpriteIcon } from "./CorridorAssetIcon";
 
 interface CorridorSpreadTableProps {
   metrics: CorridorMetrics[];

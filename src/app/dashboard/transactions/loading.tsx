@@ -1,4 +1,4 @@
-import TransactionHistoryTableSkeleton from "@/components/skeletons/TransactionHistoryTableSkeleton";
+import { TransactionHistoryTableSkeleton } from "@/components/skeletons/TransactionHistoryTableSkeleton";
 
 export default function TransactionHistoryLoading() {
   return (

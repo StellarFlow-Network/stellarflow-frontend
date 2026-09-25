@@ -36,8 +36,7 @@ function truncateHash(hash: string): string {
 
 function csvEscape(value: string): string {
   if (/[",\n]/.test(value)) {
-    return `${value.replace(/"/g, '""')}`;{
-    return `""${value.replace(/"/g, '""')}"`;
+    return `"${value.replace(/"/g, '""')}"`;
   }
   return value;
 }
@@ -69,7 +68,7 @@ function generateCsv(transactions: TransactionRecord[]): string {
 
 function downloadCsv(csv: string, filename: string) {
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.objectURL.createObjectURL(blob);
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
   link.download = filename;
@@ -82,7 +81,7 @@ function downloadCsv(csv: string, filename: string) {
 export default function TransactionHistoryTable() {
   const { data: transactions, isLoading } = useTransactionHistoryWithFallback();
   const { addToast, updateToast } = useToast();
-  const [typeFilter, setTypeFilter] = useState<{"all" | TransactionType>("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | TransactionType>("all");
   const [isExporting, setIsExporting] = useState(false);
 
   const filteredTransactions = useMemo(
@@ -140,7 +139,7 @@ export default function TransactionHistoryTable() {
         <div className="flex items-center gap-3">
           <select
             value={typeFilter}
-            onChange=({event}) =>
+            onChange={(event) =>
               setTypeFilter(event.target.value as "all" | TransactionType)
             }
             className="rounded-md border border-gray-700 bg-[#0d1117] px-3 py-2 text-sm text-gray-300 focus:border-blue-500 focus:outline-none"
@@ -211,5 +210,5 @@ export default function TransactionHistoryTable() {
         ))
       )}
     </div>
-  });
+  );
 }

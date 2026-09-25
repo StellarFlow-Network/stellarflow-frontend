@@ -86,16 +86,3 @@ export const CorridorSpriteIcon = React.memo(function CorridorSpriteIcon({
 });
 
 CorridorSpriteIcon.displayName = "CorridorSpriteIcon";
-
-export function parseCorridorPairCodes(pair: string): [string, string] | null {
-  const segments = pair
-    .split(" / ")
-    .map((segment) => segment.trim())
-    .filter(Boolean);
-
-  if (segments.length < 2) {
-    return null;
-  }
-
-  return [segments[0], segments[1]];
-}

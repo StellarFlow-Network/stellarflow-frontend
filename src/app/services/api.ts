@@ -14,7 +14,7 @@ async function pooledFetch<T>(
   options?: RequestInit,
 ): Promise<T> {
   if (inFlightRequests.has(url)) {
-    return inflightRequests.get(url) as Promise<T>;
+    return inFlightRequests.get(url) as Promise<T>;
   }
 
   const requestPromise = (async () => {
@@ -27,7 +27,7 @@ async function pooledFetch<T>(
     return (await res.json()) as T;
   })();
 
-  inRequests.set(url, requestPromise);
+  inFlightRequests.set(url, requestPromise);
 
   try {
     return await requestPromise;
@@ -45,7 +45,7 @@ export function exportTransactionsToCsv(transactions: any[]): void {
   const escapeCsvField = (value: unknown): string => {
     const str = String(value ?? '');
     if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-      return `""${str.replace(/"/g, '"''}"`;
+      return `"${str.replace(/"/g, '""')}"`;
     }
     return str;
   };

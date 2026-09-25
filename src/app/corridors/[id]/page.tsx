@@ -2,10 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCorridorById, listCorridorIds } from "@/lib/corridors";
-import {
-  CorridorAssetIcon,
-  parseCorridorPairCodes,
-} from "@/app/dashboard/corridors/CorridorAssetIcon";
+import { parseCorridorPairCodes } from "@/lib/corridorId";
+import { CorridorAssetIcon } from "@/app/dashboard/corridors/CorridorAssetIcon";
 import OrderBookDepthChart from "@/components/charts/OrderBookDepthChart";
 
 interface CorridorPageProps {

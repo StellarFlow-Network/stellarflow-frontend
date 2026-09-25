@@ -68,7 +68,7 @@ const QUERY_KEY = ["remittance-payouts"] as const;
 
 // Polling interval (ms) to detect webhook-driven status changes
 // From the off-ramp partner switching statuses.
-const WEBHOOK_POLL_INTERVAl = 5000;
+const WEBHOOK_POLL_INTERVAL = 5000;
 
 // Webhook status transitions mapping to stepper steps
 const PAYOUT_STATUS_STEP = {

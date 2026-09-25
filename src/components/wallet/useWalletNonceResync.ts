@@ -40,7 +40,7 @@ function saveNonce(sequence: string): void {
  * Queries the latest sequence number from Horizon RPC and updates local state.
  */
 export function useWalletNonceResync(): UseWalletNonceResyncReturn {
-  const { clients } = useNetwork();
+  const { horizonUrl } = useNetwork();
   const { wallet } = useWallet();
   const [isResyncing, setIsResyncing] = useState(false);
   const [lastResyncedAt, setLastResyncedAt] = useState<number | null>(null);
@@ -51,19 +51,18 @@ export function useWalletNonceResync(): UseWalletNonceResyncReturn {
 
   const resyncNonce = useCallback(async (): Promise<NonceResyncResult> => {
     const publicKey = wallet?.publicKey;
-    const horizon = clients?.horizon;
 
-    if (!publicKey || !horizon) {
-      return { success: false, error: "Wallet not connected or Horizon client not ready" };
+    if (!publicKey || !horizonUrl) {
+      return { success: false, error: "Wallet not connected or Horizon endpoint not ready" };
     }
 
     setIsResyncing(true);
 
     try {
       // Fetch account from Horizon to get the current sequence number
-      const horizonClient = horizon;
-      if (!horizonClient) throw new Error("Horizon client not available");
-      const account = await (horizonClient as unknown as { loadAccount: (pk: string) => Promise<{ sequenceNumber: () => string }> }).loadAccount(publicKey);
+      const { Horizon } = await import("@stellar/stellar-sdk");
+      const horizonClient = new Horizon.Server(horizonUrl);
+      const account = await horizonClient.loadAccount(publicKey);
       const sequence = account.sequenceNumber();
 
       // Save to local storage
@@ -78,7 +77,7 @@ export function useWalletNonceResync(): UseWalletNonceResyncReturn {
     } finally {
       setIsResyncing(false);
     }
-  }, [wallet?.publicKey, clients?.horizon]);
+  }, [wallet?.publicKey, horizonUrl]);
 
   return {
     resyncNonce,
