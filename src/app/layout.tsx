@@ -32,11 +32,11 @@ export const metadata: Metadata = {
   themeColor: "#39ff14",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "StellarFlow",
   },
   icons: {
-    apple: "/icon-192.svg",
+    apple: "/apple-touch-icon.png",
   },
   other: {
     "mobile-web-app-capable": "yes",
@@ -98,8 +98,8 @@ export default async function RootLayout({
         {/* PWA: apple-touch-icon for iOS home-screen bookmarks */}
         <link
           rel="apple-touch-icon"
-          href="/icon-192.svg"
-          sizes="192x192"
+          href="/apple-touch-icon.png"
+          sizes="180x180"
         />
         <Script
           id="polyfill-loader"
