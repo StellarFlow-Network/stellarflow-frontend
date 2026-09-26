@@ -13,7 +13,7 @@
     "build:strict": "next build --webpack && node scripts/check-bundle-size.js --strict && node scripts/check-css-size.js --strict",
     "start": "next start",
     "lint": "eslint",
-    "test": "node scripts/test-lang-cache.js",
+    "test": "node scripts/test-lang-cache.js && node scripts/test-yield-benchmark.js",
     "test:e2e": "playwright test",
     "test:visual": "playwright test e2e/visual.spec.ts",
     "test:visual:update": "playwright test e2e/visual.spec.ts --update-snapshots",
