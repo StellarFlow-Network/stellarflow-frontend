@@ -16,3 +16,4 @@ export {
   type FiatOnRampResult,
   type OnRampProvider,
 } from "../remittance/FiatOnRampModal";
+export * from "./LedgerWalletProvider";
