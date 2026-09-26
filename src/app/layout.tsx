@@ -13,6 +13,7 @@ import { SecurityBanner } from "@/components/navigation/SecurityBanner";
 import { InstallBanner } from "./components/InstallBanner";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { SwUpdateBanner } from "@/components/pwa/SwUpdateBanner";
+import { OfflineDraftSyncRoot } from "@/components/offline";
 import { ScreenLockProvider } from "@/components/security/ScreenLockModal";
 import { SessionTimeoutManager } from "@/components/security/SessionTimeoutManager";
 import { WalletSessionProvider } from "@/context/WalletContext";
@@ -155,6 +156,7 @@ export default async function RootLayout({
                       </ToastProvider>
                       <SwUpdateBanner />
                       <InstallBanner />
+                      <OfflineDraftSyncRoot />
                       <CommandPalette />
                   </ProgressBarProvider>
                 </QueryProvider>
