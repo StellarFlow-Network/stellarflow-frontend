@@ -1,39 +1,20 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useState, useEffect } from "react";
 import OptimizedDialog from "@/app/components/OptimizedDialog";
 import Icon from "@/components/icons/Icon";
 import { ICON_IDS } from "@/components/icons/iconIds";
-import { useToast } from "@/components/ui/ToastQueue";
-
-type ConnectionStep =
-  | "idle"
-  | "connecting"
-  | "unlock_device"
-  | "open_app"
-  | "enable_signing"
-  | "fetching_key"
-  | "connected"
-  | "error";
-
-interface LedgerState {
-  step: ConnectionStep;
-  publicKey: string | null;
-  errorMessage: string | null;
-  deviceModel: string | null;
-}
+import { useLedgerWallet, LedgerConnectionStep } from "./LedgerWalletProvider";
+import { motion, AnimatePresence } from "framer-motion";
 
 export interface LedgerConnectModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConnected?: (publicKey: string) => void;
-  onSignTransaction?: (
-    signedXdr: string,
-    publicKey: string,
-  ) => void;
+  onSignTransaction?: (signedXdr: string, publicKey: string) => void;
 }
 
-const STEP_LABELS: Record<ConnectionStep, string> = {
+const STEP_LABELS: Record<LedgerConnectionStep, string> = {
   idle: "Ready to connect",
   connecting: "Connecting to Ledger...",
   unlock_device: "Unlock your Ledger device",
@@ -44,7 +25,7 @@ const STEP_LABELS: Record<ConnectionStep, string> = {
   error: "Connection failed",
 };
 
-const STEP_ORDER: ConnectionStep[] = [
+const STEP_ORDER: LedgerConnectionStep[] = [
   "connecting",
   "unlock_device",
   "open_app",
@@ -53,183 +34,42 @@ const STEP_ORDER: ConnectionStep[] = [
   "connected",
 ];
 
-function isWebUSBSupported(): boolean {
-  return typeof navigator !== "undefined" && "usb" in navigator;
-}
-
 export function LedgerConnectModal({
   isOpen,
   onClose,
   onConnected,
   onSignTransaction,
 }: LedgerConnectModalProps) {
-  const { addToast, updateToast } = useToast();
-
-  const [state, setState] = useState<LedgerState>({
-    step: "idle",
-    publicKey: null,
-    errorMessage: null,
-    deviceModel: null,
-  });
+  const {
+    isSupported,
+    state,
+    isSigning,
+    signError,
+    connect,
+    signTransaction,
+    resetError,
+  } = useLedgerWallet();
 
   const [txXdr, setTxXdr] = useState("");
-  const [isSigning, setIsSigning] = useState(false);
-  const [signError, setSignError] = useState<string | null>(null);
 
-  const webUSBAvailable = useMemo(() => isWebUSBSupported(), []);
+  const handleConnect = async () => {
+    await connect();
+  };
 
   useEffect(() => {
-    if (!isOpen) {
-      setState({
-        step: "idle",
-        publicKey: null,
-        errorMessage: null,
-        deviceModel: null,
-      });
-      setTxXdr("");
-      setIsSigning(false);
-      setSignError(null);
+    if (state.step === "connected" && state.publicKey) {
+      onConnected?.(state.publicKey);
     }
-  }, [isOpen]);
+  }, [state.step, state.publicKey, onConnected]);
 
-  const handleConnect = useCallback(async () => {
-    if (!webUSBAvailable) {
-      setState((s) => ({
-        ...s,
-        step: "error",
-        errorMessage:
-          "WebUSB is not supported in this browser. Please use Chrome, Edge, or Opera.",
-      }));
-      return;
-    }
-
-    setState((s) => ({
-      ...s,
-      step: "connecting",
-      errorMessage: null,
-      publicKey: null,
-    }));
-
-    try {
-      setState((s) => ({ ...s, step: "unlock_device" }));
-      const TransportWebUSB = await import("@ledgerhq/hw-transport-webusb").then(
-        (m) => m.default,
-      );
-
-      setState((s) => ({ ...s, step: "open_app" }));
-      const transport = await TransportWebUSB.create();
-
-      const deviceName =
-        (transport as unknown as Record<string, { productName?: string }>)
-          .device?.productName ?? "Ledger Device";
-      setState((s) => ({ ...s, deviceModel: deviceName }));
-
-      setState((s) => ({ ...s, step: "enable_signing" }));
-
-      setState((s) => ({ ...s, step: "fetching_key" }));
-      const Str = await import("@ledgerhq/hw-app-str").then((m) => m.default);
-      const stellarApp = new Str(transport);
-
-      const { rawPublicKey } = await stellarApp.getPublicKey("44'/148'/0'");
-      const publicKey = rawPublicKey.toString("hex");
-
-      setState((s) => ({
-        ...s,
-        step: "connected",
-        publicKey,
-      }));
-
-      onConnected?.(publicKey);
-
-      await transport.close();
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Unknown error occurred.";
-
-      let userMessage = message;
-      if (message.includes("denied")) {
-        userMessage =
-          "USB device access was denied. Please approve the connection prompt.";
-      } else if (message.includes("0x6e01") || message.includes("0x6e00")) {
-        userMessage =
-          "The Stellar app is not open on your Ledger. Please open it and try again.";
-      } else if (message.includes("Locked")) {
-        userMessage =
-          "Your Ledger device is locked. Please unlock it with your PIN.";
-      }
-
-      setState((s) => ({
-        ...s,
-        step: "error",
-        errorMessage: userMessage,
-      }));
-    }
-  }, [webUSBAvailable, onConnected]);
-
-  const handleSign = useCallback(async () => {
+  const handleSign = async () => {
     if (!state.publicKey || !txXdr.trim()) return;
-
-    setIsSigning(true);
-    setSignError(null);
-
-    const toastId = addToast({
-      title: "Ledger signing",
-      description: "Review the transaction on your Ledger device.",
-      status: "processing",
-    });
-
-    try {
-      const TransportWebUSB = await import("@ledgerhq/hw-transport-webusb").then(
-        (m) => m.default,
-      );
-      const transport = await TransportWebUSB.create();
-      const Str = await import("@ledgerhq/hw-app-str").then((m) => m.default);
-      const stellarApp = new Str(transport);
-
-      const { Networks, TransactionBuilder } = await import(
-        "@stellar/stellar-sdk"
-      );
-      const tx = TransactionBuilder.fromXDR(txXdr.trim(), Networks.TESTNET);
-      const signatureBuffer = Buffer.from(tx.signatureBase());
-
-      const result = await stellarApp.signTransaction(
-        "44'/148'/0'",
-        signatureBuffer,
-      );
-
-      const signedXdr = Buffer.from(
-        result.signature.buffer as ArrayBuffer,
-        result.signature.byteOffset,
-        result.signature.byteLength,
-      ).toString("base64");
-
-      updateToast(toastId, {
-        status: "confirmed",
-        title: "Transaction signed",
-        description: "Your Ledger has signed the transaction.",
-      });
-
+    const signedXdr = await signTransaction(txXdr);
+    if (signedXdr) {
       onSignTransaction?.(signedXdr, state.publicKey);
-      await transport.close();
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Signing failed.";
-
-      let userMessage = message;
-      if (message.includes("denied") || message.includes("0x6985")) {
-        userMessage = "Transaction was rejected on the Ledger device.";
-      }
-
-      setSignError(userMessage);
-      updateToast(toastId, {
-        status: "failed",
-        title: "Signing failed",
-        description: userMessage,
-      });
-    } finally {
-      setIsSigning(false);
+      setTxXdr("");
     }
-  }, [state.publicKey, txXdr, addToast, updateToast, onSignTransaction]);
+  };
 
   const currentStepIndex = STEP_ORDER.indexOf(state.step);
 
@@ -240,9 +80,9 @@ export function LedgerConnectModal({
       title="Connect Ledger Wallet"
       size="lg"
     >
-      <div className="space-y-5">
+      <div className="space-y-5 relative">
         {/* WebUSB Warning */}
-        {!webUSBAvailable && (
+        {!isSupported && (
           <div className="rounded-lg border border-yellow-500/40 bg-yellow-950/20 px-3 py-2 text-sm text-yellow-300">
             WebUSB is not available. Ledger connections require Chrome, Edge, or
             Opera on desktop.
@@ -257,28 +97,28 @@ export function LedgerConnectModal({
           <div className="space-y-3">
             {[
               {
-                step: "unlock_device" as ConnectionStep,
+                step: "unlock_device" as LedgerConnectionStep,
                 label: "Unlock your Ledger with your PIN",
                 icon: ICON_IDS.unlock,
               },
               {
-                step: "open_app" as ConnectionStep,
+                step: "open_app" as LedgerConnectionStep,
                 label: "Open the Stellar app",
                 icon: ICON_IDS.globe,
               },
               {
-                step: "enable_signing" as ConnectionStep,
+                step: "enable_signing" as LedgerConnectionStep,
                 label: "Enable blind signing in app settings",
                 icon: ICON_IDS.shieldCheck,
               },
               {
-                step: "fetching_key" as ConnectionStep,
+                step: "fetching_key" as LedgerConnectionStep,
                 label: "Approve the connection on device",
                 icon: ICON_IDS.key,
               },
             ].map(({ step, label, icon }) => {
               const stepIdx = STEP_ORDER.indexOf(step);
-              const isCompleted = currentStepIndex > stepIdx;
+              const isCompleted = currentStepIndex > stepIdx && state.step !== "error";
               const isActive = state.step === step;
 
               return (
@@ -326,9 +166,9 @@ export function LedgerConnectModal({
           </div>
         </div>
 
-        {/* Status */}
+        {/* Status Display */}
         <div
-          className={`rounded-lg border p-4 ${
+          className={`rounded-lg border p-4 transition-colors ${
             state.step === "connected"
               ? "border-emerald-500/40 bg-emerald-950/20"
               : state.step === "error"
@@ -374,18 +214,32 @@ export function LedgerConnectModal({
           )}
 
           {state.errorMessage && (
-            <p className="mt-2 text-sm text-red-300">{state.errorMessage}</p>
+            <div className="mt-2 text-sm text-red-300">
+              <p>{state.errorMessage}</p>
+              <div className="mt-2">
+                <p className="text-xs text-red-400/80 mb-1">Troubleshooting Tips:</p>
+                <ul className="list-disc list-inside text-xs space-y-1">
+                  <li>Ensure the device is plugged in securely.</li>
+                  <li>Unlock your Ledger and open the Stellar app.</li>
+                  <li>Check if another application is using the device.</li>
+                </ul>
+              </div>
+            </div>
           )}
         </div>
 
-        {/* Transaction Signing (only when connected) */}
-        {state.step === "connected" && state.publicKey && (
-          <div className="space-y-3">
+        {/* Transaction Signing Form */}
+        {state.step === "connected" && state.publicKey && !isSigning && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-3"
+          >
             <label
               htmlFor="ledger-tx-xdr"
               className="text-xs uppercase font-bold text-gray-500"
             >
-              Transaction XDR (optional)
+              Transaction XDR
             </label>
             <textarea
               id="ledger-tx-xdr"
@@ -395,49 +249,117 @@ export function LedgerConnectModal({
               spellCheck={false}
               autoComplete="off"
               placeholder="Paste a transaction XDR to sign with your Ledger..."
-              disabled={isSigning}
-              className="w-full resize-none rounded-lg border border-gray-700 bg-[#0d1117] px-3 py-2.5 font-mono text-sm text-gray-200 placeholder:text-gray-600 focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full resize-none rounded-lg border border-gray-700 bg-[#0d1117] px-3 py-2.5 font-mono text-sm text-gray-200 placeholder:text-gray-600 focus:border-blue-500 focus:outline-none"
             />
 
             {signError && (
               <div
-                className="rounded-lg border border-red-500/40 bg-red-950/20 px-3 py-2 text-sm text-red-300"
+                className="rounded-lg border border-red-500/40 bg-red-950/20 px-3 py-3 text-sm text-red-300"
                 role="alert"
               >
-                {signError}
+                <div className="flex items-start gap-2 mb-2">
+                  <Icon id={ICON_IDS.alertTriangle} className="text-red-400 shrink-0 mt-0.5" size={16} />
+                  <p className="font-semibold text-red-200">Signature Error</p>
+                </div>
+                <p className="mb-2">{signError}</p>
+                
+                <p className="text-xs font-medium text-red-200/80 mb-1">Troubleshooting:</p>
+                <ul className="list-disc list-inside text-xs space-y-1 text-red-300/80 mb-3">
+                  <li>Check if your device disconnected or went to sleep.</li>
+                  <li>Make sure you approve the transaction on the device screen.</li>
+                  <li>Enable "Hash Signing" or "Blind Signing" in the Stellar app settings on your Ledger.</li>
+                </ul>
+                <button
+                  type="button"
+                  onClick={resetError}
+                  className="rounded bg-red-500/20 px-3 py-1.5 text-xs font-medium text-red-200 hover:bg-red-500/30 transition-colors"
+                >
+                  Dismiss Error
+                </button>
               </div>
             )}
 
-            {txXdr.trim() && (
+            {txXdr.trim() && !signError && (
               <button
                 type="button"
                 onClick={handleSign}
-                disabled={isSigning}
-                className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 shadow-lg shadow-blue-500/20"
               >
-                {isSigning
-                  ? "Review on Ledger..."
-                  : "Sign Transaction with Ledger"}
+                Sign Transaction with Ledger
               </button>
             )}
-          </div>
+          </motion.div>
         )}
+
+        {/* Animated Signing Overlay */}
+        <AnimatePresence>
+          {isSigning && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#0d1117]/95 backdrop-blur-sm rounded-lg border border-blue-500/30 p-6 text-center"
+            >
+              {/* Graphic Device Simulation */}
+              <div className="relative mb-6">
+                <motion.div
+                  animate={{ 
+                    boxShadow: ["0px 0px 0px rgba(59,130,246,0)", "0px 0px 20px rgba(59,130,246,0.5)", "0px 0px 0px rgba(59,130,246,0)"]
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="h-12 w-32 rounded bg-gray-800 border border-gray-600 flex items-center justify-center relative overflow-hidden"
+                >
+                  {/* Ledger screen glare effect */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent pointer-events-none" />
+                  
+                  {/* Scrolling Text Simulation */}
+                  <motion.div
+                    animate={{ x: ["100%", "-100%"] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                    className="whitespace-nowrap text-[10px] font-mono text-blue-400 font-bold tracking-widest"
+                  >
+                    REVIEW TRANSACTION
+                  </motion.div>
+                </motion.div>
+                
+                {/* Simulated Ledger Buttons */}
+                <div className="absolute -top-1.5 left-4 h-1.5 w-6 rounded-t bg-gray-500" />
+                <div className="absolute -top-1.5 right-4 h-1.5 w-6 rounded-t bg-gray-500" />
+                
+                {/* Connecting wire */}
+                <div className="absolute top-1/2 -right-12 h-1 w-12 bg-gray-700" />
+              </div>
+              
+              <h3 className="text-lg font-bold text-white mb-2">Verify Transaction on Ledger Device</h3>
+              <p className="text-sm text-gray-400 mb-6 max-w-xs mx-auto">
+                Please check your Ledger device screen to review the transaction hash and approve it.
+              </p>
+              
+              <div className="flex items-center justify-center gap-2 text-xs text-blue-400 font-medium">
+                <Icon id={ICON_IDS.loader} className="animate-spin" size={14} />
+                Waiting for device approval...
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Action Buttons */}
         <div className="flex justify-end gap-3 pt-2">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-300 transition-colors hover:bg-gray-800"
+            disabled={isSigning}
+            className="rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-300 transition-colors hover:bg-gray-800 disabled:opacity-50"
           >
             {state.step === "connected" ? "Done" : "Cancel"}
           </button>
+          
           {state.step !== "connected" && (
             <button
               type="button"
               onClick={handleConnect}
               disabled={
-                !webUSBAvailable ||
+                !isSupported ||
                 (state.step !== "idle" && state.step !== "error")
               }
               className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
