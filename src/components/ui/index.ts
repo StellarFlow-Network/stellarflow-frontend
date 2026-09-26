@@ -26,3 +26,17 @@ export {
 
 export { DeFiTooltip, type DeFiTooltipProps } from "./DeFiTooltip";
 export { DeFiTerm, type DeFiTermProps } from "./DeFiTerm";
+
+export {
+  IdenticonAvatar,
+  IDENTICON_SIZE_PX,
+  IDENTICON_GRID,
+  DARK_UI_BACKGROUND,
+  fnv1a32,
+  generateIdenticonPalette,
+  buildIdenticonMatrix,
+  meetsWcagAaOnDark,
+  type IdenticonAvatarProps,
+  type IdenticonAvatarSize,
+  type IdenticonPalette,
+} from "./IdenticonAvatar";
