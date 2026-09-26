@@ -45,6 +45,20 @@ export const DEFI_GLOSSARY: Record<string, GlossaryTerm> = {
     learnMoreText: 'Calculate potential impermanent loss scenarios',
     warningThreshold: 'Higher volatility between paired tokens leads to higher impermanent loss risk.',
   },
+  'il-mitigation-score': {
+    id: 'il-mitigation-score',
+    term: 'IL Mitigation Score',
+    shortDefinition:
+      'Percentage of a liquidity position impermanent loss that accumulated trading fees have paid back.',
+    detailedExplanation:
+      'Automated market maker positions lose value to price divergence, but the trading fees they collect can offset that loss. The mitigation score divides fees collected by the absolute impermanent loss for the same position, so 100% marks the break-even point where fee income has exactly cancelled out the loss and any value above 100% is net profit.',
+    category: 'liquidity',
+    docsUrl: 'https://docs.stellarflow.network/glossary/il-mitigation-score',
+    learnMoreText: 'Read how fee offset is modelled for LP positions',
+    formula: 'M_offset = (Fees_collected / |IL|) * 100',
+    warningThreshold:
+      'M_offset < 100% means accumulated fees have not covered the impermanent loss; a position with no price divergence has no IL to offset.',
+  },
   'health-factor': {
     id: 'health-factor',
     term: 'Health Factor',
