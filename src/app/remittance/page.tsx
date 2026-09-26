@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { FxRateTicker, FxComparisonTable, FiatOnRampModal } from "@/components/remittance";
+import { FxRateTicker, FxComparisonTable, FiatOnRampModal, SEP38RateChart } from "@/components/remittance";
 import { useOptionalWallet, useOptionalWalletActions } from "@/app/components/providers/WalletProvider";
 import { CreditCard, Wallet } from "lucide-react";
 
@@ -49,6 +49,10 @@ export default function RemittancePage() {
         <div className="xl-col-span-2">
           <FxComparisonTable />
         </div>
+      </div>
+
+      <div className="mt-6">
+        <SEP38RateChart />
       </div>
 
       {isOnRampOpen && walletAddress && (

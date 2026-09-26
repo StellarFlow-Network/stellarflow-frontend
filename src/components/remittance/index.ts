@@ -31,3 +31,7 @@ export {
   default as FeeSavingsWidget,
   type FeeSavingsWidgetProps,
 } from "./FeeSavingsWidget";
+export {
+  default as SEP38RateChart,
+  type SEP38RateChartProps,
+} from "./SEP38RateChart";
