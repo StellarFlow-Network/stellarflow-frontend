@@ -10,6 +10,11 @@ export {
   type OnRampProvider,
 } from "./FiatOnRampModal";
 export {
+  SEP24ErrorFallbackModal,
+  type SEP24ErrorFallbackModalProps,
+  type SEP24InterruptionReason,
+} from "./SEP24ErrorFallbackModal";
+export {
   BeneficiaryForm,
   type BeneficiaryFormProps,
 } from "./BeneficiaryForm";
