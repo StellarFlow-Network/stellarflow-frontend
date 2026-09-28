@@ -15,6 +15,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node scripts/test-lang-cache.js",
+    "test:unit": "node scripts/run-unit-tests.mjs",
+    "test:coverage": "node scripts/check-component-coverage.mjs",
     "test:e2e": "playwright test",
     "test:visual": "playwright test e2e/visual.spec.ts",
     "test:visual:update": "playwright test e2e/visual.spec.ts --update-snapshots",
