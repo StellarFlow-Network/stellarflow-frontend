@@ -321,6 +321,8 @@ export default function SettingsPage() {
   );
 }
 
+export default SettingsPage;
+
 function ToggleItem({ icon, title, description, enabled, onToggle, onConfigure }: { icon: React.ReactNode, title: string, description: string, enabled: boolean, onToggle: () => void, onConfigure?: () => void }) {
   const trackClasses = enabled ? TOGGLE_STYLES.enabled.track : TOGGLE_STYLES.disabled.track;
   const knobClasses = enabled ? TOGGLE_STYLES.enabled.knob : TOGGLE_STYLES.disabled.knob;
