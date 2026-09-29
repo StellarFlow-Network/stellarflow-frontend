@@ -2,16 +2,23 @@
 
 import { PriceData, OrderBookSnapshot } from "@/types";
 
-interface SocketMessage {
-  type: "price_update" | "delta_update" | "orderbook_update";
+export interface SocketMessage {
+  /**
+   * Channel tag. The price channels are narrowed on receive; any other tag is
+   * treated as a non-price indexer channel and fanned out to indexer listeners
+   * untouched. `string & {}` keeps literal autocompletion for the known tags.
+   */
+  type: "price_update" | "delta_update" | "orderbook_update" | (string & {});
   assetId?: string;
-  data: PriceData | Partial<PriceData> | OrderBookSnapshot;
+  data: PriceData | Partial<PriceData> | OrderBookSnapshot | Record<string, unknown> | undefined;
   timestamp: number;
 }
 
 type MessageCallback = (data: PriceData | Partial<PriceData>) => void;
 type OrderBookCallback = (data: OrderBookSnapshot) => void;
 type StatusCallback = (connected: boolean) => void;
+/** Raw frame fan-out for non-price indexer channels (e.g. circuit breakers). */
+export type IndexerEventCallback = (message: SocketMessage) => void;
 
 export class WebSocketManager {
   private static instance: WebSocketManager | null = null;
@@ -21,6 +28,7 @@ export class WebSocketManager {
   private messageListeners: Set<MessageCallback> = new Set();
   private orderBookListeners: Set<OrderBookCallback> = new Set();
   private statusListeners: Set<StatusCallback> = new Set();
+  private indexerEventListeners: Set<IndexerEventCallback> = new Set();
   
   // Keep an aggregated set of all sub-assets requested by various hooks
   private globalSubscribedAssets: Set<string> = new Set();
@@ -87,6 +95,10 @@ export class WebSocketManager {
             this.orderBookListeners.forEach((callback) =>
               callback(message.data as OrderBookSnapshot),
             );
+          } else {
+            // Non-price indexer channels ride the same socket. They are fanned
+            // out raw so each channel owns its own payload parsing.
+            this.notifyIndexerEventListeners(message);
           }
         } catch (err) {
           console.error("Failed to parse centralized WebSocket message:", err);
@@ -149,6 +161,17 @@ export class WebSocketManager {
     this.statusListeners.delete(callback);
   }
 
+  // Subscribe a component to non-price indexer channels (circuit breakers,
+  // governance votes, …). Callbacks receive the untouched frame so each
+  // channel can validate its own payload shape.
+  public subscribeToIndexerEvents(callback: IndexerEventCallback) {
+    this.indexerEventListeners.add(callback);
+  }
+
+  public unsubscribeFromIndexerEvents(callback: IndexerEventCallback) {
+    this.indexerEventListeners.delete(callback);
+  }
+
   // Dynamic asset registration commands sent up to raw socket pipeline
   public subscribeToAssets(assetIds: string[]) {
     let checkNew = false;
@@ -184,6 +207,10 @@ export class WebSocketManager {
 
   private notifyStatusListeners(status: boolean) {
     this.statusListeners.forEach((callback) => callback(status));
+  }
+
+  private notifyIndexerEventListeners(message: SocketMessage) {
+    this.indexerEventListeners.forEach((callback) => callback(message));
   }
 
   public getConnectedStatus(): boolean {

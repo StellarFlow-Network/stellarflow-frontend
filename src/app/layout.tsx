@@ -26,6 +26,7 @@ import { PushNotificationRoot } from "@/components/notifications";
 import { RpcFailoverMonitor } from "./components/providers/RpcFailoverMonitor";
 import { CommandPalette } from "@/components/command-palette";
 import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
+import { CircuitBreakerProvider, CircuitBreakerBanner } from "@/components/circuit-breaker";
 
 export const metadata: Metadata = {
   title: "StellarFlow Network Dashboard",
@@ -129,6 +130,16 @@ export default async function RootLayout({
       >
         <GlobalErrorBoundary>
         <OfflineBanner />
+        {/*
+          Circuit breaker provider wraps the whole tree so an on-chain
+          `CircuitBreakerTriggered` event can lock the action CTAs of any
+          affected module view, not just the page that happens to be open.
+          The banner itself sits above it in document order so it is the first
+          thing a user meets when a pause lands.
+        */}
+        <CircuitBreakerProvider>
+          <CircuitBreakerBanner />
+        </CircuitBreakerProvider>
         <CspReporterInit />
         <SvgSprite />
         <div className="fixed top-3 right-3 z-40">

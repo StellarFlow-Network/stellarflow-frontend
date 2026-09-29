@@ -145,7 +145,6 @@ body {
 .micro-interaction-input {
   transition: border-color 180ms ease, box-shadow 180ms ease;
 }
-
 .micro-interaction-input:focus {
   border-color: rgb(96 165 250 / 0.9);
   box-shadow: 0 0 0 1px rgb(96 165 250 / 0.55), 0 0 22px rgb(59 130 246 / 0.18);
@@ -169,8 +168,23 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .status-ping,
   .status-pulse,
+  .circuit-breaker-flash,
   .stellar-confetti { animation: none; }
   .micro-interaction-input { transition: none; }
+}
+
+/* ─── Circuit Breaker Emergency Banner ────────────────────────── */
+
+/* Slow, low-contrast flash: the banner must read as urgent without strobing.
+   Suppressed entirely under prefers-reduced-motion (see block above). */
+.circuit-breaker-flash {
+  animation: circuit-breaker-flash 1.8s ease-in-out infinite;
+  will-change: background-color;
+}
+
+@keyframes circuit-breaker-flash {
+  0%, 100% { background-color: rgb(159 18 57 / 0.97); }
+  50% { background-color: rgb(225 29 72 / 0.97); }
 }
 
 /* ─── Admin Tab Bar ──────────────────────────────────────── */
