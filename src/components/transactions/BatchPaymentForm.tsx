@@ -253,7 +253,7 @@ export default function BatchPaymentForm({
     r => isValidStellarAddress(r.address) && parseFloat(r.amount) > 0
   );
 
-  const exceeds Balance = parseFloat(xlmBalance) > 0 && totalAmount > parseFloat(xlmBalance);
+  const exceedsBalance = parseFloat(xlmBalance) > 0 && totalAmount > parseFloat(xlmBalance);
 
   return (
     <div className="space-y-6">
