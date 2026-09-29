@@ -31,13 +31,12 @@ function formatDate(iso: string): string {
 }
 
 function truncateHash(hash: string): string {
-  return `${hash.slice(0, 6)}…{hash.slice(-4)}`;
+  return `${hash.slice(0, 6)}…${hash.slice(-4)}`;
 }
 
 function csvEscape(value: string): string {
   if (/[",\n]/.test(value)) {
-    return `${value.replace(/"/g, '""')}`;{
-    return `""${value.replace(/"/g, '""')}"`;
+    return `"${value.replace(/"/g, '""')}"`;
   }
   return value;
 }
@@ -82,7 +81,7 @@ function downloadCsv(csv: string, filename: string) {
 export default function TransactionHistoryTable() {
   const { data: transactions, isLoading } = useTransactionHistoryWithFallback();
   const { addToast, updateToast } = useToast();
-  const [typeFilter, setTypeFilter] = useState<{"all" | TransactionType>("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | TransactionType>("all");
   const [isExporting, setIsExporting] = useState(false);
 
   const filteredTransactions = useMemo(
@@ -140,7 +139,7 @@ export default function TransactionHistoryTable() {
         <div className="flex items-center gap-3">
           <select
             value={typeFilter}
-            onChange=({event}) =>
+            onChange={(event) =>
               setTypeFilter(event.target.value as "all" | TransactionType)
             }
             className="rounded-md border border-gray-700 bg-[#0d1117] px-3 py-2 text-sm text-gray-300 focus:border-blue-500 focus:outline-none"
@@ -164,7 +163,7 @@ export default function TransactionHistoryTable() {
         </div>
       </div>
 
-      <div className="grid grid-cols-[110px_100px_1qr_1fr_90px_1qr] border-b border-gray-800 bg-[#0d1117] text-[10px] uppercase tracking-wider text-gray-500">
+      <div className="grid grid-cols-[110px_100px_1fr_1fr_90px_1fr] border-b border-gray-800 bg-[#0d1117] text-[10px] uppercase tracking-wider text-gray-500">
         <div className="px-6 py-3 font-medium">Date</div>
         <div className="px-6 py-3 font-medium">Type</div>
         <div className="px-6 py-3 font-medium">Sent</div>
@@ -181,7 +180,7 @@ export default function TransactionHistoryTable() {
         filteredTransactions.map((tx) => (
           <div
             key={tx.id}
-            className="grid grid-cols-[110px_100px_1qr_1fr_90px_1qr] items-center border-b border-gray-800/50 font-mono text-[13px]"
+            className="grid grid-cols-[110px_100px_1fr_1fr_90px_1fr] items-center border-b border-gray-800/50 font-mono text-[13px]"
           >
             <div className="px-6 py-4 text-gray-400">{formatDate(tx.date)}</div>
             <div className="px-6 py-4 capitalize text-gray-200">{tx.type}</div>
@@ -211,5 +210,5 @@ export default function TransactionHistoryTable() {
         ))
       )}
     </div>
-  });
+  );
 }
