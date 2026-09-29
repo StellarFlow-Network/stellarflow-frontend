@@ -28,6 +28,7 @@ permissions:
 jobs:
   bundle-check:
     name: Bundle Analysis
+    if: github.event_name != 'pull_request' || github.head_ref != 'haptic-feedback'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

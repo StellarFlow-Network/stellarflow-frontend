@@ -41,6 +41,7 @@ const GROUP_ORDER: Record<CommandKind, number> = {
 };
 
 interface GroupedCommand {
+  type: "command";
   command: Command;
   groupIndex: number;
   flatIndex: number;
@@ -115,7 +116,7 @@ export function CommandPalette() {
         });
         lastGroup = groupIndex;
       }
-      out.push({ command, groupIndex, flatIndex });
+      out.push({ type: "command", command, groupIndex, flatIndex });
     }
     return out;
   }, [results]);
@@ -219,7 +220,7 @@ export function CommandPalette() {
         const selected = rows
           .filter((r) => r.type !== "header")
           .find((_, i) => i === activeIndex);
-        if (selected && selected.type !== "header") {
+        if (selected) {
           handleSelect(selected.command);
         }
       }

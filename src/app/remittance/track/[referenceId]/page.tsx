@@ -1,7 +1,7 @@
 "use client";
 
 import React, { use } from "react";
-import RemittanceTrackingPage from "@/pages/remittance/track/[referenceId]";
+import RemittanceTrackingPage from "@/components/remittance/RemittanceTrackingPage";
 
 interface PageProps {
   params: Promise<{ referenceId: string }>;

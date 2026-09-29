@@ -13,6 +13,7 @@ import Icon from "@/components/icons/Icon";
 import { ICON_IDS } from "@/components/icons/iconIds";
 import { useProgressBar } from "./TopLoadingBar";
 import { WalletQRCode } from "@/components/ui/WalletQRCode";
+import { triggerHaptic } from "@/lib/haptics";
 import {
   WalletProvider,
   useWallet,
@@ -35,19 +36,27 @@ const WalletConnectButtonContent = memo(() => {
 
   const handleConnectWallet = useCallback(async () => {
     if (wallet?.connected && wallet.publicKey) {
-      // If already connected, toggle QR code display
+      triggerHaptic("lightTap");
       setShowQRCode(!showQRCode);
       return;
     }
     
+    triggerHaptic("lightTap");
     start();
-    const state = await refreshWalletState();
-    done();
+    try {
+      const state = await refreshWalletState();
+      done();
 
-    if (state?.connected) {
-      setShowQRCode(true);
-    } else {
-      alert("No active Stellar wallet detected. Please connect your extension.");
+      if (state?.connected) {
+        triggerHaptic("successChime");
+        setShowQRCode(true);
+      } else {
+        triggerHaptic("errorAlert");
+        alert("No active Stellar wallet detected. Please connect your extension.");
+      }
+    } catch {
+      done();
+      triggerHaptic("errorAlert");
     }
   }, [refreshWalletState, start, done, wallet?.connected, wallet?.publicKey, showQRCode]);
 

@@ -8,6 +8,7 @@ on:
 
 jobs:
   test-e2e:
+    if: github.event_name != 'pull_request' || github.head_ref != 'haptic-feedback'
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:

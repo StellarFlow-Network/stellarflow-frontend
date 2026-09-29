@@ -26,6 +26,9 @@ import {
   SEP07_URI_REGEX,
 } from "@/lib/qrScannerValidation";
 
+export { parseAndValidateStellarQR };
+export type { ScannedStellarPayment };
+
 export interface QRScannerModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -172,7 +175,7 @@ export function QRScannerModal({
         videoRef.current.setAttribute("playsinline", "true");
         await videoRef.current.play();
 
-        codeReader.decodeFromVideoElement(videoRef.current, (result, error) => {
+        codeReader.decodeFromVideoElementContinuously(videoRef.current, (result, error) => {
           if (result && isScanningRef.current) {
             const rawText = result.getText();
             const validation = parseAndValidateStellarQR(rawText);

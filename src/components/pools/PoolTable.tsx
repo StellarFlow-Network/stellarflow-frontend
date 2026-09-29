@@ -306,10 +306,5 @@ export default function PoolTable() {
         )}
       </div>
     </div>
-    <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-left">
-      <thead><tr className="border-b border-slate-800 text-xs uppercase tracking-wide text-slate-400"><th className="py-3">Pool / contract</th>{([ ["tvl", "TVL"], ["volume24h", "24h Volume"], ["apy", "APY"] ] as const).map(([key, label]) => <th key={key} className="py-3 text-right"><button type="button" onClick={() => { setSort(key); setPage(1); }} aria-label={`Sort by ${label}, high to low`} className={sort === key ? "text-lime-400" : "hover:text-white"}>{label}{sort === key ? " ↓" : ""}</button></th>)}</tr></thead>
-      <tbody>{visible.map((pool) => <tr key={pool.id} className="border-b border-slate-800/70 text-sm"><td className="py-3"><span className="block font-semibold text-white">{pool.pair}</span><span className="font-mono text-xs text-slate-500">{pool.address}</span></td><td className="py-3 text-right font-mono text-slate-200">{formatMoney(pool.tvl)}</td><td className="py-3 text-right font-mono text-slate-200">{formatMoney(pool.volume24h)}</td><td className="py-3 text-right font-semibold text-lime-400">{pool.apy.toFixed(1)}%</td></tr>)}{visible.length === 0 && <tr><td colSpan={4} className="py-10 text-center text-slate-400">No pools match these filters.</td></tr>}</tbody>
-    </table></div>
-    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-400"><span>{pools.length} pools · Page {page} of {pageCount}</span><div className="flex items-center gap-2"><label htmlFor="pool-page-size">Rows</label><select id="pool-page-size" value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); setPage(1); }} className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white"><option value={10}>10</option><option value={25}>25</option><option value={50}>50</option></select><button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)} className="rounded border border-slate-700 px-3 py-1 disabled:opacity-40">Previous</button><button type="button" disabled={page >= pageCount} onClick={() => setPage(page + 1)} className="rounded border border-slate-700 px-3 py-1 disabled:opacity-40">Next</button></div></div>
-  </section>;
+  );
 }

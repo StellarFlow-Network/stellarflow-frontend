@@ -19,6 +19,7 @@ import { WalletNonceResync } from '@/components/wallet/WalletNonceResync';
 import { useZKProofLoader } from '@/components/zk/useZKProofLoader';
 import { useThemeContext, type Theme } from '@/context/ThemeContext';
 import { CustomTokenSettings } from '@/components/tokens/CustomTokenSettings';
+import { NotificationPreferencesDrawer } from '@/app/components/NotificationPreferencesDrawer';
 
 interface Settings {
   emailReports: boolean;
@@ -41,6 +42,7 @@ const TOGGLE_STYLES = {
 
 export default function SettingsPage() {
   const [showKey, setShowKey] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [screenLockModalOpen, setScreenLockModalOpen] = useState(false);
   const {
     isEnabled: soundEffectsEnabled,
@@ -52,8 +54,9 @@ export default function SettingsPage() {
   const {
     isEnabled: hapticsEnabled,
     toggle: toggleHaptics,
-    triggerTap: testHapticTap,
-    triggerTxConfirm: testHapticTx,
+    triggerLightTap: testHapticLightTap,
+    triggerSuccessChime: testHapticSuccess,
+    triggerErrorAlert: testHapticError,
     isSupported: hapticsSupported,
   } = useHapticFeedback();
   const { isPinSet, isLocked, idleTimeoutMinutes, lockNow } = useScreenLock();
@@ -172,6 +175,7 @@ export default function SettingsPage() {
               <input type="text" defaultValue="Lead Trainer / Developer" disabled className="w-full bg-[#0d1117] border border-gray-800 rounded-md py-2 px-3 text-sm text-gray-500 cursor-not-allowed" />
             </div>
           </div>
+        </section>
 
         <section className="bg-[#161b22] border border-gray-800 rounded-xl p-6">
           <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
@@ -218,6 +222,58 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* Device Interactions & Haptics */}
+        <section className="bg-[#161b22] border border-gray-800 rounded-xl p-6">
+          <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
+            <Icon id={ICON_IDS.smartphone} size={20} className="text-purple-400" />
+            Device Interactions & Haptics
+          </h2>
+          <div className="space-y-4">
+            <ToggleItem
+              icon={<Icon id={ICON_IDS.smartphone} size={18} />}
+              title="Haptic Feedback"
+              description="Deliver subtle tactile vibration feedback on button taps, slider adjustments, wallet connect actions, and transaction outcomes on mobile devices."
+              enabled={hapticsEnabled}
+              onToggle={toggleHaptics}
+            />
+            {hapticsEnabled && (
+              <div className="pl-12 pr-3 py-3 border-t border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold text-gray-300">Tactile Feedback Test</p>
+                  <p className="text-xs text-gray-500">
+                    {hapticsSupported
+                      ? 'Web Haptics API is supported and active on this device.'
+                      : 'Haptic feedback configured (tactile cues trigger on supported mobile devices).'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => testHapticLightTap(true)}
+                    className="px-3 py-1.5 text-xs bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-lg border border-gray-700 transition-colors font-medium"
+                  >
+                    Light Tap (10ms)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => testHapticSuccess(true)}
+                    className="px-3 py-1.5 text-xs bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg border border-emerald-500/30 transition-colors font-medium"
+                  >
+                    Success Chime
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => testHapticError(true)}
+                    className="px-3 py-1.5 text-xs bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg border border-red-500/30 transition-colors font-medium"
+                  >
+                    Error Alert
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
         {/* Auto-Lock Security Settings */}
         <AutoLockSettings />
 
@@ -252,65 +308,6 @@ export default function SettingsPage() {
             </div>
           </div>
         </section>
-
-            <form onSubmit={handleSaveCustomRpc} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1">
-                  Custom Horizon URL
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    value={inputUrl}
-                    onChange={(e) => setInputUrl(e.target.value)}
-                    placeholder="https://horizon-custom.example.com"
-                    className="flex-1 bg-[#0d1117] border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    type="submit"
-                    disabled={isValidating}
-                    className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2"
-                  >
-                    {isValidating && (
-                      <span className="h-3 w-3 rounded-full border border-white border-t-transparent animate-spin" />
-                    )}
-                    Validate & Save
-                  </button>
-                </div>
-              </div>
-
-              {error && (
-                <div className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 border border-red-500/20 p-3 rounded-lg" role="alert">
-                  <Icon id={ICON_IDS.alertTriangle} size={14} className="shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              {successMessage && (
-                <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-lg">
-                  <Icon id={ICON_IDS.checkCircle || ICON_IDS.alertTriangle} size={14} className="shrink-0" />
-                  <span>{successMessage}</span>
-                </div>
-              )}
-
-              <div className="pt-2 flex items-center justify-between text-xs text-gray-400">
-                <span>Active Horizon Endpoint: <strong className="text-gray-200 font-mono">{horizonUrl}</strong></span>
-                {customHorizonUrl && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      resetToDefaultEndpoint();
-                      setInputUrl("");
-                    }}
-                    className="text-red-400 hover:underline"
-                  >
-                    Reset to Default
-                  </button>
-                )}
-              </div>
-            </form>
-          </div>
-        </main>
       </div>
 
       <NotificationPreferencesDrawer 

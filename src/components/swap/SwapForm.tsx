@@ -3,6 +3,7 @@ import { useWallet, useWalletActions } from '@/app/components/providers/WalletPr
 import { useSwapExecution } from '@/hooks/useSwapExecution';
 import { formatTokenAmount } from '@/utils/formatters';
 import { PathVisualizer } from './PathVisualizer';
+import { triggerHaptic } from '@/lib/haptics';
 
 export interface TokenOption {
   symbol: string;
@@ -124,6 +125,7 @@ export const SwapForm: React.FC<SwapFormProps> = ({ tokens, onSwapSuccess }) => 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    triggerHaptic('lightTap');
     if (submitButtonState.disabled) return;
 
     try {
@@ -134,11 +136,13 @@ export const SwapForm: React.FC<SwapFormProps> = ({ tokens, onSwapSuccess }) => 
         minOutput: toAmount, // Apply slippage bounds in hook
       });
 
+      triggerHaptic('successChime');
       setFromAmount('');
       setToAmount('');
       fetchBalances();
       if (onSwapSuccess) onSwapSuccess();
     } catch (err) {
+      triggerHaptic('errorAlert');
       console.error('Swap execution failed:', err);
     }
   };

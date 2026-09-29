@@ -32,17 +32,23 @@ export interface UseHapticFeedbackReturn {
   setEnabled: (enabled: boolean) => void;
   /** Trigger a haptic feedback pattern */
   trigger: (pattern?: HapticPattern, force?: boolean) => boolean;
-  /** Semantic helper: Short crisp tap (12ms) */
+  /** Semantic helper: Light tap for button clicks and CTA interactions (10ms) */
+  triggerLightTap: (force?: boolean) => boolean;
+  /** Semantic helper: Success chime for confirmations and wallet connections [10ms, 50ms, 10ms] */
+  triggerSuccessChime: (force?: boolean) => boolean;
+  /** Semantic helper: Error alert for rejections and failures [50ms, 100ms, 50ms] */
+  triggerErrorAlert: (force?: boolean) => boolean;
+  /** Semantic helper: Short crisp tap (10ms alias) */
   triggerTap: (force?: boolean) => boolean;
   /** Semantic helper: Micro-tick for slider adjustments (8ms) */
   triggerSlider: (force?: boolean) => boolean;
   /** Semantic helper: Selection click (20ms) */
   triggerSelection: (force?: boolean) => boolean;
-  /** Semantic helper: Double pulse for transaction submission and confirmation [40, 60, 40]ms */
+  /** Semantic helper: Double pulse for transaction submission and confirmation [10, 50, 10]ms */
   triggerTxConfirm: (force?: boolean) => boolean;
-  /** Semantic helper: Double pulse alias for success */
+  /** Semantic helper: Success chime alias */
   triggerSuccess: (force?: boolean) => boolean;
-  /** Semantic helper: Error pattern [70, 40, 70]ms */
+  /** Semantic helper: Error alert alias */
   triggerError: (force?: boolean) => boolean;
   /** Cancel any active vibration */
   cancel: () => boolean;
@@ -93,12 +99,24 @@ export function useHapticFeedback(): UseHapticFeedbackReturn {
     setIsEnabledState(enabled);
   }, []);
 
-  const trigger = useCallback((pattern: HapticPattern = 'tap', force: boolean = false) => {
+  const trigger = useCallback((pattern: HapticPattern = 'lightTap', force: boolean = false) => {
     return triggerHaptic(pattern, force);
   }, []);
 
+  const triggerLightTap = useCallback((force: boolean = false) => {
+    return triggerHaptic('lightTap', force);
+  }, []);
+
+  const triggerSuccessChime = useCallback((force: boolean = false) => {
+    return triggerHaptic('successChime', force);
+  }, []);
+
+  const triggerErrorAlert = useCallback((force: boolean = false) => {
+    return triggerHaptic('errorAlert', force);
+  }, []);
+
   const triggerTap = useCallback((force: boolean = false) => {
-    return triggerHaptic('tap', force);
+    return triggerHaptic('lightTap', force);
   }, []);
 
   const triggerSlider = useCallback((force: boolean = false) => {
@@ -110,15 +128,15 @@ export function useHapticFeedback(): UseHapticFeedbackReturn {
   }, []);
 
   const triggerTxConfirm = useCallback((force: boolean = false) => {
-    return triggerHaptic('txConfirm', force);
+    return triggerHaptic('successChime', force);
   }, []);
 
   const triggerSuccess = useCallback((force: boolean = false) => {
-    return triggerHaptic('txConfirm', force);
+    return triggerHaptic('successChime', force);
   }, []);
 
   const triggerError = useCallback((force: boolean = false) => {
-    return triggerHaptic('error', force);
+    return triggerHaptic('errorAlert', force);
   }, []);
 
   const cancel = useCallback(() => {
@@ -131,6 +149,9 @@ export function useHapticFeedback(): UseHapticFeedbackReturn {
     toggle,
     setEnabled,
     trigger,
+    triggerLightTap,
+    triggerSuccessChime,
+    triggerErrorAlert,
     triggerTap,
     triggerSlider,
     triggerSelection,

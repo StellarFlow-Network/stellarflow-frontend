@@ -26,6 +26,7 @@ import { PushNotificationRoot } from "@/components/notifications";
 import { RpcFailoverMonitor } from "./components/providers/RpcFailoverMonitor";
 import { CommandPalette } from "@/components/command-palette";
 import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
+import MobileBottomNav from "@/components/navigation/MobileBottomNav";
 
 export const metadata: Metadata = {
   title: "StellarFlow Network Dashboard",

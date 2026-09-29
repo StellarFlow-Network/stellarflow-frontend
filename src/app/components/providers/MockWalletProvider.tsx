@@ -72,7 +72,10 @@ export function MockWalletProvider({ children, config = {} }: MockWalletProvider
     }
   }, [mergedConfig]);
 
-  const stateValue = useMemo(() => ({ wallet: walletState }), [walletState]);
+  const stateValue = useMemo(
+    () => ({ wallet: walletState, isConnected: Boolean(walletState?.connected) }),
+    [walletState],
+  );
   const statusValue = useMemo(() => ({ isChecking, error: null }), [isChecking]);
   const actionsValue = useMemo(() => ({ refreshWalletState }), [refreshWalletState]);
 
