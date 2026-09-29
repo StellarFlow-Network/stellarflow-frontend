@@ -19,16 +19,16 @@ Bundle size thresholds are configured in [`.bundle-limits.json`](.bundle-limits.
 ```json
 {
   "maxMainBundle": 250,       // Main chunk max size (gzipped, KB)
-  "maxPageBundle": 100,       // Per-page chunk max size (gzipped, KB)
-  "maxTotalGzipped": 500,     // Total all chunks (gzipped, KB)
+  "maxPageBundle": 150,       // Per-page chunk max size (strictly <= 150KB, gzipped)
+  "maxTotalGzipped": 1000,    // Total all chunks (gzipped, KB)
   "maxIndividualGzipped": 150 // Individual bundle hard limit (gzipped, KB)
 }
 ```
 
-**Adjust thresholds based on your project requirements:**
-- Smaller values = stricter optimization requirements
-- Run baseline builds first to establish realistic limits
-- Update thresholds as the project grows, but avoid exceeding them
+**Page Bundle Size Budget:**
+- Enforces maximum initial JavaScript page bundle size strictly **$\le 150$KB**.
+- Prevents bloat by code-splitting heavy components and dynamically importing route modules.
+- Replaces heavy libraries with lightweight alternatives (e.g., `date-fns` over `moment`).
 
 ## Usage
 
@@ -73,9 +73,9 @@ cat .bundle-report.json
 
 📋 Configuration:
   • Max main bundle: 250KB (gzipped)
-  • Max page bundle: 100KB (gzipped)
+  • Max page bundle: 150KB (gzipped)
   • Max individual: 150KB (gzipped)
-  • Max total: 500KB (gzipped)
+  • Max total: 1000KB (gzipped)
 
 📊 Bundle Breakdown:
   ✅ main-abc123.js

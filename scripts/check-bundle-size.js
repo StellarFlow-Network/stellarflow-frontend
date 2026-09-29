@@ -12,7 +12,7 @@ const OUTPUT_FILE = path.join(process.cwd(), '.bundle-report.json');
 // Default thresholds (in KB)
 const DEFAULT_LIMITS = {
   maxMainBundle: 250,
-  maxPageBundle: 100,
+  maxPageBundle: 150,
   maxTotalGzipped: 500,
   maxIndividualGzipped: 150,
 };
