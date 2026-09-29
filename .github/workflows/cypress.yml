@@ -1,0 +1,84 @@
+name: Cypress E2E Tests
+
+# Cross-border remittance suite (#1078). Runs against a dev server because the
+# suite stubs the SEP-38 quote and corridor APIs, so it needs no seeded data and
+# no production build step.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-cypress:
+    timeout-minutes: 25
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Cypress binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/Cypress
+          key: cypress-binary-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            cypress-binary-${{ runner.os }}-
+
+      - name: Install Cypress binary
+        run: npx cypress install
+
+      - name: Start Next.js dev server
+        run: |
+          npm run dev > /tmp/stellarflow-next.log 2>&1 &
+          echo $! > /tmp/stellarflow-next.pid
+
+      - name: Wait for app
+        run: |
+          for _ in $(seq 1 90); do
+            if curl -fsS http://localhost:3000/remittance/send >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Next.js dev server did not become ready in time"
+          cat /tmp/stellarflow-next.log
+          exit 1
+
+      - name: Run Cypress E2E tests
+        run: npm run test:cypress
+        env:
+          CYPRESS_BASE_URL: http://localhost:3000
+
+      - name: Upload Cypress artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-artifacts
+          path: |
+            cypress/screenshots/
+            cypress/videos/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload Next.js dev server log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-dev-log
+          path: /tmp/stellarflow-next.log
+          retention-days: 7
+
+      - name: Stop Next.js dev server
+        if: always()
+        run: |
+          if [ -f /tmp/stellarflow-next.pid ]; then
+            kill "$(cat /tmp/stellarflow-next.pid)" || true
+          fi

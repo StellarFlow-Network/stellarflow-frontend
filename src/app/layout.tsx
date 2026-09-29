@@ -10,6 +10,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Script from "next/script";
 import SvgSprite from "@/components/icons/SvgSprite";
 import { SecurityBanner } from "@/components/navigation/SecurityBanner";
+import MobileBottomNav from "@/components/navigation/MobileBottomNav";
 import { PWAInstallGuideModal } from "@/components/pwa/PWAInstallGuideModal";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { SwUpdateBanner } from "@/components/pwa/SwUpdateBanner";

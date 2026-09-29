@@ -2,8 +2,11 @@
 
 import React, { useState } from "react";
 import { CorridorStatusMap, FxRateTicker, FxComparisonTable, FiatOnRampModal, SEP24InteractiveModal, type RemittanceCorridor } from "@/components/remittance";
+import { RedeemNoteForm } from "@/components/remittance/RedeemNoteForm";
+import { ShieldedDepositModal } from "@/components/remittance/ShieldedDepositModal";
 import { useOptionalWallet, useOptionalWalletActions } from "@/app/components/providers/WalletProvider";
-import { ArrowDownToLine, ArrowUpFromLine, CreditCard } from "lucide-react";
+import Link from "next/link";
+import { ArrowDownToLine, ArrowUpFromLine, CreditCard, LockKeyhole, Send, ShieldAlert } from "lucide-react";
 import type { SEP24Operation } from "@/lib/sep24Interactive";
 
 export default function RemittancePage() {
@@ -12,6 +15,7 @@ export default function RemittancePage() {
   const wallet = walletState?.wallet;
   const [isOnRampOpen, setIsOnRampOpen] = useState(false);
   const [isSEP24Open, setIsSEP24Open] = useState(false);
+  const [isShieldedDepositOpen, setIsShieldedDepositOpen] = useState(false);
   const [sep24Operation, setSEP24Operation] = useState<SEP24Operation>("deposit");
   const [selectedCorridor, setSelectedCorridor] = useState<RemittanceCorridor | null>(null);
 
@@ -65,6 +69,13 @@ export default function RemittancePage() {
           >
             <ArrowUpFromLine size={17} /> SEP-24 Withdraw
           </button>
+          <Link
+            href="/remittance/send"
+            data-testid="remittance-send-cta"
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-emerald-400 px-4 text-sm font-semibold text-neutral-950 transition-colors hover:bg-emerald-300"
+          >
+            <Send size={17} /> Send Money
+          </Link>
         </div>
       </div>
 

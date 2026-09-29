@@ -11,11 +11,34 @@ import React, {
 
 export type NetworkTarget = "testnet" | "mainnet";
 
+/** Per-network endpoint + passphrase bundle, keyed by `NetworkTarget`. */
+export interface NetworkConfig {
+  horizonUrl: string;
+  sorobanUrl: string;
+  networkPassphrase: string;
+}
+
+/** Static network configuration, usable outside a `NetworkProvider`. */
+export const NETWORK_CONFIGS: Record<NetworkTarget, NetworkConfig> = {
+  testnet: {
+    horizonUrl: "https://horizon-testnet.stellar.org",
+    sorobanUrl: "https://soroban-testnet.stellar.org",
+    networkPassphrase: "Test SDF Network ; September 2015",
+  },
+  mainnet: {
+    horizonUrl: "https://horizon.stellar.org",
+    sorobanUrl: "https://soroban-mainnet.stellar.org",
+    networkPassphrase: "Public Global Stellar Network ; September 2015",
+  },
+};
+
 interface NetworkContextType {
   network: NetworkTarget;
   horizonUrl: string;
   sorobanUrl: string;
   customHorizonUrl: string;
+  /** Resolved config for the active network, following any custom endpoint. */
+  config: NetworkConfig;
 }
 
 interface NetworkActionsType {
@@ -169,12 +192,17 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     setError(null);
   }, []);
 
-  const contextValue = useMemo(
+  const contextValue = useMemo<NetworkContextType>(
     () => ({
       network,
       horizonUrl,
       sorobanUrl,
       customHorizonUrl,
+      config: {
+        ...NETWORK_CONFIGS[network],
+        horizonUrl,
+        sorobanUrl,
+      },
     }),
     [network, horizonUrl, sorobanUrl, customHorizonUrl],
   );
@@ -214,6 +242,15 @@ export function useNetwork() {
     throw new Error("useNetwork must be used within a NetworkProvider");
   }
   return context;
+}
+
+/**
+ * Read the network context without requiring a `NetworkProvider` ancestor.
+ * Returns `null` when rendered outside the provider so standalone pages
+ * (diagnostics, RPC benchmark) can fall back to their own defaults.
+ */
+export function useOptionalNetwork(): NetworkContextType | undefined {
+  return useContext(NetworkContext);
 }
 
 export function useNetworkActions() {

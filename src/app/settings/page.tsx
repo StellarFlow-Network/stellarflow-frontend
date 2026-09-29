@@ -167,11 +167,12 @@ export default function SettingsPage() {
               <label className="text-xs text-gray-500 uppercase font-bold">Display Name</label>
               <input type="text" defaultValue="Sadeeq" className="w-full bg-[#0d1117] border border-gray-700 rounded-md py-2 px-3 text-sm focus:outline-none focus:border-blue-500" />
             </div>
-            <div className="space-y-2">
-              <label className="text-xs text-gray-500 uppercase font-bold">Admin Role</label>
-              <input type="text" defaultValue="Lead Trainer / Developer" disabled className="w-full bg-[#0d1117] border border-gray-800 rounded-md py-2 px-3 text-sm text-gray-500 cursor-not-allowed" />
+              <div className="space-y-2">
+                <label className="text-xs text-gray-500 uppercase font-bold">Admin Role</label>
+                <input type="text" defaultValue="Lead Trainer / Developer" disabled className="w-full bg-[#0d1117] border border-gray-800 rounded-md py-2 px-3 text-sm text-gray-500 cursor-not-allowed" />
+              </div>
             </div>
-          </div>
+          </section>
 
         <section className="bg-[#161b22] border border-gray-800 rounded-xl p-6">
           <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
@@ -309,8 +310,6 @@ export default function SettingsPage() {
                 )}
               </div>
             </form>
-          </div>
-        </main>
       </div>
 
       <NotificationPreferencesDrawer 

@@ -45,7 +45,7 @@ export function exportTransactionsToCsv(transactions: any[]): void {
   const escapeCsvField = (value: unknown): string => {
     const str = String(value ?? '');
     if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-      return `""${str.replace(/"/g, '"''}"`;
+      return `"${str.replace(/"/g, '""')}"`;
     }
     return str;
   };
