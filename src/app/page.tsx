@@ -8,6 +8,7 @@ import DashboardInteractive from "./DashboardInteractive";
 import { ErrorBoundary } from "@/components/ui";
 import GuidedTour from "@/components/onboarding/GuidedTour";
 import { NetworkProvider } from "./components/providers/NetworkProvider";
+import AnchorSpreadMonitor from "@/components/remittance/AnchorSpreadMonitor";
 
 const mockRelayers = [
   { id: "r1", name: "Abuja Relayer", status: "Online" as const, latency: 34 },
@@ -47,9 +48,9 @@ export default function Page() {
           <div className="max-w-6xl mx-auto space-y-12">
             {/* System At-A-Glance Stats Section */}
             <ErrorBoundary name="SystemStats">
-              <SystemStats />
+              
             </ErrorBoundary>
-
+              <AnchorSpreadMonitor />
             {/* Server-rendered stats cards — no JS required for initial paint */}
             <ErrorBoundary name="SystemStatsCards">
               <section className="min-w-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
