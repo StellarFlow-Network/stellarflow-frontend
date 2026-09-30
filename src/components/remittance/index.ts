@@ -56,6 +56,9 @@ export {
   type SEP31SettlementStatus,
 } from "./SEP31MerchantCheckout";
 export { CorridorStatusMap, DEFAULT_CORRIDORS, type CorridorStatusMapProps, type RemittanceCorridor, type CorridorRegion, type AnchorStatus } from "./CorridorStatusMap";
+
+export { RedeemNoteForm, type RedeemNoteFormProps } from "./RedeemNoteForm";
+export { ShieldedDepositModal, type ShieldedDepositModalProps } from "./ShieldedDepositModal";
 export {
   FiatRampDrawer,
   type FiatRampDrawerProps,

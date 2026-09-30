@@ -1,6 +1,6 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { getCacheProfile } from "../lib/cacheProfiles";
-import type { RemittancePayoutRecord } from "@types/remittancePayout";
+import type { RemittancePayoutRecord } from "@/types/remittancePayout";
 
 function getMockData(): RemittancePayoutRecord[] {
   return [
@@ -81,7 +81,8 @@ const PAYOUT_STATUS_STEP = {
 };
 
 export function getPayoutStep(status: string): number {
-  return PAYOUT_STATUS_STEP[status.toUpperCase()] ?? 0;
+  const normalizedStatus = status.toUpperCase() as keyof typeof PAYOUT_STATUS_STEP;
+  return PAYOUT_STATUS_STEP[normalizedStatus] ?? 0;
 }
 
 export function useRemittancePayouts(): UseQueryResult<

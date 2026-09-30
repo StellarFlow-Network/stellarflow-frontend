@@ -100,3 +100,44 @@ export async function validateShieldedRemittanceNote(
     },
   };
 }
+
+export interface ZKWithdrawalProofPayload {
+  proof: string;
+  nullifierHash: string;
+  merkleRoot: string;
+  recipient: string;
+  amount: string;
+}
+
+export type ZKWithdrawalProofValidation =
+  | { valid: true; proof: ZKWithdrawalProofPayload; rootValidation: import("./merkleRootBuffer").ZKProofRootValidation }
+  | { valid: false; error: string; rootValidation?: import("./merkleRootBuffer").ZKProofRootValidation };
+
+export function validateZKProofWithRootHistory(
+  payload: ZKWithdrawalProofPayload,
+  buffer: import("./merkleRootBuffer").MerkleRootHistoryBuffer,
+): ZKWithdrawalProofValidation {
+  if (!payload || typeof payload !== "object") {
+    return { valid: false, error: "Invalid ZK withdrawal proof payload." };
+  }
+  if (!payload.proof || !payload.nullifierHash || !payload.merkleRoot) {
+    return { valid: false, error: "Missing required ZK proof parameters (proof, nullifierHash, merkleRoot)." };
+  }
+
+  const rootValidation = buffer.validateProofRoot(payload.merkleRoot);
+  if (!rootValidation.valid) {
+    return {
+      valid: false,
+      error: rootValidation.error || "Merkle root is not present in active history buffer.",
+      rootValidation,
+    };
+  }
+
+  return {
+    valid: true,
+    proof: payload,
+    rootValidation,
+  };
+}
+/** Backwards-compatible name for root-history validation. */
+export const validateWithdrawalProofAgainstRootBuffer = validateZKProofWithRootHistory;

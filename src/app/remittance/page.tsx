@@ -1,12 +1,19 @@
 "use client";
 
 import React, { useState } from "react";
-import { FxRateTicker, FxComparisonTable, FiatOnRampModal, SEP38RateChart } from "@/components/remittance";
-import { CorridorStatusMap, FxRateTicker, FxComparisonTable, FiatOnRampModal, type RemittanceCorridor } from "@/components/remittance";
-import { CorridorStatusMap, FxRateTicker, FxComparisonTable, FiatOnRampModal, SEP24InteractiveModal, type RemittanceCorridor } from "@/components/remittance";
+import {
+  CorridorStatusMap,
+  FxRateTicker,
+  FxComparisonTable,
+  FiatOnRampModal,
+  SEP24InteractiveModal,
+  SEP38RateChart,
+  RedeemNoteForm,
+  ShieldedDepositModal,
+  type RemittanceCorridor,
+} from "@/components/remittance";
 import { useOptionalWallet, useOptionalWalletActions } from "@/app/components/providers/WalletProvider";
 import { ArrowDownToLine, ArrowUpFromLine, CreditCard, LockKeyhole, ShieldAlert } from "lucide-react";
-import { RedeemNoteForm } from "@/components/remittance/RedeemNoteForm";
 import type { SEP24Operation } from "@/lib/sep24Interactive";
 
 export default function RemittancePage() {
@@ -15,6 +22,7 @@ export default function RemittancePage() {
   const wallet = walletState?.wallet;
   const [isOnRampOpen, setIsOnRampOpen] = useState(false);
   const [isSEP24Open, setIsSEP24Open] = useState(false);
+  const [isShieldedDepositOpen, setIsShieldedDepositOpen] = useState(false);
   const [sep24Operation, setSEP24Operation] = useState<SEP24Operation>("deposit");
   const [selectedCorridor, setSelectedCorridor] = useState<RemittanceCorridor | null>(null);
 
@@ -162,6 +170,10 @@ export default function RemittancePage() {
         onRefresh={async () => {
           await walletActions?.refreshWalletState();
         }}
+      />
+      <ShieldedDepositModal
+        isOpen={isShieldedDepositOpen}
+        onClose={() => setIsShieldedDepositOpen(false)}
       />
     </div>
   );

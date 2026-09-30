@@ -1084,6 +1084,9 @@ export function DelegationGraphVisualizer({
     if (clickedNode) {
       isDraggingRef.current = true;
       draggedNodeRef.current = clickedNode;
+      // Canvas simulation nodes are deliberately mutable and live in simNodesRef,
+      // not React state; pin the node in the physics model while it is dragged.
+      // eslint-disable-next-line react-hooks/immutability -- mutable D3-style simulation model held in a ref
       clickedNode.fx = clickedNode.x;
       clickedNode.fy = clickedNode.y;
       alphaRef.current = Math.max(alphaRef.current, 0.3); // wake physics

@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import Icon from "@/components/icons/Icon";
 import { ICON_IDS } from "@/components/icons/iconIds";
 import { useToast } from "@/components/ui/ToastQueue";
-import { exportTransactionsToCsv, type TaxPlatform } from "@/utils/csvExport";
 import { useTransactionHistoryWithFallback } from "@/app/hooks/useTransactionHistory";
 import type { TransactionRecord, TransactionType } from "@/types/transactions";
 import { TransactionHistoryTableSkeleton } from "@/components/skeletons/TransactionHistoryTableSkeleton";
@@ -18,7 +17,7 @@ const TYPE_FILTERS: { label: string; value: "all" | TransactionType }[] = [
 ];
 
 const STATUS_STYLES: Record<TransactionRecord["status"], string> = {
-  completed: "bg-emerald-410/10 text-emerald-400",
+  completed: "bg-emerald-400/10 text-emerald-400",
   pending: "bg-yellow-500/10 text-yellow-500",
   failed: "bg-red-500/10 text-red-500",
 };
@@ -43,9 +42,6 @@ function csvEscape(value: string): string {
 }
 
 function toCsvRow(tx: TransactionRecord): string {
-  // Select the relevant amount and asset.
-  // For swaps and liquidity, receivedAmount represents what the user receives.
-  // For remittances, we use the sent amount (or received if it's incoming).
   const amount =
     tx.receivedAmount > 0 ? tx.receivedAmount : tx.sentAmount;
   const asset =

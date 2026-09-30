@@ -19,7 +19,7 @@ interface HapticProviderProps {
 export function HapticProvider({ children }: HapticProviderProps) {
   useEffect(() => {
     const interactiveSelector =
-      'button, [role="button"], a[role="button"], input[type="button"], input[type="submit"], [data-haptic="tap"], summary';
+      'button, [role="button"], a[role="button"], input[type="button"], input[type="submit"], [data-haptic="tap"], [data-haptic="lightTap"], summary';
 
     // 1. Passive pointer/touch handler for button and clickable element taps.
     // Pointer events cover desktop browsers and modern mobile browsers; touchstart
@@ -37,7 +37,7 @@ export function HapticProvider({ children }: HapticProviderProps) {
       const interactiveEl = target.closest<HTMLElement>(interactiveSelector);
 
       if (interactiveEl && !interactiveEl.hasAttribute('disabled') && interactiveEl.getAttribute('aria-disabled') !== 'true') {
-        triggerHaptic('tap');
+        triggerHaptic('lightTap');
       }
     };
 

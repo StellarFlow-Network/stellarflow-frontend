@@ -166,10 +166,10 @@ function SwapContent() {
       })
         .addOperation(Operation.pathPaymentStrictReceive({
           sendAsset: sourceAsset,
-          sendMax: selectedPath.source_amount,
+          sendMax: (parseFloat(selectedPath.source_amount) * (1 + slippagePercent / 100)).toFixed(7),
           destination: destinationAddress,
           destAsset: destAsset,
-          destMin: minReceiveAmount,
+          destAmount: selectedPath.destination_amount,
           path: path
         }))
         .setTimeout(30)
@@ -324,7 +324,7 @@ function SwapContent() {
                     {hop.asset.isNative() ? "XLM" : hop.asset.getCode()}
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium">{hop.asset.isNative() ? "Stellar Lumens (XLM)" : `${hop.asset.getCode()} (${hop.asset.getIssuer().slice(0, 8)}...)`}</p>
+                    <p className="font-medium">{hop.asset.isNative() ? "Stellar Lumens (XLM)" : `${hop.asset.getCode()} (${hop.asset.getIssuer()?.slice(0, 8)}...)`}</p>
                     <p className="text-sm text-gray-400">{hop.amount}</p>
                   </div>
                   {index < pathHops.length - 1 && (
@@ -351,7 +351,7 @@ function SwapContent() {
         )}
 
         {/* Slippage Dialog */}
-        <OptimizedDialog open={slippageDialogOpen} onClose={() => setSlippageDialogOpen(false)}>
+        <OptimizedDialog isOpen={slippageDialogOpen} onClose={() => setSlippageDialogOpen(false)}>
           <div className="p-6">
             <h3 className="text-xl font-semibold mb-4">Set Slippage Tolerance</h3>
             <div className="grid grid-cols-4 gap-2 mb-4">

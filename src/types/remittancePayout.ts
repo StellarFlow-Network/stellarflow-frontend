@@ -22,5 +22,5 @@ export interface RemittancePayoutRecord {
   exchangeRate: string;
   fee: number;
   feeCurrency: string;
-  status: "completed" | "pending" | "failed";
+  status: "completed" | "pending" | "failed" | "rejected";
 }

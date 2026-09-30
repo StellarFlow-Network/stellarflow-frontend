@@ -210,12 +210,7 @@ export function XBullWalletProvider({
 
   // ── Polling helpers ────────────────────────────────────────────────────
 
-  const stopPolling = useCallback(() => {
-    if (pollIntervalRef.current !== null) {
-      clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
-    }
-  }, []);
+
 
   // ── Extension detection on open ────────────────────────────────────────
   useEffect(() => {
@@ -235,6 +230,10 @@ export function XBullWalletProvider({
       setState({ step: "idle", publicKey: null, errorMessage: null });
     }
   }, [isOpen]);
+
+  // ── Polling helpers ────────────────────────────────────────────────────
+
+
 
   // ── Reset on close ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -257,8 +256,6 @@ export function XBullWalletProvider({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // ── Polling helpers ────────────────────────────────────────────────────
 
   /**
    * Start an interval that silently calls connect() to check the active

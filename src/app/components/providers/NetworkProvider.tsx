@@ -1,5 +1,6 @@
 "use client";
 
+import { Horizon } from "@stellar/stellar-sdk";
 import React, {
   createContext,
   useContext,
@@ -18,20 +19,17 @@ export interface NetworkConfig {
   /** Passphrase transactions are signed against. */
   networkPassphrase: string;
   horizonUrl: string;
+  sorobanUrl: string;
   sorobanRpcUrl: string;
 }
 
-/**
- * Static per-network configuration table shared by hooks/components that need
- * endpoint details without subscribing to the provider (they fall back to
- * `NETWORK_CONFIGS[network]` when rendered outside `<NetworkProvider>`).
- */
 export const NETWORK_CONFIGS: Record<NetworkTarget, NetworkConfig> = {
   testnet: {
     label: "Testnet",
     network: "testnet",
     networkPassphrase: "Test SDF Network ; September 2015",
     horizonUrl: "https://horizon-testnet.stellar.org",
+    sorobanUrl: "https://soroban-testnet.stellar.org",
     sorobanRpcUrl: "https://soroban-testnet.stellar.org",
   },
   mainnet: {
@@ -39,17 +37,19 @@ export const NETWORK_CONFIGS: Record<NetworkTarget, NetworkConfig> = {
     network: "mainnet",
     networkPassphrase: "Public Global Stellar Network ; September 2015",
     horizonUrl: "https://horizon.stellar.org",
+    sorobanUrl: "https://soroban-mainnet.stellar.org",
     sorobanRpcUrl: "https://soroban-mainnet.stellar.org",
   },
 };
 
-interface NetworkContextType {
+export interface NetworkContextType {
   network: NetworkTarget;
   horizonUrl: string;
   sorobanUrl: string;
   customHorizonUrl: string;
   /** Active network config (honours a custom Horizon endpoint when set). */
   config: NetworkConfig;
+  clients: { horizon: Horizon.Server };
 }
 
 interface NetworkActionsType {
@@ -67,17 +67,6 @@ interface NetworkStatusType {
 const NetworkContext = createContext<NetworkContextType | undefined>(undefined);
 const NetworkActionsContext = createContext<NetworkActionsType | undefined>(undefined);
 const NetworkStatusContext = createContext<NetworkStatusType | undefined>(undefined);
-
-const DEFAULT_ENDPOINTS: Record<NetworkTarget, { horizon: string; soroban: string }> = {
-  testnet: {
-    horizon: "https://horizon-testnet.stellar.org",
-    soroban: "https://soroban-testnet.stellar.org",
-  },
-  mainnet: {
-    horizon: "https://horizon.stellar.org",
-    soroban: "https://soroban-mainnet.stellar.org",
-  },
-};
 
 export function NetworkProvider({ children }: { children: React.ReactNode }) {
   const [network, setNetwork] = useState<NetworkTarget>(() => {
@@ -119,11 +108,11 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     if (customHorizonUrl) {
       return customHorizonUrl;
     }
-    return DEFAULT_ENDPOINTS[network].horizon;
+    return NETWORK_CONFIGS[network].horizonUrl;
   }, [network, customHorizonUrl]);
 
   const sorobanUrl = useMemo(() => {
-    return DEFAULT_ENDPOINTS[network].soroban;
+    return NETWORK_CONFIGS[network].sorobanUrl;
   }, [network]);
 
   const validateEndpoint = async (url: string): Promise<boolean> => {
@@ -151,7 +140,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     try {
       // Simulate client re-instantiation / network ping check
       await new Promise((resolve) => setTimeout(resolve, 300));
-      const targetUrl = DEFAULT_ENDPOINTS[target].horizon;
+      const targetUrl = NETWORK_CONFIGS[target].horizonUrl;
       const ok = await validateEndpoint(targetUrl);
       if (!ok) {
         throw new Error(`Failed to connect to ${target} Horizon node.`);
@@ -203,15 +192,18 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     setError(null);
   }, []);
 
+  const clients = useMemo(() => ({ horizon: new Horizon.Server(horizonUrl) }), [horizonUrl]);
+
   const contextValue = useMemo(
     () => ({
       network,
       horizonUrl,
       sorobanUrl,
       customHorizonUrl,
-      config: { ...NETWORK_CONFIGS[network], horizonUrl },
+      config: { ...NETWORK_CONFIGS[network], horizonUrl, sorobanRpcUrl: sorobanUrl },
+      clients,
     }),
-    [network, horizonUrl, sorobanUrl, customHorizonUrl],
+    [network, horizonUrl, sorobanUrl, customHorizonUrl, clients],
   );
 
   const actionsValue = useMemo(
@@ -251,14 +243,6 @@ export function useNetwork() {
   return context;
 }
 
-/**
- * Non-throwing variant for components/hooks that must also render outside a
- * `<NetworkProvider>` (diagnostics page, RPC health checks, wallet panels).
- */
-export function useOptionalNetwork() {
-  return useContext(NetworkContext);
-}
-
 export function useNetworkActions() {
   const context = useContext(NetworkActionsContext);
   if (!context) {
@@ -273,4 +257,8 @@ export function useNetworkStatus() {
     throw new Error("useNetworkStatus must be used within a NetworkProvider");
   }
   return context;
+}
+
+export function useOptionalNetwork(): NetworkContextType | null {
+  return useContext(NetworkContext) ?? null;
 }

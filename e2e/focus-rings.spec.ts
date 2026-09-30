@@ -16,12 +16,12 @@ test('keyboard focus rings cover native and ARIA controls, but not mouse focus',
         <div role="menuitem" tabindex="0">Menu item</div>
         <div role="tab" tabindex="0">Tab</div>
         <div role="dialog" aria-label="Dialog" tabindex="0">Dialog</div>
-        <div contenteditable="true" aria-label="Editable text">Editable</div>
+        <div contenteditable="true" role="textbox" aria-label="Editable text">Editable</div>
       </main>
     `;
   });
 
-  const button = page.getByRole('button', { name: 'Button' });
+  const button = page.getByRole('button', { name: 'Button', exact: true });
   await button.click();
   await expect(button).toBeFocused();
   expect(await button.evaluate((element) => element.matches(':focus-visible'))).toBe(false);
@@ -47,8 +47,12 @@ test('keyboard focus rings cover native and ARIA controls, but not mouse focus',
     await expect(target).toHaveCSS('outline-color', 'rgb(59, 130, 246)');
   }
 
-  await page.evaluate(() => document.documentElement.classList.add('high-contrast'));
+  const link = page.getByRole('link', { name: 'Link' });
+  await link.focus();
   await page.keyboard.press('Tab');
-  await expect(page.getByRole('link', { name: 'Link' })).toBeFocused();
+  await expect(button).toBeFocused();
+  await page.evaluate(() => document.documentElement.classList.add('high-contrast'));
+  await page.keyboard.press('Shift+Tab');
+  await expect(link).toBeFocused();
   await expect(page.getByRole('link', { name: 'Link' })).toHaveCSS('outline-color', 'rgb(255, 255, 0)');
 });

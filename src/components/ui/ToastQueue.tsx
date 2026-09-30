@@ -58,10 +58,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       if (lastPlayedStatus.current[toast.id] === toast.status) continue;
       lastPlayedStatus.current[toast.id] = toast.status;
       if (toast.status === "submitted" || toast.status === "confirmed") {
-        triggerHaptic("txConfirm");
+        triggerHaptic("successChime");
         if (toast.status === "confirmed") playSuccess();
       } else if (toast.status === "failed") {
-        triggerHaptic("error");
+        triggerHaptic("errorAlert");
         playFailure();
       }
     }
