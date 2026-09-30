@@ -26,11 +26,37 @@ import {
 export const CANDLE_RESOLUTIONS = ["1m", "5m", "15m", "1h", "1d"] as const;
 export type CandleResolution = (typeof CANDLE_RESOLUTIONS)[number];
 
+/**
+ * Floor applied to a measured height. A parent that collapses to a sliver
+ * (mid-drag, hidden tab, zero-height grid row) would otherwise hand
+ * lightweight-charts a non-positive height, which it rejects.
+ */
+const MIN_CHART_RENDER_HEIGHT = 120;
+
 export interface CandlestickChartProps {
   pairId: AssetSymbol;
   baseSymbol: string;
   quoteSymbol: string;
   height?: number;
+  /**
+   * Drive the timeframe from the parent instead of local state. When supplied
+   * the chart becomes controlled: {@link onTimeframeChange} reports every
+   * change and the rendered interval always mirrors this prop. Lets a multi-cell
+   * layout keep an independent interval per chart.
+   */
+  timeframe?: CandleResolution;
+  onTimeframeChange?: (resolution: CandleResolution) => void;
+  /**
+   * Fill the parent's height instead of using {@link height}. Both axes are then
+   * measured with the existing ResizeObserver, so a resize only re-applies chart
+   * options — no teardown, no canvas re-creation, no leaked instances.
+   */
+  fillParent?: boolean;
+  /**
+   * Render the built-in interval buttons. Turn this off when the surrounding
+   * layout supplies its own interval control for the chart.
+   */
+  showTimeframeControls?: boolean;
 }
 
 interface CandleTooltip {
@@ -79,11 +105,15 @@ function liveVolume(update: unknown): number | undefined {
   return finiteNumber(metadata.volume) ?? undefined;
 }
 
-export default function CandlestickChart({
+export function CandlestickChart({
   pairId,
   baseSymbol,
   quoteSymbol,
   height = 360,
+  timeframe,
+  onTimeframeChange,
+  fillParent = false,
+  showTimeframeControls = true,
 }: CandlestickChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -91,8 +121,13 @@ export default function CandlestickChart({
   const volumeSeriesRef = useRef<ISeriesApi<"Histogram", Time> | null>(null);
   const averageSeriesRef = useRef<ISeriesApi<"Line", Time> | null>(null);
   const candlesRef = useRef<OhlcvCandle[]>([]);
-  const resolutionRef = useRef<CandleResolution>("5m");
-  const [resolution, setResolution] = useState<CandleResolution>("5m");
+  // Last size handed to the chart, so the observer can skip no-op applyOptions
+  // calls instead of re-configuring on every sub-pixel resize tick.
+  const sizeRef = useRef<{ width: number; height: number } | null>(null);
+  const isTimeframeControlled = timeframe !== undefined;
+  const [internalResolution, setInternalResolution] = useState<CandleResolution>("5m");
+  const resolution = isTimeframeControlled ? timeframe : internalResolution;
+  const resolutionRef = useRef<CandleResolution>(resolution);
   const [candles, setCandles] = useState<OhlcvCandle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -101,6 +136,11 @@ export default function CandlestickChart({
   const [showAverage, setShowAverage] = useState(true);
   const [tooltip, setTooltip] = useState<CandleTooltip | null>(null);
   const { isConnected: socketConnected, lastUpdate } = useSocket({ assetIds: [pairId] });
+
+  const applyResolution = useCallback((next: CandleResolution) => {
+    if (!isTimeframeControlled) setInternalResolution(next);
+    onTimeframeChange?.(next);
+  }, [isTimeframeControlled, onTimeframeChange]);
 
   const endpoint = useMemo(() => {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
@@ -135,9 +175,14 @@ export default function CandlestickChart({
     const container = containerRef.current;
     if (!container) return;
 
+    const initialWidth = Math.round(container.clientWidth);
+    const initialHeight = fillParent
+      ? Math.max(Math.round(container.clientHeight), MIN_CHART_RENDER_HEIGHT)
+      : height;
+
     const chart = createChart(container, {
-      width: container.clientWidth,
-      height,
+      width: initialWidth,
+      height: initialHeight,
       layout: {
         background: { color: "transparent" },
         textColor: "#a8b2ae",
@@ -185,11 +230,26 @@ export default function CandlestickChart({
     candleSeriesRef.current = candleSeries;
     volumeSeriesRef.current = volumeSeries;
     averageSeriesRef.current = averageSeries;
+    sizeRef.current = { width: initialWidth, height: initialHeight };
     chart.subscribeCrosshairMove(handleCrosshairMove);
 
     const observer = new ResizeObserver((entries) => {
-      const width = entries[0]?.contentRect.width;
-      if (width && chartRef.current) chartRef.current.applyOptions({ width });
+      const rect = entries[0]?.contentRect;
+      const chartApi = chartRef.current;
+      if (!rect || !chartApi) return;
+
+      const nextWidth = Math.round(rect.width);
+      // A collapsed parent (hidden tab, zero-height grid row) would otherwise
+      // hand lightweight-charts a non-positive width, which it rejects.
+      if (nextWidth <= 0) return;
+      const nextHeight = fillParent
+        ? Math.max(Math.round(rect.height), MIN_CHART_RENDER_HEIGHT)
+        : height;
+
+      const previous = sizeRef.current;
+      if (previous && previous.width === nextWidth && previous.height === nextHeight) return;
+      sizeRef.current = { width: nextWidth, height: nextHeight };
+      chartApi.applyOptions({ width: nextWidth, height: nextHeight });
     });
     observer.observe(container);
 
@@ -201,8 +261,9 @@ export default function CandlestickChart({
       candleSeriesRef.current = null;
       volumeSeriesRef.current = null;
       averageSeriesRef.current = null;
+      sizeRef.current = null;
     };
-  }, [height, handleCrosshairMove]);
+  }, [fillParent, height, handleCrosshairMove]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -242,18 +303,21 @@ export default function CandlestickChart({
 
   // Hotkey integration: the shortcut layer broadcasts the requested timeframe
   // and the chart applies it when it matches one of its own resolutions.
+  // A controlled chart opts out — its owner decides which cell the shortcut
+  // targets, so one keypress cannot silently rewrite a whole grid.
   useEffect(() => {
+    if (isTimeframeControlled) return;
     const handleTimeframeShortcut = (event: Event) => {
       const detail = (event as CustomEvent<{ timeframe?: string }>).detail;
       const next = detail?.timeframe;
       if (!next) return;
       if (!(CANDLE_RESOLUTIONS as readonly string[]).includes(next)) return;
-      setResolution(next as CandleResolution);
+      applyResolution(next as CandleResolution);
     };
     window.addEventListener(CHART_TIMEFRAME_EVENT, handleTimeframeShortcut);
     return () =>
       window.removeEventListener(CHART_TIMEFRAME_EVENT, handleTimeframeShortcut);
-  }, []);
+  }, [applyResolution, isTimeframeControlled]);
 
   useEffect(() => {
     const candleSeries = candleSeriesRef.current;
@@ -348,9 +412,17 @@ export default function CandlestickChart({
     return ((activePrice - candles[0].open) / candles[0].open) * 100;
   }, [activePrice, candles]);
 
+  const chartHeight = sizeRef.current?.height ?? height;
+  const chartWidth = sizeRef.current?.width ?? containerRef.current?.clientWidth ?? 320;
+
   return (
-    <section className="min-w-0 rounded-xl border border-white/10 bg-[#111814] p-4 text-white sm:p-5" aria-label={`${baseSymbol} to ${quoteSymbol} price chart`}>
-      <header className="mb-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+    <section
+      className={fillParent
+        ? "flex min-h-0 min-w-0 flex-1 flex-col rounded-xl border border-white/10 bg-[#111814] p-4 text-white sm:p-5"
+        : "min-w-0 rounded-xl border border-white/10 bg-[#111814] p-4 text-white sm:p-5"}
+      aria-label={`${baseSymbol} to ${quoteSymbol} price chart`}
+    >
+      <header className="mb-4 flex shrink-0 flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
           <div>
             <h2 className="text-base font-semibold">{baseSymbol} / {quoteSymbol}</h2>
@@ -370,20 +442,22 @@ export default function CandlestickChart({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex rounded-lg border border-white/10 bg-black/20 p-1" role="group" aria-label="Chart resolution">
-            {CANDLE_RESOLUTIONS.map((item, index) => (
-              <button
-                key={item}
-                type="button"
-                title={`Switch to ${item} (press ${index + 1})`}
-                aria-pressed={resolution === item}
-                onClick={() => setResolution(item)}
-                className={`min-h-9 rounded-md px-2.5 text-xs font-semibold transition-colors ${resolution === item ? "bg-white/10 text-white" : "text-white/50 hover:text-white"}`}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
+          {showTimeframeControls && (
+            <div className="flex rounded-lg border border-white/10 bg-black/20 p-1" role="group" aria-label="Chart resolution">
+              {CANDLE_RESOLUTIONS.map((item, index) => (
+                <button
+                  key={item}
+                  type="button"
+                  title={`Switch to ${item} (press ${index + 1})`}
+                  aria-pressed={resolution === item}
+                  onClick={() => applyResolution(item)}
+                  className={`min-h-9 rounded-md px-2.5 text-xs font-semibold transition-colors ${resolution === item ? "bg-white/10 text-white" : "text-white/50 hover:text-white"}`}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="flex items-center gap-3 text-xs text-white/60">
             <label className="inline-flex min-h-9 items-center gap-2">
               <input type="checkbox" checked={showVolume} onChange={(event) => setShowVolume(event.target.checked)} className="accent-lime-300" />
@@ -397,14 +471,19 @@ export default function CandlestickChart({
         </div>
       </header>
 
-      <div className="relative overflow-hidden rounded-lg bg-black/15" style={{ height }}>
-        <div ref={containerRef} className="h-full w-full" />
+      <div
+        className={fillParent
+          ? "relative min-h-0 flex-1 overflow-hidden rounded-lg bg-black/15"
+          : "relative overflow-hidden rounded-lg bg-black/15"}
+        style={fillParent ? undefined : { height }}
+      >
+        <div ref={containerRef} className={fillParent ? "absolute inset-0" : "h-full w-full"} />
         {tooltip && (
           <div
             className="pointer-events-none absolute z-10 max-w-[calc(100%-1rem)] rounded-md border border-white/10 bg-[#0d1411]/95 px-3 py-2 text-xs shadow-lg"
             style={{
-              left: Math.min(tooltip.x + 12, Math.max(8, (containerRef.current?.clientWidth ?? 320) - 172)),
-              top: Math.max(8, Math.min(tooltip.y + 12, height - 92)),
+              left: Math.min(tooltip.x + 12, Math.max(8, chartWidth - 172)),
+              top: Math.max(8, Math.min(tooltip.y + 12, chartHeight - 92)),
             }}
           >
             <p className="mb-1 text-white/50">{tooltip.time}</p>
@@ -431,9 +510,11 @@ export default function CandlestickChart({
           </p>
         )}
       </div>
-      <p className="mt-3 text-[11px] text-white/35">
+      <p className="mt-3 shrink-0 text-[11px] text-white/35">
         Historical OHLCV with live price ticks. Volume updates only when the feed supplies trade volume.
       </p>
     </section>
   );
 }
+
+export default CandlestickChart;

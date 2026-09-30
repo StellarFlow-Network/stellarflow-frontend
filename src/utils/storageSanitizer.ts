@@ -241,6 +241,14 @@ export const VERSIONED_SCHEMAS: readonly ManagedSchema[] = Object.freeze([
     migratable: true,
     description: "Chart rendering preferences",
   },
+  {
+    key: "stellarflow.chart.multiGrid",
+    encoding: "enveloped",
+    version: APP_STORAGE_VERSION,
+    disposable: false,
+    migratable: true,
+    description: "Multi-chart grid layout, pairs and intervals",
+  },
 ]);
 
 // ─── Module state ───────────────────────────────────────────────────────────────

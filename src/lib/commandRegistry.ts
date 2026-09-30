@@ -226,6 +226,18 @@ export const NAVIGATION_COMMANDS: readonly CommandItem[] = [
     iconId: ICON_IDS.signal,
     href: "/rpc-benchmark",
   },
+  {
+    id: "page:trading",
+    kind: "page",
+    title: "Multi-Chart Trading View",
+    subtitle: "/trading",
+    keywords: [
+      "charts", "candles", "candlestick", "multi chart", "grid", "quad",
+      "split", "timeframe", "watchlist", "pairs", "trading view",
+    ],
+    iconId: ICON_IDS.lineChart,
+    href: "/trading",
+  },
 ];
 
 /**
