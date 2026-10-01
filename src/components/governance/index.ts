@@ -20,3 +20,6 @@ export type {
 
 export { DelegationGraphVisualizer } from './DelegationGraphVisualizer';
 export type { DelegationGraphVisualizerProps } from './DelegationGraphVisualizer';
+
+export { VoteSnapshotAuditor } from './VoteSnapshotAuditor';
+export type { VoteSnapshotAuditorProps, VoteSnapshot } from './VoteSnapshotAuditor';
