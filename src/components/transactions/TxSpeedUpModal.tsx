@@ -26,6 +26,8 @@ import {
   type TransactionDetails,
 } from "@/lib/txSpeedUpOps";
 
+import { CongestionFeeAlert } from "@/components/common/CongestionFeeAlert";
+
 type Mode = "speedUp" | "cancel";
 
 /** Envelope inspection result, tagged with the XDR it was derived from. */
@@ -330,6 +332,7 @@ export function TxSpeedUpModal({
       size="xl"
     >
       <div className="space-y-5">
+        <CongestionFeeAlert />
         {/* Pending-time detection */}
         <div className={`rounded-lg border p-4 ${tone.container}`}>
           <div className="flex items-start justify-between gap-4">

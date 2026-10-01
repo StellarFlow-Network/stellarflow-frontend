@@ -14,3 +14,15 @@ export {
 export {
   CandlestickChart,
 } from "./CandlestickChart";
+
+export {
+  OrderBookDepthRatioBar,
+  calculateDepthRatio,
+  type OrderBookDepthRatioBarProps,
+  type DepthRatioResult,
+} from "./OrderBookDepthRatioBar";
+
+export {
+  HighPriceImpactModal,
+  type HighPriceImpactModalProps,
+} from "./HighPriceImpactModal";

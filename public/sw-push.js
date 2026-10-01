@@ -1,6 +1,10 @@
 /**
  * Standalone Web Push service worker (#599).
  * Used when next-pwa's generated /sw.js is unavailable (e.g. development).
+ *
+ * A push payload may carry its own `url` (multisig signature requests deep link
+ * to `/multisig?filter=pending&request=<id>`, #962); otherwise the legacy
+ * `?tx=&type=` transaction deep link is derived from the payload.
  */
 
 /* eslint-disable no-undef */
@@ -30,6 +34,13 @@ self.addEventListener("push", (event) => {
     /* ignore */
   }
 
+  const targetUrl =
+    typeof payload.url === "string" && payload.url
+      ? payload.url
+      : payload.txHash && payload.type
+        ? `/?tx=${encodeURIComponent(payload.txHash)}&type=${encodeURIComponent(payload.type)}`
+        : "/";
+
   const options = {
     body: payload.body || "",
     icon: "/icon-192.png",
@@ -39,15 +50,31 @@ self.addEventListener("push", (event) => {
       type: payload.type,
       txHash: payload.txHash,
       meta: payload.meta || {},
-      url:
-        payload.txHash && payload.type
-          ? `/?tx=${encodeURIComponent(payload.txHash)}&type=${encodeURIComponent(payload.type)}`
-          : "/",
+      url: targetUrl,
     },
   };
 
   event.waitUntil(
-    self.registration.showNotification(payload.title || "StellarFlow", options),
+    (async () => {
+      await self.registration.showNotification(
+        payload.title || "StellarFlow",
+        options,
+      );
+
+      // Relay to open tabs so in-app state (pending badge, queues) updates
+      // without a reload. Consumers ignore payload types they do not know.
+      const allClients = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+      for (const client of allClients) {
+        client.postMessage({
+          type: payload.type,
+          url: targetUrl,
+          request: payload.request,
+        });
+      }
+    })(),
   );
 });
 

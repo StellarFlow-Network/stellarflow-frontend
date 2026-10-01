@@ -6,6 +6,7 @@ import Icon from '@/components/icons/Icon';
 import { ICON_IDS } from '@/components/icons/iconIds';
 import { ProposalList, type ProposalRecord, type ProposalStatus } from '@/components/governance/ProposalList';
 import { DelegateDirectory } from '@/components/governance/DelegateDirectory';
+import { DelegationGraphVisualizer } from '@/components/governance/DelegationGraphVisualizer';
 import ProposalCreationModal, { type ProposalSubmission } from '@/components/governance/ProposalCreationModal';
 import { MobileVoteCard } from '@/components/governance/MobileVoteCard';
 import type { Delegate } from '@/types/delegation';
@@ -169,7 +170,7 @@ function GovernanceWalletControl({
 }
 
 export default function GovernancePage() {
-  const [section, setSection] = useState<'proposals' | 'delegates'>('proposals');
+  const [section, setSection] = useState<'proposals' | 'delegates' | 'delegation-graph'>('proposals');
   const [activeTab, setActiveTab] = useState<'all' | ProposalStatus>('all');
   const [voteTarget, setVoteTarget] = useState<ProposalRecord | null>(null);
   const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
@@ -188,6 +189,7 @@ export default function GovernancePage() {
   const SECTION_SWITCHER: { key: typeof section; label: string; icon: keyof typeof ICON_IDS }[] = [
     { key: 'proposals', label: 'Proposals', icon: 'vote' },
     { key: 'delegates', label: 'Delegates', icon: 'users' },
+    { key: 'delegation-graph', label: 'Delegation Graph', icon: 'network' },
   ];
 
   const handleProposalSubmit = (proposal: ProposalSubmission) => {
@@ -222,6 +224,13 @@ export default function GovernancePage() {
           <StatCard title="Voter Turnout Avg" value="74.2%" icon={<Icon id={ICON_IDS.users} size={20} className="text-green-400" />} subtitle="High network coordinator interest" />
           <StatCard title="Passing Invariants" value="100%" icon={<Icon id={ICON_IDS.checkCircle} size={20} className="text-emerald-400" />} subtitle="All parameters safe" />
         </div>
+      ) : section === 'delegation-graph' ? (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <StatCard title="Network Nodes" value="19 Total" icon={<Icon id={ICON_IDS.network} size={20} className="text-blue-400" />} subtitle="Delegates & active delegators" />
+          <StatCard title="Active Relationships" value="14 Links" icon={<Icon id={ICON_IDS.activity} size={20} className="text-cyan-400" />} subtitle="Directional power delegations" />
+          <StatCard title="Total Delegated" value="5.36M XLM" icon={<Icon id={ICON_IDS.coins} size={20} className="text-yellow-500" />} subtitle="Community voting weight" />
+          <StatCard title="Topology Health" value="100% 60fps" icon={<Icon id={ICON_IDS.checkCircle} size={20} className="text-emerald-400" />} subtitle="Interactive force layout" />
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <StatCard title="Registered Delegates" value="5 Delegates" icon={<Icon id={ICON_IDS.users} size={20} className="text-blue-400" />} subtitle="Trusted community representatives" />
@@ -231,7 +240,7 @@ export default function GovernancePage() {
         </div>
       )}
 
-      {/* Section Switcher (Proposals / Delegates) */}
+      {/* Section Switcher (Proposals / Delegates / Delegation Graph) */}
       <div className="flex border-b border-gray-800 mb-6 gap-6">
         {SECTION_SWITCHER.map(({ key, label, icon }) => (
           <button
@@ -282,6 +291,21 @@ export default function GovernancePage() {
             onVote={(target) => setVoteTarget(target)}
           />
         </>
+      ) : section === 'delegation-graph' ? (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-bold text-gray-100 flex items-center gap-2">
+                <Icon id={ICON_IDS.network} size={20} className="text-blue-400" />
+                Voting Power Delegation Network
+              </h2>
+              <p className="text-sm text-gray-400 mt-1">
+                Explore voting power delegations between DAO members and delegates. Click a delegate node to open their profile.
+              </p>
+            </div>
+          </div>
+          <DelegationGraphVisualizer delegates={MOCK_DELEGATES} height={640} />
+        </div>
       ) : (
         /* Delegate Directory */
         <DelegateDirectory delegates={MOCK_DELEGATES} />

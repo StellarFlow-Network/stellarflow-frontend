@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useOptionalWallet } from "@/app/components/providers/WalletProvider";
 import { useGasFee } from "@/hooks/useGasFee";
+import { SocialShareModal } from "@/components/common";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -154,6 +155,7 @@ export function MobileVoteCard({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submittedTx, setSubmittedTx] = useState<MobileVoteSubmission | null>(null);
   const [copiedHash, setCopiedHash] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   // Swipe-to-confirm slider tracking
   const sliderTrackRef = useRef<HTMLDivElement>(null);
@@ -297,6 +299,7 @@ export function MobileVoteCard({
   const handleReset = () => {
     setSelectedChoice(null);
     setSubmittedTx(null);
+    setIsShareOpen(false);
     setSubmitError(null);
     setHasTriggeredSwipe(false);
     setDragProgress(0);
@@ -464,6 +467,13 @@ export function MobileVoteCard({
 
             {/* Action Buttons */}
             <div className="w-full flex flex-col gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setIsShareOpen(true)}
+                className="w-full py-3 px-4 rounded-xl bg-cyan-700 hover:bg-cyan-600 text-white text-sm font-semibold transition-colors"
+              >
+                Share vote
+              </button>
               <button
                 type="button"
                 onClick={handleReset}
@@ -893,6 +903,22 @@ export function MobileVoteCard({
           </motion.div>
         )}
       </AnimatePresence>
+      {submittedTx && (
+        <SocialShareModal
+          isOpen={isShareOpen}
+          onClose={() => setIsShareOpen(false)}
+          shareData={{
+            type: "governance",
+            title: `${activeProposalTitle}: ${submittedTx.voteChoice}`,
+            fromAmount: `Voted ${submittedTx.voteChoice}`,
+            fromSymbol: "Vote",
+            toAmount: formatVotingPower(submittedTx.votingPower),
+            toSymbol: "veFLOW",
+            timestamp: `${new Date(submittedTx.timestamp).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })} UTC`,
+            txHash: submittedTx.transactionHash,
+          }}
+        />
+      )}
     </div>
   );
 }

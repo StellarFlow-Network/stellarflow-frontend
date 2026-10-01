@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { ValidatorNode } from '@/types/validators';
 
+// Static export only supports GET handlers marked as static; this audit
+// snapshot is constant data, so it is prerendered at build time.
+export const dynamic = 'force-static';
+
 const VALIDATORS: ValidatorNode[] = [
   {
     id: 'val-01',

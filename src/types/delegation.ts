@@ -34,3 +34,32 @@ export interface DelegationTransactionPayload {
 }
 
 export type DelegateDirectoryFilter = 'all' | 'infrastructure' | 'community' | 'security' | 'governance';
+
+export interface DelegationGraphNode {
+  id: string;
+  name: string;
+  address: string;
+  type: 'delegate' | 'member';
+  votingPower: number;
+  delegatorCount?: number;
+  tags?: string[];
+  platformStatement?: string;
+  votingHistory?: DelegateVoteRecord[];
+  joinedAt?: string;
+  avatarUrl?: string;
+  delegateData?: Delegate;
+}
+
+export interface DelegationGraphLink {
+  id: string;
+  source: string;
+  target: string;
+  amount: number;
+  status: 'active' | 'pending';
+}
+
+export interface DelegationGraphData {
+  nodes: DelegationGraphNode[];
+  links: DelegationGraphLink[];
+}
+

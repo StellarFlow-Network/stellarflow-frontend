@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { useState } from "react";
 import { OptimizedDialog, OptimizedDialogProps } from "./OptimizedDialog";
-import { Button } from "@/components/ui/button";
 
 const meta: Meta<typeof OptimizedDialog> = {
   title: "UI/Modals/OptimizedDialog",
@@ -65,7 +64,13 @@ const InteractiveTemplate = (args: Omit<OptimizedDialogProps, "isOpen" | "onClos
   const [isOpen, setIsOpen] = useState(false);
   return (
     <div>
-      <Button onClick={() => setIsOpen(true)}>Open Dialog</Button>
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className="rounded bg-blue-600 px-4 py-2 text-white"
+      >
+        Open Dialog
+      </button>
       <OptimizedDialog {...args} isOpen={isOpen} onClose={() => setIsOpen(false)}>
         {args.children}
       </OptimizedDialog>

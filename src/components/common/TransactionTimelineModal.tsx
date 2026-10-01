@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, CircleAlert, ChevronDown, LoaderCircle, Maximize2, Minimize2, Share2, X } from "lucide-react";
 
+import { CongestionFeeAlert } from "./CongestionFeeAlert";
+
 export type TransactionStepStatus = "pending" | "processing" | "completed" | "failed";
 
 export interface TransactionTimelineStep {
@@ -64,6 +66,7 @@ export default function TransactionTimelineModal({ transactionId, txHash, steps,
     <section className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 shadow-2xl">
       <header className="flex items-start justify-between gap-4 border-b border-slate-800 p-5"><div><p className="text-xs font-semibold uppercase tracking-widest text-lime-400">Transaction execution</p><h2 id="transaction-timeline-title" className="mt-1 text-xl font-bold text-white">Transaction timeline</h2><p className="mt-1 max-w-sm truncate font-mono text-xs text-slate-500">{txHash || transactionId}</p></div><div className="flex gap-2"><button type="button" onClick={shareTransaction} className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"><Share2 size={16} /><span className="hidden sm:inline">Share link</span></button><button type="button" aria-label="Minimize transaction timeline" onClick={() => setMinimized(true)} className="rounded-lg border border-slate-700 p-2 text-slate-300 hover:bg-slate-800"><Minimize2 size={17} /></button><button type="button" aria-label="Close transaction timeline" onClick={onClose} className="rounded-lg border border-slate-700 p-2 text-slate-300 hover:bg-slate-800"><X size={17} /></button></div></header>
       <div className="overflow-y-auto p-5">
+        <CongestionFeeAlert className="mb-4" />
         <ol className="space-y-1">{timelineSteps.map((step, index) => {
           const isExpanded = expanded.includes(step.id);
           const hasDetails = Boolean(step.rawXdr || step.gasConsumed !== undefined || step.description || step.error);

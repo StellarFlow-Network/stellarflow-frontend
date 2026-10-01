@@ -15,6 +15,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSocket } from "@/app/hooks/useSocket";
 import type { AssetSymbol } from "@/config/assetSymbols";
+import { CHART_TIMEFRAME_EVENT } from "@/lib/keyboardShortcuts";
 import {
   finiteNumber,
   mapHistoricalOhlcv,
@@ -239,6 +240,21 @@ export default function CandlestickChart({
     resolutionRef.current = resolution;
   }, [resolution]);
 
+  // Hotkey integration: the shortcut layer broadcasts the requested timeframe
+  // and the chart applies it when it matches one of its own resolutions.
+  useEffect(() => {
+    const handleTimeframeShortcut = (event: Event) => {
+      const detail = (event as CustomEvent<{ timeframe?: string }>).detail;
+      const next = detail?.timeframe;
+      if (!next) return;
+      if (!(CANDLE_RESOLUTIONS as readonly string[]).includes(next)) return;
+      setResolution(next as CandleResolution);
+    };
+    window.addEventListener(CHART_TIMEFRAME_EVENT, handleTimeframeShortcut);
+    return () =>
+      window.removeEventListener(CHART_TIMEFRAME_EVENT, handleTimeframeShortcut);
+  }, []);
+
   useEffect(() => {
     const candleSeries = candleSeriesRef.current;
     const volumeSeries = volumeSeriesRef.current;
@@ -355,10 +371,11 @@ export default function CandlestickChart({
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex rounded-lg border border-white/10 bg-black/20 p-1" role="group" aria-label="Chart resolution">
-            {CANDLE_RESOLUTIONS.map((item) => (
+            {CANDLE_RESOLUTIONS.map((item, index) => (
               <button
                 key={item}
                 type="button"
+                title={`Switch to ${item} (press ${index + 1})`}
                 aria-pressed={resolution === item}
                 onClick={() => setResolution(item)}
                 className={`min-h-9 rounded-md px-2.5 text-xs font-semibold transition-colors ${resolution === item ? "bg-white/10 text-white" : "text-white/50 hover:text-white"}`}

@@ -8,8 +8,8 @@ export default function Sidebar() {
       <nav className="space-y-4">
         <Link href="/" prefetch={false}>Home</Link>
         <Link href="/swap" prefetch={false}>Swap & Send</Link>
-        <Link href="/analytics" prefetch={false}>Analytics</Link>
-        <Link href="/transactions" prefetch={false}>Transactions</Link>
+        <Link href="/dashboard/portfolio" prefetch={false}>Analytics</Link>
+        <Link href="/dashboard/transactions" prefetch={false}>Transactions</Link>
         <Link href="/settings" prefetch={false}>Settings</Link>
       </nav>
     </aside>

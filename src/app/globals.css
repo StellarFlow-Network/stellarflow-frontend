@@ -25,6 +25,7 @@
   --muted: rgba(0, 0, 0, 0.45);
   --control: #ffffff;
   --control-hover: #f5f5f5;
+  --focus-ring-color: #3b82f6;
 }
 
 /* Dark theme — applied by next-themes adding `.dark` to <html> */
@@ -37,17 +38,41 @@
   --muted: rgba(255, 255, 255, 0.45);
   --control: #161b22;
   --control-hover: #1c2128;
+
+  /* Accessibility tokens — non-boosted (dark) defaults. */
+  --contrast-focus: #ffff00;
+  --accent: #39ff14;
+  --accent-foreground: #0a0f1e;
+  --status-success: #4ade80;
+  --status-warning: #fbbf24;
+  --status-danger: #f87171;
+  --status-info: #60a5fa;
+  --chart-1: #60a5fa;
+  --chart-2: #34d399;
+  --chart-3: #f59e0b;
+  --chart-4: #f472b6;
+  --chart-5: #a78bfa;
+  --chart-6: #22d3ee;
 }
 
-/* WCAG AAA-oriented option: normal text is pure white on black, with yellow
-   reserved for emphasis and focus so contrast does not depend on hue. */
-.high-contrast {
+/* ─── High-contrast (WCAG AAA) option ────────────────────────────────────────
+   Activated by `data-contrast="high"` on <html> (the legacy `.high-contrast`
+   class is kept in sync for older call sites). Every text/background pair is
+   verified by `tests/unit/contrast.test.ts` to clear 7:1, and the focus ring
+   clears the 3:1 non-text minimum. Token values must stay in sync with the
+   `HIGH_CONTRAST_*` constants in `src/lib/contrast.ts`. */
+.high-contrast,
+[data-contrast="high"] {
+  color-scheme: dark;
+  background-color: #000000;
+
   --background: #000000;
   --foreground: #ffffff;
   --surface: #000000;
   --surface-raised: #1a1a1a;
   --border: #ffffff;
   --muted: #ffffff;
+  --focus-ring-color: #ffff00;
 }
 
 .high-contrast body {
@@ -55,23 +80,102 @@
   color: #ffffff;
 }
 
-.high-contrast a,
-.high-contrast button,
-.high-contrast input,
-.high-contrast select,
-.high-contrast textarea,
-.high-contrast [tabindex]:not([tabindex="-1"]) {
-  border-color: #ffffff;
+/* Thick, high-visibility borders so control boundaries are unambiguous. */
+.high-contrast :where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])),
+[data-contrast="high"] :where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])) {
+  border-color: var(--border);
 }
 
-/* Keep keyboard focus visible even when a component supplies its own styles. */
-:where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
-  outline: 3px solid #ffff00;
-  outline-offset: 3px;
+/* A shared ring for keyboard focus. `:focus-visible` keeps pointer clicks quiet;
+   important is needed because many legacy controls explicitly use focus:outline-none. */
+:where(
+    a[href],
+    area[href],
+    button,
+    input:not([type="hidden"]),
+    select,
+    textarea,
+    summary,
+    [role="button"],
+    [role="link"],
+    [role="checkbox"],
+    [role="radio"],
+    [role="switch"],
+    [role="combobox"],
+    [role="option"],
+    [role="menuitem"],
+    [role="tab"],
+    [role="treeitem"],
+    [role="gridcell"],
+    [role="dialog"],
+    [role="alertdialog"],
+    [contenteditable="true"],
+    [tabindex]:not([tabindex="-1"])
+  ):focus-visible {
+  outline: 2px solid var(--focus-ring-color) !important;
+  outline-offset: 2px !important;
 }
 
-.high-contrast :where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
-  outline-color: #ffff00;
+/* ─── Glassmorphism tokens ──────────────────────────────────────────────────
+ *
+ * Two layers of variables:
+ *   --glass-*           runtime knobs consumed by the `.glass-*` classes below
+ *                       (and overridable per instance from React via inline
+ *                       style — see `src/components/glass/glassTheme.ts`).
+ *   --glass-fallback-*  opaque stand-ins used whenever `backdrop-filter` is
+ *                       unavailable, so panels stay readable on older engines.
+ *
+ * `--glass-blur*` values are mirrored by the `--blur-glass*` theme tokens in
+ * the `@theme inline` block so Tailwind's `backdrop-blur-glass` utility stays
+ * in sync.
+ * ------------------------------------------------------------------------- */
+
+:root {
+  --glass-blur: 16px;
+  --glass-blur-panel: 16px;
+  --glass-blur-modal: 24px;
+  --glass-blur-nav: 12px;
+  --glass-saturate: 160%;
+
+  --glass-surface: rgb(255 255 255 / 0.55);
+  --glass-surface-strong: rgb(255 255 255 / 0.72);
+  --glass-border: rgb(255 255 255 / 0.6);
+  --glass-sheen: rgb(255 255 255 / 0.65);
+  --glass-shadow: 0 8px 32px rgb(15 23 42 / 0.16);
+
+  --glass-fallback-surface: #f3f4f6;
+  --glass-fallback-surface-strong: #ffffff;
+  --glass-fallback-border: #d1d5db;
+}
+
+.dark {
+  --glass-surface: rgb(22 27 34 / 0.55);
+  --glass-surface-strong: rgb(13 17 23 / 0.72);
+  --glass-border: rgb(255 255 255 / 0.12);
+  --glass-sheen: rgb(255 255 255 / 0.07);
+  --glass-shadow: 0 16px 48px rgb(0 0 0 / 0.55);
+
+  --glass-fallback-surface: #161b22;
+  --glass-fallback-surface-strong: #1c2128;
+  --glass-fallback-border: #30363d;
+}
+
+/* High-contrast mode wins over both themes: no translucency, no blur. */
+.high-contrast {
+  --glass-blur: 0px;
+  --glass-blur-panel: 0px;
+  --glass-blur-modal: 0px;
+  --glass-blur-nav: 0px;
+
+  --glass-surface: #000000;
+  --glass-surface-strong: #000000;
+  --glass-border: #ffffff;
+  --glass-sheen: transparent;
+  --glass-shadow: none;
+
+  --glass-fallback-surface: #000000;
+  --glass-fallback-surface-strong: #000000;
+  --glass-fallback-border: #ffffff;
 }
 
 @theme inline {
@@ -83,11 +187,37 @@
   --color-muted: var(--muted);
   --color-control: var(--control);
   --color-control-hover: var(--control-hover);
+  --color-contrast-focus: var(--contrast-focus);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-status-success: var(--status-success);
+  --color-status-warning: var(--status-warning);
+  --color-status-danger: var(--status-danger);
+  --color-status-info: var(--status-info);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-sans);
   --color-neon-green: #39ff14;
   --color-oracle-navy: #0a0f1e;
   --color-oracle-border: #1b2a3b;
+
+  /* Glassmorphism theme tokens. The numeric values mirror the runtime
+     `--glass-blur*` variables above so `backdrop-blur-glass`,
+     `backdrop-blur-glass-sm` and `backdrop-blur-glass-xl` match the classes. */
+  --color-glass-surface: var(--glass-surface);
+  --color-glass-surface-strong: var(--glass-surface-strong);
+  --color-glass-border: var(--glass-border);
+  --color-glass-sheen: var(--glass-sheen);
+  --blur-glass-sm: 8px;
+  --blur-glass: 16px;
+  --blur-glass-xl: 24px;
+  --radius-glass: 1rem;
+  --radius-glass-lg: 1.5rem;
 }
 
 body {
@@ -164,6 +294,15 @@ body {
   from { opacity: 0; transform: translateY(0) rotate(0deg); }
   20% { opacity: 1; }
   to { opacity: 0; transform: translateY(7rem) rotate(260deg); }
+}
+
+/* Brief green pulse on the AMM fee tracker when a fill spikes well above the
+   recent trade-size average. One-shot: the component re-keys the overlay so
+   consecutive spikes restart the run. */
+@keyframes fee-spike-glow {
+  0% { opacity: 0; }
+  25% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -566,4 +705,80 @@ body {
 .slider-thumb::-moz-range-thumb:active {
   transform: scale(1.05);
   box-shadow: 0 0 16px rgba(59, 130, 246, 0.9);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   GLASSMORPHISM SURFACES
+
+   `.glass-surface` is the shared recipe; `.glass-panel` / `.glass-modal` /
+   `.glass-nav` only pick a density (surface opacity + blur radius). They live
+   in the `components` cascade layer so Tailwind utilities (hover:, rounded-*,
+   p-*, …) can still override them.
+
+   Rendering strategy — fallback first:
+     1. Outside `@supports`, the surface is opaque (`--glass-fallback-*`), so
+        browsers without `backdrop-filter` — older iOS/Android WebViews — keep
+        readable panels instead of a washed-out translucent block.
+     2. Inside `@supports`, the background switches to the translucent token and
+        `backdrop-filter` plus the top sheen gradient are switched on.
+     3. `prefers-reduced-transparency: reduce` forces the fallback again.
+
+   Only `background-*`, `border-color` and `box-shadow` are set here: no
+   `position`, `border-radius`, `padding` or `overflow`, so utilities keep full
+   control of layout.
+   ───────────────────────────────────────────────────────────── */
+
+@layer components {
+  .glass-surface {
+    background-color: var(--glass-fallback-surface);
+    background-image: none;
+    border-color: var(--glass-fallback-border);
+    box-shadow: var(--glass-shadow);
+  }
+
+  /* Density presets: one real rule per variant, each reading its own token so
+     a consumer can retune a single density (e.g. --glass-blur-nav). */
+  .glass-panel {
+    --glass-blur: var(--glass-blur-panel);
+  }
+
+  .glass-modal {
+    --glass-blur: var(--glass-blur-modal);
+  }
+
+  .glass-nav {
+    --glass-blur: var(--glass-blur-nav);
+  }
+
+  /* Progressive enhancement: only blur when the engine can actually do it. */
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass-surface {
+      background-color: var(--glass-surface);
+      background-image: linear-gradient(150deg, var(--glass-sheen), transparent 42%);
+      border-color: var(--glass-border);
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+      backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    }
+
+    .glass-modal,
+    .glass-nav {
+      background-color: var(--glass-surface-strong);
+    }
+  }
+
+  /* Users who ask for less transparency get the opaque fallback, no blur. */
+  @media (prefers-reduced-transparency: reduce) {
+    .glass-surface {
+      background-color: var(--glass-fallback-surface);
+      background-image: none;
+      border-color: var(--glass-fallback-border);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+
+    .glass-modal,
+    .glass-nav {
+      background-color: var(--glass-fallback-surface-strong);
+    }
+  }
 }

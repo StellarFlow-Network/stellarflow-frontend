@@ -33,6 +33,12 @@ export interface NotificationPreferences {
   remittancePayouts: boolean;
   deposits: boolean;
   liquidationWarnings: boolean;
+  /**
+   * Multisig co-signer alerts (#962). Not part of {@link PushAlertCategory}:
+   * signature requests are not transaction outcomes, so they use their own
+   * deep link (`/multisig?filter=pending`) instead of the `?tx=&type=` one.
+   */
+  multisigRequests: boolean;
 }
 
 export interface PushSubscriptionJSON {
@@ -61,6 +67,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   remittancePayouts: true,
   deposits: true,
   liquidationWarnings: true,
+  multisigRequests: true,
 };
 
 const PREFS_STORAGE_KEY = "sf.push.preferences.v1";
@@ -129,7 +136,21 @@ export function normalizePreferences(
     remittancePayouts: input?.remittancePayouts ?? true,
     deposits: input?.deposits ?? true,
     liquidationWarnings: input?.liquidationWarnings ?? true,
+    multisigRequests: input?.multisigRequests ?? true,
   };
+}
+
+/**
+ * Whether multisig co-signer alerts (#962) are allowed by current preferences.
+ *
+ * Kept separate from {@link isCategoryEnabled} because signature requests are
+ * not a {@link PushEventType} — they deep link into the multisig approval
+ * drawer rather than the transaction details modal.
+ */
+export function isMultisigRequestAlertsEnabled(
+  prefs: NotificationPreferences,
+): boolean {
+  return Boolean(prefs.enabled && prefs.multisigRequests);
 }
 
 /** Whether a given push event type is allowed by current preferences. */
@@ -394,6 +415,10 @@ export const PREFERENCE_LABELS: Record<
   liquidationWarnings: {
     title: "Liquidation Warnings",
     description: "Alert before a position reaches liquidation.",
+  },
+  multisigRequests: {
+    title: "Multisig Signature Requests",
+    description: "Alert when a pending transaction needs your signature.",
   },
 };
 
