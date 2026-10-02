@@ -8,6 +8,7 @@ import { exportTransactionsToCsv, type TaxPlatform } from "@/utils/csvExport";
 import { useTransactionHistoryWithFallback } from "@/app/hooks/useTransactionHistory";
 import type { TransactionRecord, TransactionType } from "@/types/transactions";
 import { TransactionHistoryTableSkeleton } from "@/components/skeletons/TransactionHistoryTableSkeleton";
+import { SocialShareModal, type SocialShareData } from "@/components/common";
 
 const TYPE_FILTERS: { label: string; value: "all" | TransactionType }[] = [
   { label: "All Activity", value: "all" },
@@ -31,13 +32,12 @@ function formatDate(iso: string): string {
 }
 
 function truncateHash(hash: string): string {
-  return `${hash.slice(0, 6)}…{hash.slice(-4)}`;
+  return `${hash.slice(0, 6)}…${hash.slice(-4)}`;
 }
 
 function csvEscape(value: string): string {
   if (/[",\n]/.test(value)) {
-    return `${value.replace(/"/g, '""')}`;{
-    return `""${value.replace(/"/g, '""')}"`;
+    return `"${value.replace(/"/g, '""')}"`;
   }
   return value;
 }
@@ -69,7 +69,7 @@ function generateCsv(transactions: TransactionRecord[]): string {
 
 function downloadCsv(csv: string, filename: string) {
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.objectURL.createObjectURL(blob);
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
   link.download = filename;
@@ -82,8 +82,9 @@ function downloadCsv(csv: string, filename: string) {
 export default function TransactionHistoryTable() {
   const { data: transactions, isLoading } = useTransactionHistoryWithFallback();
   const { addToast, updateToast } = useToast();
-  const [typeFilter, setTypeFilter] = useState<{"all" | TransactionType>("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | TransactionType>("all");
   const [isExporting, setIsExporting] = useState(false);
+  const [shareData, setShareData] = useState<SocialShareData | null>(null);
 
   const filteredTransactions = useMemo(
     () =>
@@ -140,7 +141,7 @@ export default function TransactionHistoryTable() {
         <div className="flex items-center gap-3">
           <select
             value={typeFilter}
-            onChange=({event}) =>
+            onChange={(event) =>
               setTypeFilter(event.target.value as "all" | TransactionType)
             }
             className="rounded-md border border-gray-700 bg-[#0d1117] px-3 py-2 text-sm text-gray-300 focus:border-blue-500 focus:outline-none"
@@ -164,7 +165,7 @@ export default function TransactionHistoryTable() {
         </div>
       </div>
 
-      <div className="grid grid-cols-[110px_100px_1qr_1fr_90px_1qr] border-b border-gray-800 bg-[#0d1117] text-[10px] uppercase tracking-wider text-gray-500">
+      <div className="grid grid-cols-[110px_100px_1fr_1fr_90px_1fr] border-b border-gray-800 bg-[#0d1117] text-[10px] uppercase tracking-wider text-gray-500">
         <div className="px-6 py-3 font-medium">Date</div>
         <div className="px-6 py-3 font-medium">Type</div>
         <div className="px-6 py-3 font-medium">Sent</div>
@@ -181,7 +182,7 @@ export default function TransactionHistoryTable() {
         filteredTransactions.map((tx) => (
           <div
             key={tx.id}
-            className="grid grid-cols-[110px_100px_1qr_1fr_90px_1qr] items-center border-b border-gray-800/50 font-mono text-[13px]"
+            className="grid grid-cols-[110px_100px_1fr_1fr_90px_1fr] items-center border-b border-gray-800/50 font-mono text-[13px]"
           >
             <div className="px-6 py-4 text-gray-400">{formatDate(tx.date)}</div>
             <div className="px-6 py-4 capitalize text-gray-200">{tx.type}</div>
@@ -206,10 +207,36 @@ export default function TransactionHistoryTable() {
                   {tx.status}
                 </span>
               </a>
+              {tx.type === "swap" && tx.status === "completed" && (
+                <button
+                  type="button"
+                  onClick={() => setShareData({
+                    type: "trade",
+                    title: `${tx.sentCurrency} to ${tx.receivedCurrency} swap completed`,
+                    fromSymbol: tx.sentCurrency,
+                    fromAmount: tx.sentAmount.toLocaleString(),
+                    toSymbol: tx.receivedCurrency,
+                    toAmount: tx.receivedAmount.toLocaleString(),
+                    timestamp: `${new Date(tx.date).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })} UTC`,
+                    txHash: tx.txHash,
+                  })}
+                  className="mt-1 inline-flex items-center rounded px-2 py-1 font-sans text-xs text-cyan-300 transition-colors hover:bg-cyan-950/60 hover:text-cyan-200"
+                  aria-label={`Share completed ${tx.sentCurrency} to ${tx.receivedCurrency} swap`}
+                >
+                  Share
+                </button>
+              )}
             </div>
           </div>
         ))
       )}
+      {shareData && (
+        <SocialShareModal
+          isOpen
+          onClose={() => setShareData(null)}
+          shareData={shareData}
+        />
+      )}
     </div>
-  });
+  );
 }

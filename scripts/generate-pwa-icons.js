@@ -27,6 +27,8 @@ const OUT_DIR = path.join(__dirname, "..", "public");
 const SIZES = [
   { size: 192, name: "icon-192.png" },
   { size: 512, name: "icon-512.png" },
+  { size: 1024, name: "icon-1024.png" },
+  { size: 180, name: "apple-touch-icon.png" },
 ];
 
 async function generate() {

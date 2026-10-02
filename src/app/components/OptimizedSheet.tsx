@@ -155,7 +155,7 @@ export function OptimizedSheet({
 
           {/* Sheet content */}
           <motion.div
-            className={`fixed ${positionClasses} ${sizeClass} bg-[#0d1117] border-gray-800 shadow-2xl ${className}`}
+            className={`glass-surface glass-modal fixed ${positionClasses} ${sizeClass} shadow-2xl ${className}`}
             style={{
               borderWidth:
                 position === "right"
@@ -174,14 +174,14 @@ export function OptimizedSheet({
             <div className="flex h-full flex-col">
               {/* Header */}
               {(title || showCloseButton) && (
-                <div className="flex items-center justify-between border-b border-gray-800 px-6 py-4">
+                <div className="flex items-center justify-between border-b border-border px-6 py-4">
                   {title && (
-                    <h2 className="text-lg font-semibold text-gray-100">{title}</h2>
+                    <h2 className="text-lg font-semibold text-foreground">{title}</h2>
                   )}
                   {showCloseButton && (
                     <button
                       onClick={onClose}
-                      className="ml-auto p-1.5 text-gray-400 hover:text-gray-200 hover:bg-gray-800 rounded-lg transition-colors"
+                      className="ml-auto p-1.5 text-foreground/60 hover:text-foreground hover:bg-control-hover rounded-lg transition-colors"
                       aria-label="Close panel"
                     >
                       <X size={20} />

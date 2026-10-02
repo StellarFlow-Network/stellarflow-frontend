@@ -1,6 +1,15 @@
 import type { StorybookConfig } from "@storybook/nextjs";
+import path from "node:path";
 
 const config: StorybookConfig = {
+  webpackFinal: async (config) => {
+    config.resolve = config.resolve ?? {};
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "@": path.resolve(process.cwd(), "src"),
+    };
+    return config;
+  },
   stories: ["../src/**/*.stories.tsx", "../src/**/*.stories.mdx"],
   // @storybook/addon-essentials and @storybook/addon-interactions were
   // removed upstream — their functionality (actions, controls, backgrounds,

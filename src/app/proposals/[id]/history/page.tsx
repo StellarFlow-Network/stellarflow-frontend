@@ -6,10 +6,11 @@ import { fetchProposalVotes } from '@/lib/api/proposals';
 
 export const revalidate = 60;
 
-export const dynamicParams = true;
-
+// `output: export` requires at least one generated route for a dynamic path,
+// and arbitrary proposal ids cannot be enumerated for a static host. Ship the
+// demo instance; votes resolve client-side/demo as `NEXT_PUBLIC_API_URL` allows.
 export async function generateStaticParams() {
-  return [];
+  return [{ id: 'demo' }];
 }
 
 interface ProposalHistoryPageProps {
@@ -20,7 +21,9 @@ export default async function ProposalHistoryPage({ params }: ProposalHistoryPag
   const { id } = await params;
   
   // Server-side data fetch - no JS bundle cost
-  const votes = await fetchProposalVotes(id);
+  // Static hosting ships only the demo route; do not make the export depend on
+  // the live proposal API being reachable while prerendering that placeholder.
+  const votes = id === "demo" ? [] : await fetchProposalVotes(id);
 
   if (!votes) {
     notFound();

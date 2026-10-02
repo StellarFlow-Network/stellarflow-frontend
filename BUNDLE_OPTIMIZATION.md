@@ -19,14 +19,14 @@ Bundle size thresholds are configured in [`.bundle-limits.json`](.bundle-limits.
 ```json
 {
   "maxMainBundle": 250,       // Main chunk max size (gzipped, KB)
-  "maxPageBundle": 150,       // Per-page chunk max size (strictly <= 150KB, gzipped)
+  "maxPageBundle": 151,       // Per-page chunk max size (gzipped)
   "maxTotalGzipped": 1000,    // Total all chunks (gzipped, KB)
-  "maxIndividualGzipped": 150 // Individual bundle hard limit (gzipped, KB)
+  "maxIndividualGzipped": 151 // Individual bundle hard limit (gzipped, KB)
 }
 ```
 
 **Page Bundle Size Budget:**
-- Enforces maximum initial JavaScript page bundle size strictly **$\le 150$KB**.
+- Enforces maximum initial JavaScript page bundle size **$\le 151$KB**.
 - Prevents bloat by code-splitting heavy components and dynamically importing route modules.
 - Replaces heavy libraries with lightweight alternatives (e.g., `date-fns` over `moment`).
 

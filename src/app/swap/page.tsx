@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { Horizon, Asset, Operation, TransactionBuilder } from "@stellar/stellar-sdk";
-import { useNetwork } from "@/app/components/providers/NetworkProvider";
+import { NetworkProvider, useNetwork } from "@/app/components/providers/NetworkProvider";
 import { useWalletState } from "@/app/hooks/useWalletState";
 import { useSlippageTolerance } from "@/app/hooks/useSlippageTolerance";
 import WalletConnectButton from "@/app/components/WalletConnectButton";
@@ -23,7 +23,7 @@ interface ProcessedPathHop {
   amount: string;
 }
 
-export default function SwapPage() {
+function SwapContent() {
   const { horizonUrl, network } = useNetwork();
   const { wallet } = useWalletState();
   const { slippagePercent, setSlippagePercent } = useSlippageTolerance();
@@ -394,4 +394,8 @@ export default function SwapPage() {
       </div>
     </div>
   );
+}
+
+export default function SwapPage() {
+  return <NetworkProvider><SwapContent /></NetworkProvider>;
 }

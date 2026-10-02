@@ -12,6 +12,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { BalanceValue } from "@/context/BalancePrivacyContext";
+import { SocialShareModal, type SocialShareData } from "@/components/common";
 import {
   useVaultYieldHarvest,
   type HarvestEvent,
@@ -418,10 +419,11 @@ function PoolAllocationsPanel({ allocations }: { allocations: PoolAllocation[] }
 // Harvest event log row
 // ---------------------------------------------------------------------------
 
-function HarvestRow({ event, expanded, onToggle }: {
+function HarvestRow({ event, expanded, onToggle, onShare }: {
   event: HarvestEvent;
   expanded: boolean;
   onToggle: () => void;
+  onShare: () => void;
 }) {
   return (
     <div className="rounded-lg border border-neutral-800 bg-neutral-950 p-4 transition-colors hover:border-neutral-700">
@@ -504,6 +506,15 @@ function HarvestRow({ event, expanded, onToggle }: {
               Explorer <ExternalLink size={10} />
             </a>
           </div>
+          {event.status === "confirmed" && (
+            <button
+              type="button"
+              onClick={onShare}
+              className="rounded-lg border border-cyan-800/70 px-3 py-2 text-xs font-semibold text-cyan-300 transition-colors hover:bg-cyan-950/50"
+            >
+              Share harvest
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -514,7 +525,7 @@ function HarvestRow({ event, expanded, onToggle }: {
 // Harvest Logs Panel
 // ---------------------------------------------------------------------------
 
-function HarvestLogsPanel({ events }: { events: HarvestEvent[] }) {
+function HarvestLogsPanel({ events, onShare }: { events: HarvestEvent[]; onShare: (event: HarvestEvent) => void }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const toggle = (id: string) =>
@@ -537,6 +548,7 @@ function HarvestLogsPanel({ events }: { events: HarvestEvent[] }) {
             event={event}
             expanded={expandedId === event.id}
             onToggle={() => toggle(event.id)}
+            onShare={() => onShare(event)}
           />
         ))}
       </div>
@@ -605,6 +617,7 @@ function Skeleton({ className }: { className?: string }) {
  */
 export function VaultYieldHarvestVisualizer() {
   const { data, isLoading, isFetching, refetch } = useVaultYieldHarvest();
+  const [shareData, setShareData] = useState<SocialShareData | null>(null);
 
   if (isLoading || !data) {
     return (
@@ -718,7 +731,19 @@ export function VaultYieldHarvestVisualizer() {
               <Clock size={15} className="text-violet-400" />
               Harvest Events
             </h2>
-            <HarvestLogsPanel events={harvestEvents} />
+            <HarvestLogsPanel
+              events={harvestEvents}
+              onShare={(event) => setShareData({
+                type: "yield",
+                title: "Vault yield harvest milestone",
+                fromAmount: fmtUsd(event.totalHarvestedUsd),
+                fromSymbol: "Harvest",
+                toAmount: event.compoundedShares.toLocaleString(),
+                toSymbol: "shares",
+                timestamp: `${new Date(event.timestamp).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })} UTC`,
+                txHash: event.txHash,
+              })}
+            />
           </div>
         </div>
 
@@ -728,6 +753,13 @@ export function VaultYieldHarvestVisualizer() {
           Data refreshes every 30s
         </p>
       </div>
+      {shareData && (
+        <SocialShareModal
+          isOpen
+          onClose={() => setShareData(null)}
+          shareData={shareData}
+        />
+      )}
     </div>
   );
 }

@@ -74,7 +74,7 @@ export default function MobileDrawerNav({ isOpen, onClose }: MobileDrawerNavProp
             role="dialog"
             aria-modal="true"
             aria-label="Additional navigation"
-            className="fixed inset-y-0 right-0 z-50 flex w-[min(22rem,88vw)] flex-col border-l border-border bg-background px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))] text-foreground shadow-2xl"
+            className="glass-surface glass-nav fixed inset-y-0 right-0 z-50 flex w-[min(22rem,88vw)] flex-col border-l px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))] text-foreground shadow-2xl"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}

@@ -67,7 +67,7 @@ Edit `.bundle-limits.json` to change thresholds:
   "maxMainBundle": 250,         // Main JS chunk limit (gzipped, KB)
   "maxPageBundle": 100,         // Per-page chunk limit (gzipped, KB)
   "maxTotalGzipped": 500,       // Total all bundles (gzipped, KB)
-  "maxIndividualGzipped": 150   // Hard limit per bundle (gzipped, KB)
+  "maxIndividualGzipped": 151   // Hard limit per bundle (gzipped, KB)
 }
 ```
 

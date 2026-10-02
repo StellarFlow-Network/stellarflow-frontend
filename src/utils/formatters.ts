@@ -33,6 +33,27 @@ export function formatCountdown(remainingSeconds: number): string {
   return [hours, minutes, secs].map((part) => String(part).padStart(2, "0")).join(":");
 }
 
+const COMPACT_AMOUNT_UNITS = [
+  { threshold: 1_000_000, suffix: "M" },
+  { threshold: 1_000, suffix: "K" },
+] as const;
+
+export function formatOrderBookPrice(value: number, maxFractionDigits: number = 4): string {
+  return value.toLocaleString("en-US", {
+    minimumFractionDigits: Math.min(2, maxFractionDigits),
+    maximumFractionDigits: maxFractionDigits,
+  });
+}
+
+export function formatCompactAmount(value: number): string {
+  const unit = COMPACT_AMOUNT_UNITS.find(({ threshold }) => Math.abs(value) >= threshold);
+  return unit ? `${(value / unit.threshold).toFixed(2)}${unit.suffix}` : value.toFixed(2);
+}
+
+export function formatPercent(value: number, fractionDigits: number = 2): string {
+  return `${value.toFixed(fractionDigits)}%`;
+}
+
 export function formatStroops(stroops: string): string {
   const stroopValue = BigInt(stroops);
   const xlmValue = Number(stroopValue) / 10_000_000;

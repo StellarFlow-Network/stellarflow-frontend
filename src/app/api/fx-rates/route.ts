@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import type { FxCurrencyCode, FxRatesResponse } from "@/types/fxRates";
 
+// Static export (`output: export`) only supports GET handlers that are
+// explicitly static; this feed has no request-scoped state, so it is
+// prerendered at build time.
+export const dynamic = "force-static";
+
 /**
  * Backend price feed stand-in for the live FX rate ticker (#718).
  *

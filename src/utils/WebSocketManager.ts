@@ -1,6 +1,6 @@
 "use client";
 
-import { PriceData, OrderBookSnapshot } from "@/types";
+import { PriceData, OrderBookSnapshot, AmmTradeEvent } from "@/types";
 
 export interface SocketMessage {
   /**
@@ -11,14 +11,31 @@ export interface SocketMessage {
   type: "price_update" | "delta_update" | "orderbook_update" | (string & {});
   assetId?: string;
   data: PriceData | Partial<PriceData> | OrderBookSnapshot | Record<string, unknown> | undefined;
+interface SocketMessage {
+  type: "price_update" | "delta_update" | "orderbook_update" | "trade_execution";
+  assetId?: string;
+  data: PriceData | Partial<PriceData> | OrderBookSnapshot | AmmTradeEvent;
   timestamp: number;
 }
 
 type MessageCallback = (data: PriceData | Partial<PriceData>) => void;
 type OrderBookCallback = (data: OrderBookSnapshot) => void;
+type TradeCallback = (data: AmmTradeEvent) => void;
 type StatusCallback = (connected: boolean) => void;
 /** Raw frame fan-out for non-price indexer channels (e.g. circuit breakers). */
 export type IndexerEventCallback = (message: SocketMessage) => void;
+
+/**
+ * Multisig frames (`multisig_signature_request` / `multisig_signature_resolved`)
+ * are forwarded as the raw `{ type, data }` envelope rather than a price tick,
+ * so consumers can validate them with `parseMultisigSocketEvent` (#962).
+ */
+export interface MultisigSocketMessage {
+  type: string;
+  data?: unknown;
+}
+
+type MultisigCallback = (message: MultisigSocketMessage) => void;
 
 export class WebSocketManager {
   private static instance: WebSocketManager | null = null;
@@ -27,8 +44,10 @@ export class WebSocketManager {
   // Track listeners for data streams and connection statuses
   private messageListeners: Set<MessageCallback> = new Set();
   private orderBookListeners: Set<OrderBookCallback> = new Set();
+  private tradeListeners: Set<TradeCallback> = new Set();
   private statusListeners: Set<StatusCallback> = new Set();
   private indexerEventListeners: Set<IndexerEventCallback> = new Set();
+  private multisigListeners: Set<MultisigCallback> = new Set();
   
   // Keep an aggregated set of all sub-assets requested by various hooks
   private globalSubscribedAssets: Set<string> = new Set();
@@ -99,6 +118,10 @@ export class WebSocketManager {
             // Non-price indexer channels ride the same socket. They are fanned
             // out raw so each channel owns its own payload parsing.
             this.notifyIndexerEventListeners(message);
+          } else if (message.type === "trade_execution") {
+            this.tradeListeners.forEach((callback) =>
+              callback(message.data as AmmTradeEvent),
+            );
           }
         } catch (err) {
           console.error("Failed to parse centralized WebSocket message:", err);
@@ -149,6 +172,15 @@ export class WebSocketManager {
 
   public unsubscribeFromOrderBook(callback: OrderBookCallback) {
     this.orderBookListeners.delete(callback);
+  }
+
+  // Subscribe a component listener to AMM trade execution events
+  public subscribeToTrades(callback: TradeCallback) {
+    this.tradeListeners.add(callback);
+  }
+
+  public unsubscribeFromTrades(callback: TradeCallback) {
+    this.tradeListeners.delete(callback);
   }
 
   // Subscribe a component listener to status change events

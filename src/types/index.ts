@@ -55,3 +55,23 @@ export interface OrderBookSnapshot {
   asks: OrderBookLevel[];
   timestamp: number; // Unix timestamp
 }
+
+/** A single executed swap against an AMM pool, pushed over the price WebSocket
+ *  feed as a `trade_execution` message. Pools are their own subscription unit
+ *  (their id is the subscription key), so the pair is carried on the pool
+ *  record rather than duplicated here. */
+export interface AmmTradeEvent {
+  /** Pool the swap routed through, e.g. "xlm-usdc". */
+  poolId: string;
+  /** Notional USD value of the executed swap. */
+  volumeUsd: number;
+  /** Total trading fee charged on this swap, in `feeAsset` units. */
+  feeAmount: number;
+  /** Portion of `feeAmount` routed to liquidity providers. */
+  lpFee: number;
+  /** Portion of `feeAmount` routed to the protocol treasury. */
+  protocolFee: number;
+  /** Asset the fee was charged in, e.g. "USDC". */
+  feeAsset: string;
+  timestamp: number; // Unix timestamp
+}

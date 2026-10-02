@@ -4,24 +4,12 @@ import React, { memo } from "react";
 import { useOrderBook } from "@/app/hooks/useOrderBook";
 import { useMounted } from "@/app/hooks/useMounted";
 import type { AssetSymbol } from "@/config/assetSymbols";
+import { formatCompactAmount, formatOrderBookPrice } from "@/utils/formatters";
 
 interface OrderBookFeedProps {
   assetId: AssetSymbol;
   /** Number of price levels to show per side. Defaults to 8. */
   depth?: number;
-}
-
-function formatPrice(value: number): string {
-  return value.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 4,
-  });
-}
-
-function formatAmount(value: number): string {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(2)}K`;
-  return value.toFixed(2);
 }
 
 function OrderBookSkeleton({ depth }: { depth: number }) {
@@ -104,9 +92,9 @@ function OrderBookFeed({ assetId, depth = 8 }: OrderBookFeedProps) {
                     style={{ width: `${Math.min(100, (level.total / maxTotal) * 100)}%` }}
                     aria-hidden="true"
                   />
-                  <span className="relative text-emerald-400">{formatPrice(level.price)}</span>
+                  <span className="relative text-emerald-400">{formatOrderBookPrice(level.price)}</span>
                   <span className="relative text-right text-gray-300">
-                    {formatAmount(level.amount)}
+                    {formatCompactAmount(level.amount)}
                   </span>
                 </div>
               ))}
@@ -130,9 +118,9 @@ function OrderBookFeed({ assetId, depth = 8 }: OrderBookFeedProps) {
                     style={{ width: `${Math.min(100, (level.total / maxTotal) * 100)}%` }}
                     aria-hidden="true"
                   />
-                  <span className="relative text-rose-400">{formatPrice(level.price)}</span>
+                  <span className="relative text-rose-400">{formatOrderBookPrice(level.price)}</span>
                   <span className="relative text-right text-gray-300">
-                    {formatAmount(level.amount)}
+                    {formatCompactAmount(level.amount)}
                   </span>
                 </div>
               ))}

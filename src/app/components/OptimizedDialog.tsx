@@ -109,7 +109,7 @@ export function OptimizedDialog({
 
           {/* Dialog content */}
           <motion.div
-            className={`relative w-full ${sizeClasses[size]} bg-[#161b22] border border-gray-800 rounded-xl shadow-2xl ${className}`}
+            className={`glass-surface glass-modal relative w-full ${sizeClasses[size]} border rounded-xl shadow-2xl ${className}`}
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -117,11 +117,11 @@ export function OptimizedDialog({
           >
             {/* Header */}
             {(title || showCloseButton) && (
-              <div className="flex items-center justify-between border-b border-gray-800 px-6 py-4">
+              <div className="flex items-center justify-between border-b border-border px-6 py-4">
                 {title && (
                   <h2
                     id="dialog-title"
-                    className="text-lg font-semibold text-gray-100"
+                    className="text-lg font-semibold text-foreground"
                   >
                     {title}
                   </h2>
@@ -129,7 +129,7 @@ export function OptimizedDialog({
                 {showCloseButton && (
                   <button
                     onClick={onClose}
-                    className="ml-auto p-1.5 text-gray-400 hover:text-gray-200 hover:bg-gray-800 rounded-lg transition-colors"
+                    className="ml-auto p-1.5 text-foreground/60 hover:text-foreground hover:bg-control-hover rounded-lg transition-colors"
                     aria-label="Close dialog"
                   >
                     <X size={20} />

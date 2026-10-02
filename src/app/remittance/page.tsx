@@ -1,9 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
+import { FxRateTicker, FxComparisonTable, FiatOnRampModal, SEP38RateChart } from "@/components/remittance";
+import { CorridorStatusMap, FxRateTicker, FxComparisonTable, FiatOnRampModal, type RemittanceCorridor } from "@/components/remittance";
 import { CorridorStatusMap, FxRateTicker, FxComparisonTable, FiatOnRampModal, SEP24InteractiveModal, type RemittanceCorridor } from "@/components/remittance";
 import { useOptionalWallet, useOptionalWalletActions } from "@/app/components/providers/WalletProvider";
-import { ArrowDownToLine, ArrowUpFromLine, CreditCard } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, CreditCard, LockKeyhole, ShieldAlert } from "lucide-react";
+import { RedeemNoteForm } from "@/components/remittance/RedeemNoteForm";
 import type { SEP24Operation } from "@/lib/sep24Interactive";
 
 export default function RemittancePage() {
@@ -88,6 +91,9 @@ export default function RemittancePage() {
         </div>
       </div>
 
+      <div className="mt-6">
+        <SEP38RateChart />
+      </div>
       <section aria-labelledby="private-remittance-title" className="mt-12 space-y-5">
         <header className="flex flex-col justify-between gap-4 border-b border-neutral-800 pb-5 lg:flex-row lg:items-end">
           <div>
@@ -160,4 +166,3 @@ export default function RemittancePage() {
     </div>
   );
 }
-
