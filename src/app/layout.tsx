@@ -14,6 +14,7 @@ import MobileBottomNav from "@/components/navigation/MobileBottomNav";
 import { PWAInstallGuideModal } from "@/components/pwa/PWAInstallGuideModal";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { SwUpdateBanner } from "@/components/pwa/SwUpdateBanner";
+import { OfflineDraftSyncRoot } from "@/components/offline";
 import { ScreenLockProvider } from "@/components/security/ScreenLockModal";
 import { SessionTimeoutManager } from "@/components/security/SessionTimeoutManager";
 import { InactivityLockGuard } from "@/components/security/InactivityLockGuard";
@@ -194,6 +195,8 @@ export default async function RootLayout({
                         </PushNotificationRoot>
                       </ToastProvider>
                       <SwUpdateBanner />
+                      <InstallBanner />
+                      <OfflineDraftSyncRoot />
                       <PWAInstallGuideModal />
                       <CommandPalette />
                   </ProgressBarProvider>
