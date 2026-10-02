@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowRight,
@@ -24,6 +24,13 @@ import {
 } from "lucide-react";
 import { SignatureStatusCard, CoSigner, SignerStatus } from "./SignatureStatusCard";
 import { triggerHaptic } from "@/lib/haptics";
+import {
+  DEMO_CO_SIGNER_PUBLIC_KEY,
+  isEnvelopeAwaitingSigner,
+  type MultisigQueueFilter,
+} from "@/services/multisigNotifications";
+
+export type { MultisigQueueFilter };
 
 export interface MultisigTransaction {
   id: string;
@@ -47,10 +54,36 @@ export interface MultisigTransaction {
 export interface MultisigQueueViewProps {
   initialTransactions?: MultisigTransaction[];
   connectedUserPublicKey?: string | null;
+  /** Initial queue filter, driven by `?filter=pending` deep links (#962). */
+  initialFilter?: MultisigQueueFilter;
+  /** Envelope to focus, driven by `?request=` deep links (#962). */
+  highlightRequestId?: string | null;
   onExecuteTransaction?: (tx: MultisigTransaction) => Promise<void>;
   onSignTransaction?: (txId: string, signerPublicKey: string) => Promise<void>;
   onRevokeSignature?: (txId: string, signerPublicKey: string) => Promise<void>;
 }
+
+/**
+ * Whether `viewerPublicKey` still has to sign before `tx` can execute.
+ *
+ * Drives the "Awaiting my signature" filter the co-signer badge deep links
+ * into (#962); the rule itself lives in the notification service so it can be
+ * unit tested without a DOM.
+ */
+function awaitsViewerSignature(
+  tx: MultisigTransaction,
+  viewerPublicKey: string,
+): boolean {
+  return isEnvelopeAwaitingSigner(tx, viewerPublicKey);
+}
+
+const MULTISIG_QUEUE_FILTERS: {
+  value: MultisigQueueFilter;
+  label: string;
+}[] = [
+  { value: "all", label: "All envelopes" },
+  { value: "pending", label: "Awaiting my signature" },
+];
 
 const DEFAULT_MOCK_MULTISIG_TXS: MultisigTransaction[] = [
   {
@@ -134,20 +167,78 @@ const DEFAULT_MOCK_MULTISIG_TXS: MultisigTransaction[] = [
 
 export function MultisigQueueView({
   initialTransactions = DEFAULT_MOCK_MULTISIG_TXS,
-  connectedUserPublicKey = "GBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXDV90210",
+  connectedUserPublicKey = DEMO_CO_SIGNER_PUBLIC_KEY,
+  initialFilter = "all",
+  highlightRequestId = null,
   onExecuteTransaction,
   onSignTransaction,
   onRevokeSignature,
 }: MultisigQueueViewProps) {
+  // A visitor without a wallet extension still sees the demo envelopes this
+  // queue ships with, so fall back to the demo co-signer key instead of
+  // rendering an empty "awaiting you" filter.
+  const viewerPublicKey = connectedUserPublicKey || DEMO_CO_SIGNER_PUBLIC_KEY;
+
   const [transactions, setTransactions] = useState<MultisigTransaction[]>(initialTransactions);
-  const [selectedTxId, setSelectedTxId] = useState<string>(initialTransactions[0]?.id || "");
+  const [filter, setFilter] = useState<MultisigQueueFilter>(initialFilter);
+  const [selectedTxId, setSelectedTxId] = useState<string>(() => {
+    const highlighted = highlightRequestId
+      ? initialTransactions.find((t) => t.id === highlightRequestId)
+      : undefined;
+    if (highlighted) return highlighted.id;
+    const firstVisible =
+      initialFilter === "pending"
+        ? initialTransactions.find((t) => awaitsViewerSignature(t, viewerPublicKey))
+        : initialTransactions[0];
+    return firstVisible?.id || "";
+  });
   const [isActionBusy, setIsActionBusy] = useState(false);
   const [actionSuccessMessage, setActionSuccessMessage] = useState<string | null>(null);
+  const appliedHighlightRef = useRef<string | null>(null);
+
+  const awaitingCount = useMemo(
+    () => transactions.filter((t) => awaitsViewerSignature(t, viewerPublicKey)).length,
+    [transactions, viewerPublicKey]
+  );
+
+  const visibleTransactions = useMemo(
+    () =>
+      filter === "pending"
+        ? transactions.filter((t) => awaitsViewerSignature(t, viewerPublicKey))
+        : transactions,
+    [transactions, filter, viewerPublicKey]
+  );
 
   const selectedTx = useMemo(
-    () => transactions.find((t) => t.id === selectedTxId) || transactions[0] || null,
-    [transactions, selectedTxId]
+    () =>
+      visibleTransactions.find((t) => t.id === selectedTxId) ||
+      visibleTransactions[0] ||
+      null,
+    [visibleTransactions, selectedTxId]
   );
+
+  // Keep the detail pane pointing at something the current filter can show.
+  useEffect(() => {
+    if (visibleTransactions.length === 0) return;
+    if (!visibleTransactions.some((t) => t.id === selectedTxId)) {
+      setSelectedTxId(visibleTransactions[0].id);
+    }
+  }, [visibleTransactions, selectedTxId]);
+
+  // Follow `?filter=` deep links pushed while this page is already mounted.
+  useEffect(() => {
+    setFilter(initialFilter);
+  }, [initialFilter]);
+
+  // Open the envelope a notification pointed at, even on an in-page navigation
+  // where the component does not remount.
+  useEffect(() => {
+    if (!highlightRequestId || appliedHighlightRef.current === highlightRequestId) {
+      return;
+    }
+    appliedHighlightRef.current = highlightRequestId;
+    setSelectedTxId(highlightRequestId);
+  }, [highlightRequestId]);
 
   // Recalculate weights and threshold status
   const calculateTotalApprovedWeight = (signers: CoSigner[]): number => {
@@ -173,7 +264,7 @@ export function MultisigQueueView({
           prev.map((t) => {
             if (t.id !== txId) return t;
             const nextSigners = t.coSigners.map((s) =>
-              s.publicKey === signerKey || (connectedUserPublicKey && s.publicKey === connectedUserPublicKey)
+              s.publicKey === signerKey || s.publicKey === viewerPublicKey
                 ? {
                     ...s,
                     status: "approved" as SignerStatus,
@@ -199,7 +290,7 @@ export function MultisigQueueView({
         setIsActionBusy(false);
       }
     },
-    [connectedUserPublicKey, onSignTransaction]
+    [viewerPublicKey, onSignTransaction]
   );
 
   // Revoke signature handler
@@ -220,7 +311,7 @@ export function MultisigQueueView({
           prev.map((t) => {
             if (t.id !== txId) return t;
             const nextSigners = t.coSigners.map((s) =>
-              s.publicKey === signerKey || (connectedUserPublicKey && s.publicKey === connectedUserPublicKey)
+              s.publicKey === signerKey || s.publicKey === viewerPublicKey
                 ? {
                     ...s,
                     status: "revoked" as SignerStatus,
@@ -244,7 +335,7 @@ export function MultisigQueueView({
         setIsActionBusy(false);
       }
     },
-    [connectedUserPublicKey, onRevokeSignature]
+    [viewerPublicKey, onRevokeSignature]
   );
 
   // Execute on-chain trigger
@@ -285,9 +376,25 @@ export function MultisigQueueView({
 
   if (!selectedTx) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-[#0d1a21] p-8 text-center text-slate-400">
+      <div
+        data-testid="multisig-queue-empty"
+        className="rounded-2xl border border-white/10 bg-[#0d1a21] p-8 text-center text-slate-400"
+      >
         <FileSignature size={32} className="mx-auto mb-2 text-slate-500" />
-        <p>No multi-signature envelopes in queue.</p>
+        <p>
+          {filter === "pending"
+            ? "Nothing is waiting on your signature right now."
+            : "No multi-signature envelopes in queue."}
+        </p>
+        {filter === "pending" && transactions.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setFilter("all")}
+            className="mt-4 rounded-lg border border-white/15 px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:bg-white/5"
+          >
+            Show all {transactions.length} envelopes
+          </button>
+        )}
       </div>
     );
   }
@@ -299,7 +406,7 @@ export function MultisigQueueView({
   );
 
   const currentUserSigner = selectedTx.coSigners.find(
-    (s) => connectedUserPublicKey && s.publicKey === connectedUserPublicKey
+    (s) => s.publicKey === viewerPublicKey
   );
 
   const userCanSign = currentUserSigner?.status === "pending" && !thresholdMet && selectedTx.status !== "executed";
@@ -336,13 +443,58 @@ export function MultisigQueueView({
               <Layers size={16} className="text-[#f5c842]" />
               <span>Pending multisig payloads</span>
             </div>
-            <span className="rounded-md bg-white/10 px-2 py-0.5 font-mono text-xs text-slate-300">
-              {transactions.length} items
+            <span
+              data-testid="multisig-queue-count"
+              className="rounded-md bg-white/10 px-2 py-0.5 font-mono text-xs text-slate-300"
+            >
+              {visibleTransactions.length} / {transactions.length} items
             </span>
           </div>
 
+          {/*
+            Queue filter — the `?filter=pending` deep link from the top-bar
+            badge (#962) preselects "Awaiting my signature".
+          */}
+          <div
+            role="group"
+            aria-label="Filter multisig queue"
+            className="grid grid-cols-2 gap-1 rounded-xl border border-white/10 bg-[#0a151d] p-1"
+          >
+            {MULTISIG_QUEUE_FILTERS.map(({ value, label }) => {
+              const isActive = filter === value;
+              const count = value === "all" ? transactions.length : awaitingCount;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={isActive}
+                  data-testid={`multisig-filter-${value}`}
+                  onClick={() => {
+                    setFilter(value);
+                    setActionSuccessMessage(null);
+                    triggerHaptic("tap");
+                  }}
+                  className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                    isActive
+                      ? "bg-[#f5c842] text-[#071016]"
+                      : "text-slate-300 hover:bg-white/5"
+                  }`}
+                >
+                  <span>{label}</span>
+                  <span
+                    className={`rounded px-1 font-mono text-[10px] ${
+                      isActive ? "bg-[#071016]/15" : "bg-white/10"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
           <div className="space-y-3">
-            {transactions.map((tx) => {
+            {visibleTransactions.map((tx) => {
               const isSelected = tx.id === selectedTx.id;
               const isTxReady = tx.currentWeight >= tx.threshold;
               const isExecuted = tx.status === "executed";
@@ -505,10 +657,7 @@ export function MultisigQueueView({
                   <SignatureStatusCard
                     key={signer.publicKey}
                     signer={signer}
-                    isCurrentUser={
-                      Boolean(connectedUserPublicKey) &&
-                      signer.publicKey === connectedUserPublicKey
-                    }
+                    isCurrentUser={Boolean(viewerPublicKey) && signer.publicKey === viewerPublicKey}
                     canSign={userCanSign}
                     canRevoke={userCanRevoke}
                     isSubmitting={isActionBusy}
@@ -543,7 +692,7 @@ export function MultisigQueueView({
                     onClick={() =>
                       handleApproveAndSign(
                         selectedTx.id,
-                        connectedUserPublicKey || selectedTx.coSigners[0].publicKey
+                        viewerPublicKey || selectedTx.coSigners[0].publicKey
                       )
                     }
                     className="flex flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-xs font-bold text-[#071016] transition hover:bg-emerald-400 disabled:opacity-50 shadow-lg shadow-emerald-500/20"
@@ -560,7 +709,7 @@ export function MultisigQueueView({
                     onClick={() =>
                       handleRevokeSignature(
                         selectedTx.id,
-                        connectedUserPublicKey || selectedTx.coSigners[0].publicKey
+                        viewerPublicKey || selectedTx.coSigners[0].publicKey
                       )
                     }
                     className="flex items-center gap-1.5 rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-2.5 text-xs font-semibold text-rose-300 transition hover:bg-rose-500/20 disabled:opacity-50"

@@ -51,6 +51,7 @@ export default async function PoolDetailPage({ params }: PoolPageProps) {
       assetB={pool.assetB}
       reserveA={pool.reserveA}
       reserveB={pool.reserveB}
+      spotPrice={pool.spotPrice}
     />
   );
 }

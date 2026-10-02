@@ -11,6 +11,7 @@ import type { IconId } from "@/components/icons/iconIds";
 import { useWallet } from "@/app/components/providers/WalletProvider";
 import NetworkSelector from "@/components/navigation/NetworkSelector";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { HighContrastToggle } from "@/components/accessibility";
 
 const WalletConnectButton = dynamic(
   () => import("@/app/components/WalletConnectButton"),
@@ -20,7 +21,7 @@ const WalletConnectButton = dynamic(
 const navItems: { iconId: IconId; label: string; href: string }[] = [
   { iconId: ICON_IDS.layoutDashboard, label: "Dashboard",  href: "/" },
   { iconId: ICON_IDS.database,        label: "Contracts",  href: "/contracts" },
-  { iconId: ICON_IDS.lineChart,       label: "Analytics",  href: "/analytics" },
+  { iconId: ICON_IDS.lineChart,       label: "Analytics",  href: "/dashboard/portfolio" },
   { iconId: ICON_IDS.globe,           label: "Governance", href: "/governance" },
   { iconId: ICON_IDS.signal,          label: "RPC Benchmark", href: "/rpc-benchmark" },
   { iconId: ICON_IDS.settings,        label: "Settings",   href: "/settings" },
@@ -157,9 +158,12 @@ export default function MobileMenu() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between border-b border-border pb-4">
-                  <span className="text-xs font-semibold text-foreground/70">Appearance</span>
-                  <ThemeToggle className="text-foreground/70 hover:bg-control-hover" />
+                <div className="space-y-3 border-b border-border pb-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-foreground/70">Appearance</span>
+                    <ThemeToggle className="text-foreground/70 hover:bg-control-hover" />
+                  </div>
+                  <HighContrastToggle />
                 </div>
 
                 <NetworkSelector className="w-full" />

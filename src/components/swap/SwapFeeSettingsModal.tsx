@@ -5,6 +5,8 @@ import OptimizedDialog from "@/app/components/OptimizedDialog";
 import Icon from "@/components/icons/Icon";
 import { ICON_IDS } from "@/components/icons/iconIds";
 
+import { CongestionFeeAlert } from "@/components/common/CongestionFeeAlert";
+
 export interface SwapFeeSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -40,6 +42,7 @@ export function SwapFeeSettingsModal({
       size="sm"
     >
       <div className="space-y-4">
+        <CongestionFeeAlert compact={true} />
         <div className="rounded-lg border border-gray-800 bg-[#0d1117] p-3">
           <p className="text-xs uppercase font-bold text-gray-500">
             Recommended Base Fee

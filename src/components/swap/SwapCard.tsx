@@ -196,7 +196,7 @@ export const SwapCard: React.FC<SwapCardProps> = ({ tokens, onSwapSuccess }) => 
   };
 
   return (
-    <div className="w-full max-w-lg mx-auto rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-2xl">
+    <div className="glass-surface glass-panel w-full max-w-lg mx-auto rounded-2xl border p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-white">Swap</h2>
         <div className="flex items-center gap-2">

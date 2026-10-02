@@ -5,3 +5,10 @@
  */
 
 export { TokenBadge, type TokenBadgeProps } from './TokenBadge';
+
+export {
+  SocialShareModal,
+  type SocialShareModalProps,
+  type SocialShareData,
+  type ShareCategory,
+} from './SocialShareModal';

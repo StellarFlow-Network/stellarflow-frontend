@@ -5,7 +5,7 @@ import OptimizedDialog from '@/app/components/OptimizedDialog';
 import { useWallet } from '@/app/components/providers/WalletProvider';
 import { useHarvestRewards } from '@/hooks/useHarvestRewards';
 import { useToast } from '@/components/ui/ToastQueue';
-import { formatTokenAmount } from '@/utils/formatters';
+import { formatCountdown, formatTokenAmount } from '@/utils/formatters';
 import type { FarmPool } from './FarmCard';
 
 type FarmAction = 'stake' | 'unstake';
@@ -24,17 +24,29 @@ export function YieldFarmModal({ isOpen, onClose, farm, onRefresh }: YieldFarmMo
   const [action, setAction] = useState<FarmAction>('stake');
   const [amount, setAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentTime, setCurrentTime] = useState(() => Math.floor(Date.now() / 1000));
 
   const availableBalance = action === 'stake' ? farm.walletLpBalance : farm.userStakedLP;
   const numericAmount = Number(amount);
   const hasValidAmount = Number.isFinite(numericAmount) && numericAmount > 0 && (action === 'stake' || numericAmount <= Number(availableBalance));
   const emissionRate = farm.rewardEmissionRate ?? `${(farm.apr / 365).toFixed(4)}% APR/day`;
+  const lockSecondsRemaining = farm.lockExpiryTimestamp === null ? 0 : Math.max(0, farm.lockExpiryTimestamp - currentTime);
+  const isEarlyUnstake = action === 'unstake' && lockSecondsRemaining > 0;
+  const configuredPenalty = farm.earlyUnstakePenaltyPercent ?? 10;
+  const penaltyPercent = Number.isFinite(configuredPenalty) ? Math.min(100, Math.max(0, configuredPenalty)) : 10;
+  const penaltyAmount = isEarlyUnstake && Number.isFinite(numericAmount) ? numericAmount * penaltyPercent / 100 : 0;
 
   useEffect(() => {
     if (isOpen) {
       setAction('stake');
       setAmount('');
     }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const interval = setInterval(() => setCurrentTime(Math.floor(Date.now() / 1000)), 1000);
+    return () => clearInterval(interval);
   }, [isOpen]);
 
   const claimable = useMemo(() => formatTokenAmount(farm.claimableRewards), [farm.claimableRewards]);
@@ -139,6 +151,19 @@ export function YieldFarmModal({ isOpen, onClose, farm, onRefresh }: YieldFarmMo
           </div>
           {action === 'stake' && <p className="mt-2 text-xs text-gray-500">Your wallet LP balance will be checked when the transaction is submitted.</p>}
           {action === 'unstake' && amount && numericAmount > Number(availableBalance) && <p className="mt-2 text-xs text-red-400">Amount exceeds your staked LP balance.</p>}
+          {action === 'unstake' && farm.lockExpiryTimestamp !== null && (
+            <div className="mt-3 rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-sm" aria-live="polite">
+              <p className="text-xs font-semibold text-amber-300">
+                {isEarlyUnstake ? `Unlocks in ${formatCountdown(lockSecondsRemaining)}` : 'Position unlocked'}
+              </p>
+              {isEarlyUnstake ? (
+                <dl className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                  <div><dt className="text-gray-500">Early unstake penalty ({penaltyPercent}%)</dt><dd className="mt-1 text-white">{formatTokenAmount(String(penaltyAmount))} LP</dd></div>
+                  <div><dt className="text-gray-500">Estimated received</dt><dd className="mt-1 text-white">{formatTokenAmount(String(Math.max(0, numericAmount - penaltyAmount)))} LP</dd></div>
+                </dl>
+              ) : <p className="mt-1 text-xs text-gray-500">No early unstake penalty applies.</p>}
+            </div>
+          )}
         </div>
 
         <button

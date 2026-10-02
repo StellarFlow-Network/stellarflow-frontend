@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { formatTokenAmount, formatCountdown } from '@/utils/formatters';
 import YieldFarmModal from './YieldFarmModal';
+import { AutoHarvestGasOptimizationWizard } from './AutoHarvestGasOptimizationWizard';
 
 export interface FarmPool {
   id: string;
@@ -13,6 +14,7 @@ export interface FarmPool {
   rewardSymbol: string;
   rewardEmissionRate?: string;
   lockExpiryTimestamp: number | null; // Unix timestamp in seconds
+  earlyUnstakePenaltyPercent?: number;
 }
 
 interface FarmCardProps {
@@ -79,6 +81,8 @@ export const FarmCard: React.FC<FarmCardProps> = ({ farm, onRefresh }) => {
           </p>
         </div>
       </div>
+
+      <AutoHarvestGasOptimizationWizard apr={farm.apr} />
 
       {/* Lockup Status & Countdown */}
       {farm.lockExpiryTimestamp !== null && (

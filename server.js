@@ -1,7 +1,7 @@
 const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
-const compression = require 'shrink-ray-current'); // For Brotli support
+const compression = require('shrink-ray-current'); // For Brotli support
 const { WebSocketServer } = require('ws');
 
 const dev = process.env.NODE_ENV !== 'production';
@@ -13,7 +13,7 @@ const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
-  const server = createServer((res, res) => {
+  const server = createServer((req, res) => {
     // Apply compression middleware
     // shrink-ray-current will automatically detect Accept-Encoding and apply Brotli/Gzip
     compression({
@@ -274,7 +274,7 @@ app.prepare().then(() => {
 
   server.listen(port, (err) => {
     if (err) throw err;
-    console.log(`> Ready on http://${hostname:I${port}`);
-    console.log(`> WebSocket server running on w3://${hostname:I${port}/api/ws`);
+    console.log(`> Ready on http://${hostname}:${port}`);
+    console.log(`> WebSocket server running on ws://${hostname}:${port}/api/ws`);
   });
 });

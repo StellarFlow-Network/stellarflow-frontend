@@ -29,6 +29,35 @@ export const NETWORK_CONFIGS: Record<NetworkTarget, NetworkConfig> = {
     horizonUrl: "https://horizon.stellar.org",
     sorobanUrl: "https://soroban-mainnet.stellar.org",
     networkPassphrase: "Public Global Stellar Network ; September 2015",
+export interface NetworkConfig {
+  /** Human-readable network label. */
+  label: string;
+  network: NetworkTarget;
+  /** Passphrase transactions are signed against. */
+  networkPassphrase: string;
+  horizonUrl: string;
+  sorobanRpcUrl: string;
+}
+
+/**
+ * Static per-network configuration table shared by hooks/components that need
+ * endpoint details without subscribing to the provider (they fall back to
+ * `NETWORK_CONFIGS[network]` when rendered outside `<NetworkProvider>`).
+ */
+export const NETWORK_CONFIGS: Record<NetworkTarget, NetworkConfig> = {
+  testnet: {
+    label: "Testnet",
+    network: "testnet",
+    networkPassphrase: "Test SDF Network ; September 2015",
+    horizonUrl: "https://horizon-testnet.stellar.org",
+    sorobanRpcUrl: "https://soroban-testnet.stellar.org",
+  },
+  mainnet: {
+    label: "Public",
+    network: "mainnet",
+    networkPassphrase: "Public Global Stellar Network ; September 2015",
+    horizonUrl: "https://horizon.stellar.org",
+    sorobanRpcUrl: "https://soroban-mainnet.stellar.org",
   },
 };
 
@@ -38,6 +67,7 @@ interface NetworkContextType {
   sorobanUrl: string;
   customHorizonUrl: string;
   /** Resolved config for the active network, following any custom endpoint. */
+  /** Active network config (honours a custom Horizon endpoint when set). */
   config: NetworkConfig;
 }
 
@@ -203,6 +233,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
         horizonUrl,
         sorobanUrl,
       },
+      config: { ...NETWORK_CONFIGS[network], horizonUrl },
     }),
     [network, horizonUrl, sorobanUrl, customHorizonUrl],
   );
@@ -250,6 +281,10 @@ export function useNetwork() {
  * (diagnostics, RPC benchmark) can fall back to their own defaults.
  */
 export function useOptionalNetwork(): NetworkContextType | undefined {
+ * Non-throwing variant for components/hooks that must also render outside a
+ * `<NetworkProvider>` (diagnostics page, RPC health checks, wallet panels).
+ */
+export function useOptionalNetwork() {
   return useContext(NetworkContext);
 }
 

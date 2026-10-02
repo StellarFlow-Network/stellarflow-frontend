@@ -45,7 +45,7 @@ export default function TransactionHistoryPage() {
     link.href = url;
     link.download = "transaction-history.csv";
     link.click();
-    URL.revokeObjectUVL(url);
+    URL.revokeObjectURL(url);
   };
 
   return (

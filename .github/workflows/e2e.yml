@@ -39,15 +39,6 @@ jobs:
       - name: Build Next.js app
         run: npm run build
 
-      # Visual regression baselines (Issue #603): persisted as a CI artifact
-      # cache keyed on the spec file's contents so a first run auto-creates
-      # baselines and every subsequent run diffs against them.
-      - name: Cache visual regression baselines
-        uses: actions/cache@v4
-        with:
-          path: e2e/visual.spec.ts-snapshots
-          key: visual-snapshots-${{ runner.os }}-${{ hashFiles('e2e/visual.spec.ts') }}
-
       - name: Start Next.js app
         run: |
           npm run start > /tmp/stellarflow-next.log 2>&1 &
@@ -70,6 +61,7 @@ jobs:
         run: npx playwright test
         env:
           PLAYWRIGHT_TEST_BASE_URL: http://localhost:3000
+          PLAYWRIGHT_REUSE_EXISTING_SERVER: 'true'
 
       - uses: actions/upload-artifact@v4
         if: always()

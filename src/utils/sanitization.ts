@@ -56,6 +56,15 @@ export function sanitizeHtml(content: string): string {
   }) as string;
 }
 
+/** Removes HTML elements from plain text and Markdown before storing user input. */
+export function sanitizeUserInput(value: string): string {
+  if (typeof value !== "string") return "";
+  return DOMPurify.sanitize(value, {
+    ALLOWED_TAGS: [],
+    ALLOWED_ATTR: [],
+  }) as string;
+}
+
 interface SafeHTMLProps {
   content: string;
   className?: string;
