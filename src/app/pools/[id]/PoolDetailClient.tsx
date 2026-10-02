@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { PoolFeeApyTrendChart, type PoolApyDataPoint } from '@/components/charts/PoolFeeApyTrendChart';
+import { PoolReserveMonitor } from '@/components/amm/PoolReserveMonitor';
 
 interface PoolDetailClientProps {
   poolId: string;
@@ -14,6 +16,8 @@ interface PoolDetailClientProps {
   assetB: string;
   reserveA: number;
   reserveB: number;
+  /** Market spot price of 1 `assetA` quoted in `assetB`, when available. */
+  spotPrice?: number;
 }
 
 function generateMockApyData(poolId: string, baseApy: number): PoolApyDataPoint[] {
@@ -46,11 +50,20 @@ export function PoolDetailClient({
   assetB,
   reserveA,
   reserveB,
+  spotPrice,
 }: PoolDetailClientProps) {
+  const router = useRouter();
+
   const apyData = useMemo(
     () => generateMockApyData(poolId, apr),
     [poolId, apr]
   );
+
+  const handleArbitrageSwap = React.useCallback(() => {
+    router.push(
+      `/swap?from=${encodeURIComponent(assetA)}&to=${encodeURIComponent(assetB)}`
+    );
+  }, [assetB, assetA, router]);
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 p-6 font-sans">
@@ -100,20 +113,15 @@ export function PoolDetailClient({
           <h2 className="text-lg font-semibold mb-4 text-neutral-200">
             Pool Reserves
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="flex justify-between text-sm font-mono py-2 px-3 rounded-lg bg-neutral-950/50">
-              <span className="text-neutral-400">{assetA}</span>
-              <span className="text-neutral-200">
-                {reserveA.toLocaleString()}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm font-mono py-2 px-3 rounded-lg bg-neutral-950/50">
-              <span className="text-neutral-400">{assetB}</span>
-              <span className="text-neutral-200">
-                {reserveB.toLocaleString()}
-              </span>
-            </div>
-          </div>
+          <PoolReserveMonitor
+            assetA={assetA}
+            assetB={assetB}
+            reserveA={reserveA}
+            reserveB={reserveB}
+            spotPrice={spotPrice}
+            ariaLabel={`${pair} reserve balance monitor`}
+            onArbitrageSwap={handleArbitrageSwap}
+          />
         </div>
 
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 shadow-2xl">

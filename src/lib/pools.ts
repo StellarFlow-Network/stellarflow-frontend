@@ -8,6 +8,8 @@ export interface LiquidityPool {
   assetB: string;
   reserveA: number;
   reserveB: number;
+  /** Market spot price of 1 `assetA` quoted in `assetB`, when available. */
+  spotPrice?: number;
   totalValueLocked: number;
   apr: number;
   volume24h: number;
@@ -23,6 +25,7 @@ function getMockPools(): LiquidityPool[] {
       assetB: "USDC",
       reserveA: 42_500_000,
       reserveB: 5_100_000,
+      spotPrice: 0.12,
       totalValueLocked: 10_200_000,
       apr: 8.4,
       volume24h: 1_850_000,
@@ -35,6 +38,7 @@ function getMockPools(): LiquidityPool[] {
       assetB: "NGNC",
       reserveA: 18_200_000,
       reserveB: 27_050_000_000,
+      spotPrice: 1450,
       totalValueLocked: 4_350_000,
       apr: 12.1,
       volume24h: 920_000,
@@ -47,6 +51,7 @@ function getMockPools(): LiquidityPool[] {
       assetB: "NGNC",
       reserveA: 2_600_000,
       reserveB: 3_900_000_000,
+      spotPrice: 1500,
       totalValueLocked: 5_200_000,
       apr: 6.7,
       volume24h: 640_000,
