@@ -1,0 +1,242 @@
+/* CapitalEfficiencyGauge – mirrors LiquidityConcentrationHeatmap token conventions */
+.wrapper {
+  --ceg-accent-low:    var(--color-warning, #f59e0b);   /* idle / cold   */
+  --ceg-accent-mid:    var(--color-accent, #2563eb);    /* healthy range */
+  --ceg-accent-high:   var(--color-success, #10b981);   /* optimal range */
+  --ceg-track:         var(--color-border, #374151);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem 1rem;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 0.75rem;
+  background: var(--color-surface-elevated, transparent);
+  position: relative;
+}
+
+/* ─── Arc gauge SVG ─────────────────────────────────────────────────────── */
+.gaugeWrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.gaugeArc {
+  /* SVG is rotated so arc starts at 7 o'clock; handled inline via transform */
+  display: block;
+  overflow: visible;
+}
+
+.trackArc {
+  fill: none;
+  stroke: var(--ceg-track);
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+
+.fillArc {
+  fill: none;
+  stroke-width: 9;
+  stroke-linecap: round;
+  /* stroke colour set inline from JS to allow per-zone colour */
+  transition:
+    stroke-dashoffset 0.55s cubic-bezier(0.4, 0, 0.2, 1),
+    stroke 0.3s ease;
+}
+
+.fillArcGlow {
+  fill: none;
+  stroke-width: 14;
+  stroke-linecap: round;
+  opacity: 0.18;
+  transition:
+    stroke-dashoffset 0.55s cubic-bezier(0.4, 0, 0.2, 1),
+    stroke 0.3s ease;
+  filter: blur(3px);
+}
+
+/* ─── Centre readout ────────────────────────────────────────────────────── */
+.centreText {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.ratioValue {
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary, #f9fafb);
+  line-height: 1;
+}
+
+.ratioLabel {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  margin-top: 0.2rem;
+}
+
+.ratioLabel[data-zone="optimal"] { color: #10b981; }
+.ratioLabel[data-zone="healthy"] { color: #2563eb; }
+.ratioLabel[data-zone="low"]     { color: #f59e0b; }
+
+/* ─── Benchmark row ─────────────────────────────────────────────────────── */
+.benchmarks {
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  gap: 0.5rem;
+  width: 100%;
+  font-size: 0.72rem;
+}
+
+.benchmarkDivider {
+  background: var(--color-border, #374151);
+}
+
+.benchmarkItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.benchmarkLabel {
+  color: var(--color-text-secondary, #9ca3af);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.benchmarkValue {
+  color: var(--color-text-primary, #f9fafb);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.benchmarkDelta {
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 0.1rem 0.35rem;
+  border-radius: 9999px;
+}
+
+.benchmarkDelta[data-sign="positive"] {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.benchmarkDelta[data-sign="negative"] {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.benchmarkDelta[data-sign="neutral"] {
+  color: var(--color-text-secondary, #9ca3af);
+  background: rgba(156, 163, 175, 0.12);
+}
+
+/* ─── Stat row ──────────────────────────────────────────────────────────── */
+.stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border, #374151);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.statLabel {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary, #9ca3af);
+}
+
+.statValue {
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary, #f9fafb);
+  margin-top: 0.1rem;
+}
+
+/* ─── Tooltip trigger ───────────────────────────────────────────────────── */
+.infoButton {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: transparent;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  color: var(--color-text-secondary, #9ca3af);
+  border-radius: 0.25rem;
+  line-height: 0;
+}
+
+.infoButton:focus-visible {
+  outline: 2px solid var(--color-focus, currentColor);
+  outline-offset: 2px;
+}
+
+.infoButton:hover {
+  color: var(--color-text-primary, #f9fafb);
+}
+
+/* ─── Tooltip popover ───────────────────────────────────────────────────── */
+.tooltipPopover {
+  position: absolute;
+  top: calc(0.75rem + 1.5rem + 0.25rem);
+  right: 0.5rem;
+  z-index: 10;
+  width: min(18rem, calc(100vw - 2rem));
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 0.5rem;
+  background: var(--color-surface-elevated, #1e293b);
+  color: var(--color-text-primary, #f9fafb);
+  font-size: 0.78rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.tooltipTitle {
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.tooltipBody {
+  color: var(--color-text-secondary, #9ca3af);
+  line-height: 1.5;
+}
+
+.tooltipFormula {
+  margin-top: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 0.25rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.7rem;
+  color: var(--color-accent, #93c5fd);
+}
+
+/* ─── Accessibility / motion reduction ─────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .fillArc,
+  .fillArcGlow {
+    transition: none;
+  }
+}

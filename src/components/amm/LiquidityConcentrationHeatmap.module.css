@@ -1,0 +1,84 @@
+.wrapper {
+  --amm-heat-high: var(--color-accent, #2563eb);
+  --amm-heat-low: var(--color-accent-muted, #93c5fd);
+
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 0.75rem;
+  background: var(--color-surface-elevated, transparent);
+}
+
+.chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 12rem;
+  touch-action: pan-y;
+}
+
+.line {
+  fill: none;
+  stroke: var(--amm-heat-high);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.area { pointer-events: none; }
+
+.activeMarker {
+  stroke: var(--color-warning, #f59e0b);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+  animation: pulse-marker 1.6s ease-in-out infinite;
+}
+
+.hitTarget {
+  fill: transparent;
+  stroke: transparent;
+  cursor: crosshair;
+  outline: none;
+}
+
+.hitTarget:focus-visible {
+  stroke: var(--color-focus, currentColor);
+  stroke-width: 2;
+}
+
+.tooltip {
+  position: absolute;
+  right: 0.75rem;
+  top: 0.75rem;
+  z-index: 2;
+  display: grid;
+  gap: 0.2rem;
+  max-width: min(18rem, calc(100% - 1.5rem));
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 0.5rem;
+  background: var(--color-surface-elevated, #ffffff);
+  color: var(--color-text-primary, #111827);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+
+.empty {
+  display: grid;
+  min-height: 12rem;
+  place-items: center;
+  border: 1px dashed var(--color-border, #d1d5db);
+  border-radius: 0.75rem;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+@keyframes pulse-marker {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activeMarker { animation: none; }
+}

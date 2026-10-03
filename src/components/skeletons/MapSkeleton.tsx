@@ -3,7 +3,7 @@ import { Shimmer } from './Shimmer';
 
 export const MapSkeleton = React.memo(function MapSkeleton() {
   return (
-    <div className="relative flex min-h-[320px] w-full flex-col items-center justify-center overflow-hidden rounded-[28px] border border-[#A7C957]/30 bg-[#0A1020] p-5 shadow-[0_24px_80px_rgba(2,8,23,0.42)]">
+    <div className="relative flex h-[320px] w-full flex-col items-center justify-center overflow-hidden rounded-[28px] border border-[#A7C957]/30 bg-[#0A1020] p-5 shadow-[0_24px_80px_rgba(2,8,23,0.42)]">
       <Shimmer className="absolute inset-0 w-full h-full rounded-[28px]" />
       
       {/* Optional subtle pulsing placeholder icon to give visual context */}

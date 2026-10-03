@@ -1,31 +1,239 @@
 @import "tailwindcss";
+@config "../../tailwind.config.js";
 
+/*
+ * Tailwind CSS v4 dark mode
+ * ─────────────────────────
+ * Tailwind v4 ships dark-mode support via the `dark:` variant out of the box.
+ * It defaults to the `media` strategy; we override to `class` so that
+ * next-themes' class-toggle on <html> controls which variant is active.
+ *
+ * The `@variant dark` directive tells Tailwind v4 to activate `dark:` utilities
+ * whenever the `.dark` class is present on the root element.
+ */
+@variant dark (&:where(.dark, .dark *));
+
+/* ─── Design tokens ───────────────────────────────────────────────────────── */
+
+/* Light theme (default) */
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --surface: #f5f5f5;
+  --surface-raised: #ebebeb;
+  --border: rgba(0, 0, 0, 0.1);
+  --muted: rgba(0, 0, 0, 0.45);
+  --control: #ffffff;
+  --control-hover: #f5f5f5;
+  --focus-ring-color: #3b82f6;
 }
 
-/* Dark theme — class applied by next-themes */
+/* Dark theme — applied by next-themes adding `.dark` to <html> */
 .dark {
   --background: #0d1117;
   --foreground: #ededed;
+  --surface: #161b22;
+  --surface-raised: #1c2128;
+  --border: rgba(255, 255, 255, 0.08);
+  --muted: rgba(255, 255, 255, 0.45);
+  --control: #161b22;
+  --control-hover: #1c2128;
+
+  /* Accessibility tokens — non-boosted (dark) defaults. */
+  --contrast-focus: #ffff00;
+  --accent: #39ff14;
+  --accent-foreground: #0a0f1e;
+  --status-success: #4ade80;
+  --status-warning: #fbbf24;
+  --status-danger: #f87171;
+  --status-info: #60a5fa;
+  --chart-1: #60a5fa;
+  --chart-2: #34d399;
+  --chart-3: #f59e0b;
+  --chart-4: #f472b6;
+  --chart-5: #a78bfa;
+  --chart-6: #22d3ee;
+}
+
+/* ─── High-contrast (WCAG AAA) option ────────────────────────────────────────
+   Activated by `data-contrast="high"` on <html> (the legacy `.high-contrast`
+   class is kept in sync for older call sites). Every text/background pair is
+   verified by `tests/unit/contrast.test.ts` to clear 7:1, and the focus ring
+   clears the 3:1 non-text minimum. Token values must stay in sync with the
+   `HIGH_CONTRAST_*` constants in `src/lib/contrast.ts`. */
+.high-contrast,
+[data-contrast="high"] {
+  color-scheme: dark;
+  background-color: #000000;
+
+  --background: #000000;
+  --foreground: #ffffff;
+  --surface: #000000;
+  --surface-raised: #1a1a1a;
+  --border: #ffffff;
+  --muted: #ffffff;
+  --focus-ring-color: #ffff00;
+}
+
+.high-contrast body {
+  background: #000000;
+  color: #ffffff;
+}
+
+/* Thick, high-visibility borders so control boundaries are unambiguous. */
+.high-contrast :where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])),
+[data-contrast="high"] :where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])) {
+  border-color: var(--border);
+}
+
+/* A shared ring for keyboard focus. `:focus-visible` keeps pointer clicks quiet;
+   important is needed because many legacy controls explicitly use focus:outline-none. */
+:where(
+    a[href],
+    area[href],
+    button,
+    input:not([type="hidden"]),
+    select,
+    textarea,
+    summary,
+    [role="button"],
+    [role="link"],
+    [role="checkbox"],
+    [role="radio"],
+    [role="switch"],
+    [role="combobox"],
+    [role="option"],
+    [role="menuitem"],
+    [role="tab"],
+    [role="treeitem"],
+    [role="gridcell"],
+    [role="dialog"],
+    [role="alertdialog"],
+    [contenteditable="true"],
+    [tabindex]:not([tabindex="-1"])
+  ):focus-visible {
+  outline: 2px solid var(--focus-ring-color) !important;
+  outline-offset: 2px !important;
+}
+
+/* ─── Glassmorphism tokens ──────────────────────────────────────────────────
+ *
+ * Two layers of variables:
+ *   --glass-*           runtime knobs consumed by the `.glass-*` classes below
+ *                       (and overridable per instance from React via inline
+ *                       style — see `src/components/glass/glassTheme.ts`).
+ *   --glass-fallback-*  opaque stand-ins used whenever `backdrop-filter` is
+ *                       unavailable, so panels stay readable on older engines.
+ *
+ * `--glass-blur*` values are mirrored by the `--blur-glass*` theme tokens in
+ * the `@theme inline` block so Tailwind's `backdrop-blur-glass` utility stays
+ * in sync.
+ * ------------------------------------------------------------------------- */
+
+:root {
+  --glass-blur: 16px;
+  --glass-blur-panel: 16px;
+  --glass-blur-modal: 24px;
+  --glass-blur-nav: 12px;
+  --glass-saturate: 160%;
+
+  --glass-surface: rgb(255 255 255 / 0.55);
+  --glass-surface-strong: rgb(255 255 255 / 0.72);
+  --glass-border: rgb(255 255 255 / 0.6);
+  --glass-sheen: rgb(255 255 255 / 0.65);
+  --glass-shadow: 0 8px 32px rgb(15 23 42 / 0.16);
+
+  --glass-fallback-surface: #f3f4f6;
+  --glass-fallback-surface-strong: #ffffff;
+  --glass-fallback-border: #d1d5db;
+}
+
+.dark {
+  --glass-surface: rgb(22 27 34 / 0.55);
+  --glass-surface-strong: rgb(13 17 23 / 0.72);
+  --glass-border: rgb(255 255 255 / 0.12);
+  --glass-sheen: rgb(255 255 255 / 0.07);
+  --glass-shadow: 0 16px 48px rgb(0 0 0 / 0.55);
+
+  --glass-fallback-surface: #161b22;
+  --glass-fallback-surface-strong: #1c2128;
+  --glass-fallback-border: #30363d;
+}
+
+/* High-contrast mode wins over both themes: no translucency, no blur. */
+.high-contrast {
+  --glass-blur: 0px;
+  --glass-blur-panel: 0px;
+  --glass-blur-modal: 0px;
+  --glass-blur-nav: 0px;
+
+  --glass-surface: #000000;
+  --glass-surface-strong: #000000;
+  --glass-border: #ffffff;
+  --glass-sheen: transparent;
+  --glass-shadow: none;
+
+  --glass-fallback-surface: #000000;
+  --glass-fallback-surface-strong: #000000;
+  --glass-fallback-border: #ffffff;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-control: var(--control);
+  --color-control-hover: var(--control-hover);
+  --color-contrast-focus: var(--contrast-focus);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-status-success: var(--status-success);
+  --color-status-warning: var(--status-warning);
+  --color-status-danger: var(--status-danger);
+  --color-status-info: var(--status-info);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: var(--font-geist-sans);
   --color-neon-green: #39ff14;
   --color-oracle-navy: #0a0f1e;
   --color-oracle-border: #1b2a3b;
+
+  /* Glassmorphism theme tokens. The numeric values mirror the runtime
+     `--glass-blur*` variables above so `backdrop-blur-glass`,
+     `backdrop-blur-glass-sm` and `backdrop-blur-glass-xl` match the classes. */
+  --color-glass-surface: var(--glass-surface);
+  --color-glass-surface-strong: var(--glass-surface-strong);
+  --color-glass-border: var(--glass-border);
+  --color-glass-sheen: var(--glass-sheen);
+  --blur-glass-sm: 8px;
+  --blur-glass: 16px;
+  --blur-glass-xl: 24px;
+  --radius-glass: 1rem;
+  --radius-glass-lg: 1.5rem;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
   overflow-x: hidden;
+  transition:
+    background-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (max-width: 767px) {
+  body {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
 }
 
 .content-visibility-auto {
@@ -36,21 +244,93 @@ body {
 .wallet-btn {
   background-color: #d9f99d;
   color: #1f2937;
+  position: relative;
+}
+
+.wallet-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: #bef574;
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+  pointer-events: none;
+  will-change: opacity;
 }
 
 .wallet-btn:hover {
-  background-color: #bef574;
   transform: translateY(-2px);
   box-shadow: 0 10px 15px -3px rgb(185 249 124 / 0.4);
+}
+
+.wallet-btn:hover::before {
+  opacity: 1;
+}
+
+.status-ping { animation: status-ping 1s ease-out infinite; transform: translateZ(0); will-change: transform, opacity; }
+.status-pulse { animation: status-pulse 1.2s ease-in-out infinite; transform: translateZ(0); will-change: transform, opacity; }
+@keyframes status-ping { 0% { transform: scale(.8); opacity: .3; } 100% { transform: scale(1.25); opacity: 0; } }
+@keyframes status-pulse { 0%, 100% { transform: scale(.95); opacity: .3; } 50% { transform: scale(1); opacity: 1; } }
+
+.micro-interaction-input {
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+.micro-interaction-input:focus {
+  border-color: rgb(96 165 250 / 0.9);
+  box-shadow: 0 0 0 1px rgb(96 165 250 / 0.55), 0 0 22px rgb(59 130 246 / 0.18);
+}
+
+.stellar-confetti {
+  position: absolute;
+  top: -0.75rem;
+  width: 0.4rem;
+  height: 0.8rem;
+  border-radius: 0.125rem;
+  animation: stellar-confetti-fall 850ms cubic-bezier(.2,.7,.3,1) both;
+}
+
+@keyframes stellar-confetti-fall {
+  from { opacity: 0; transform: translateY(0) rotate(0deg); }
+  20% { opacity: 1; }
+  to { opacity: 0; transform: translateY(7rem) rotate(260deg); }
+}
+
+/* Brief green pulse on the AMM fee tracker when a fill spikes well above the
+   recent trade-size average. One-shot: the component re-keys the overlay so
+   consecutive spikes restart the run. */
+@keyframes fee-spike-glow {
+  0% { opacity: 0; }
+  25% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-ping,
+  .status-pulse,
+  .circuit-breaker-flash,
+  .stellar-confetti { animation: none; }
+  .micro-interaction-input { transition: none; }
+}
+
+/* ─── Circuit Breaker Emergency Banner ────────────────────────── */
+
+/* Slow, low-contrast flash: the banner must read as urgent without strobing.
+   Suppressed entirely under prefers-reduced-motion (see block above). */
+.circuit-breaker-flash {
+  animation: circuit-breaker-flash 1.8s ease-in-out infinite;
+  will-change: background-color;
+}
+
+@keyframes circuit-breaker-flash {
+  0%, 100% { background-color: rgb(159 18 57 / 0.97); }
+  50% { background-color: rgb(225 29 72 / 0.97); }
 }
 
 /* ─── Admin Tab Bar ──────────────────────────────────────── */
 
 .admin-tabbar-wrapper {
   width: 100%;
-  background: rgba(10, 10, 10, 0.65);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: #0a0a0a;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   padding-left: 1.5rem;
   padding-right: 1.5rem;
@@ -99,9 +379,27 @@ body {
   outline: none;
 }
 
+.admin-tab {
+  position: relative;
+}
+
+.admin-tab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.04);
+  opacity: 0;
+  transition: opacity 250ms ease;
+  pointer-events: none;
+  will-change: opacity;
+}
+
 .admin-tab:hover {
   color: rgba(255, 255, 255, 0.75);
-  background: rgba(255, 255, 255, 0.04);
+}
+
+.admin-tab:hover::before {
+  opacity: 1;
 }
 
 .admin-tab:focus-visible {
@@ -116,9 +414,23 @@ body {
   color: #99dc1b;
 }
 
+.admin-tab--active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(153, 220, 27, 0.06);
+  opacity: 0;
+  transition: opacity 250ms ease;
+  pointer-events: none;
+  will-change: opacity;
+}
+
 .admin-tab--active:hover {
   color: #99dc1b;
-  background: rgba(153, 220, 27, 0.06);
+}
+
+.admin-tab--active:hover::after {
+  opacity: 1;
 }
 
 /* ── Cyber Lime underline indicator ── */
@@ -154,4 +466,333 @@ body {
   transform: translateX(-50%) scaleX(1);
   background: rgba(255, 255, 255, 0.15);
   box-shadow: none;
+}
+
+/* ─── GPU-Accelerated Status Animations ──────────────────── */
+
+@keyframes status-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes status-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.animate-status-pulse {
+  animation: status-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-status-ping {
+  animation: status-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.gpu-layer {
+  will-change: opacity, transform;
+  transform: translateZ(0);
+}
+/* ─────────────────────────────────────────────────────────────
+   HARDWARE-ACCELERATED EXPANSION/COLLAPSE ANIMATIONS
+   
+   Replace height-based animations with GPU-accelerated transform/opacity.
+   These utilities lift animation processing away from the main thread,
+   preventing layout recalculation loops during structural expansion.
+   ───────────────────────────────────────────────────────────────── */
+
+/** 
+ * Expandable container — Applies layout containment and will-change optimization
+ * Isolates animation from affecting sibling layout calculations
+ */
+.expandable-container {
+  contain: layout style paint;
+  will-change: transform, opacity;
+}
+
+/**
+ * Expandable content wrapper — Transform-origin positioned at top
+ * Ensures scaleY animation expands downward, not from center
+ */
+.expandable-content {
+  transform-origin: top;
+  will-change: transform, opacity;
+}
+
+/**
+ * Animation utilities for indicator icons (chevrons, arrows)
+ * Rotate is GPU-accelerated via transform, not affecting layout
+ */
+.expandable-indicator {
+  display: inline-flex;
+  will-change: transform;
+  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.expandable-indicator.rotated {
+  transform: rotate(180deg);
+}
+
+/**
+
+ * Performance optimization for high-density grids
+ * Prevents cascading layout recalculation during multi-row expansion
+ */
+.expandable-grid-item {
+  contain: content layout;
+}
+
+.expandable-grid-header {
+  cursor: pointer;
+  position: relative;
+  user-select: none;
+}
+
+.expandable-grid-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: rgba(28, 33, 40, 0.5);
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+  pointer-events: none;
+  will-change: opacity;
+}
+
+.expandable-grid-header:hover::before {
+  opacity: 1;
+}
+
+/* CSS variable-based scaling for dynamic animations */
+.dynamic-scale-x {
+  transform: scaleX(var(--scale-x, 1));
+  transform-origin: left;
+  will-change: transform;
+  contain: strict;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   LAYOUT CONTAINMENT FOR HIGH-FREQUENCY UPDATING WIDGETS
+   
+   These utilities apply contain: strict to prevent text shifts and
+   badge updates from causing layout recalculation ripples across
+   adjacent dashboard blocks.
+   ───────────────────────────────────────────────────────────────── */
+
+/**
+ * High-frequency status badges — Apply strict containment
+ * Prevents status text changes (active/paused/offline) from causing
+ * layout shifts that ripple to sibling elements
+ */
+.high-frequency-badge {
+  display: inline-flex;
+  contain: strict;
+  will-change: contents;
+  min-width: min-content;
+  line-height: 1.2;
+}
+
+/**
+ * Real-time metric indicators — Health bars, latency, success rates
+ * Isolates progress bar animations and numeric updates from affecting
+ * adjacent table cells or grid items
+ */
+.metric-indicator {
+  contain: strict;
+  will-change: transform;
+  overflow: hidden;
+}
+
+/**
+ * Node status cell — Table cell container for real-time data
+ * Prevents frequent numeric updates (rewards, latency, success rate)
+ * from causing layout thrashing across entire table rows
+ */
+.node-status-cell {
+  contain: layout style;
+  will-change: contents;
+}
+
+/**
+ * Stat card widget — Dashboard metrics that update in real-time
+ * Isolates value changes from affecting adjacent stat cards
+ */
+.stat-card-widget {
+  contain: layout style paint;
+  will-change: contents;
+  overflow: hidden;
+}
+
+/**
+ * Voting ratio indicator — Real-time vote tally progress
+ * Strict containment prevents vote percentage changes from
+ * affecting layout of adjacent proposal metadata
+ */
+.voting-ratio-indicator {
+  contain: strict;
+  will-change: transform;
+  line-height: 1;
+}
+
+/**
+ * Numeric value container — Any frequently updating number
+ * Prevents font rendering changes (10 → 100%) from causing reflow
+ */
+.numeric-value {
+  contain: layout;
+  font-variant-numeric: tabular-nums;
+  will-change: contents;
+}
+
+/**
+ * Dashboard status widget — high-frequency metric cards and badge shells
+ * Restricts style recalculation to the widget bounds on the validator audit page.
+ */
+.dashboard-status-widget {
+  contain: layout paint;
+}
+
+/**
+ * Validator heartbeat cell — active-node pulse and uptime updates
+ * Isolates compositor-driven status animations from the document canvas.
+ */
+.validator-heartbeat-cell {
+  contain: layout paint;
+  will-change: opacity, transform;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   CUSTOM SLIDER STYLES FOR VOTING POWER CALCULATOR
+   ───────────────────────────────────────────────────────────────── */
+
+/**
+ * Custom slider thumb styling for better visual feedback
+ */
+.slider-thumb::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 2px solid #1f2937;
+}
+
+.slider-thumb::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.7);
+}
+
+.slider-thumb::-webkit-slider-thumb:active {
+  transform: scale(1.05);
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.9);
+}
+
+.slider-thumb::-moz-range-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 2px solid #1f2937;
+}
+
+.slider-thumb::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.7);
+}
+
+.slider-thumb::-moz-range-thumb:active {
+  transform: scale(1.05);
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.9);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   GLASSMORPHISM SURFACES
+
+   `.glass-surface` is the shared recipe; `.glass-panel` / `.glass-modal` /
+   `.glass-nav` only pick a density (surface opacity + blur radius). They live
+   in the `components` cascade layer so Tailwind utilities (hover:, rounded-*,
+   p-*, …) can still override them.
+
+   Rendering strategy — fallback first:
+     1. Outside `@supports`, the surface is opaque (`--glass-fallback-*`), so
+        browsers without `backdrop-filter` — older iOS/Android WebViews — keep
+        readable panels instead of a washed-out translucent block.
+     2. Inside `@supports`, the background switches to the translucent token and
+        `backdrop-filter` plus the top sheen gradient are switched on.
+     3. `prefers-reduced-transparency: reduce` forces the fallback again.
+
+   Only `background-*`, `border-color` and `box-shadow` are set here: no
+   `position`, `border-radius`, `padding` or `overflow`, so utilities keep full
+   control of layout.
+   ───────────────────────────────────────────────────────────── */
+
+@layer components {
+  .glass-surface {
+    background-color: var(--glass-fallback-surface);
+    background-image: none;
+    border-color: var(--glass-fallback-border);
+    box-shadow: var(--glass-shadow);
+  }
+
+  /* Density presets: one real rule per variant, each reading its own token so
+     a consumer can retune a single density (e.g. --glass-blur-nav). */
+  .glass-panel {
+    --glass-blur: var(--glass-blur-panel);
+  }
+
+  .glass-modal {
+    --glass-blur: var(--glass-blur-modal);
+  }
+
+  .glass-nav {
+    --glass-blur: var(--glass-blur-nav);
+  }
+
+  /* Progressive enhancement: only blur when the engine can actually do it. */
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass-surface {
+      background-color: var(--glass-surface);
+      background-image: linear-gradient(150deg, var(--glass-sheen), transparent 42%);
+      border-color: var(--glass-border);
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+      backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    }
+
+    .glass-modal,
+    .glass-nav {
+      background-color: var(--glass-surface-strong);
+    }
+  }
+
+  /* Users who ask for less transparency get the opaque fallback, no blur. */
+  @media (prefers-reduced-transparency: reduce) {
+    .glass-surface {
+      background-color: var(--glass-fallback-surface);
+      background-image: none;
+      border-color: var(--glass-fallback-border);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+
+    .glass-modal,
+    .glass-nav {
+      background-color: var(--glass-fallback-surface-strong);
+    }
+  }
 }
