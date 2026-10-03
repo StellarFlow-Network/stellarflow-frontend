@@ -8,6 +8,7 @@ import { useSlippageTolerance } from "@/app/hooks/useSlippageTolerance";
 import WalletConnectButton from "@/app/components/WalletConnectButton";
 import OptimizedDialog from "@/app/components/OptimizedDialog";
 import { MotionButton, MotionCard, SuccessConfetti } from "@/components/ui/MotionPrimitives";
+import { PausedActionButton, useModulePause } from "@/components/circuit-breaker";
 import CandlestickChart from "@/components/trading/CandlestickChart";
 import { ASSET_SYMBOLS } from "@/config/assetSymbols";
 
@@ -44,6 +45,11 @@ function SwapContent() {
   const [error, setError] = useState<string | null>(null);
   const [transactionPrepared, setTransactionPrepared] = useState(false);
   const [slippageDialogOpen, setSlippageDialogOpen] = useState<boolean>(false);
+
+  // Emergency pause guard — an on-chain circuit breaker can halt the swaps
+  // module at any moment, in which case the CTA below is locked down.
+  const swapsPause = useModulePause("swaps");
+  const isSwapPaused = swapsPause !== undefined;
 
   // Common tokens list (could be fetched from an API or config)
   const commonTokens = useMemo(() => [
@@ -142,6 +148,13 @@ function SwapContent() {
   }, [selectedPath, sourceAsset, destAsset]);
 
   const handleSwap = async () => {
+    if (isSwapPaused) {
+      setError(
+        "Swaps are temporarily paused by an automatic circuit breaker. Please retry once recovery completes."
+      );
+      return;
+    }
+
     if (!wallet?.publicKey || !selectedPath || !destAsset || !destinationAddress) {
       setError("Please connect wallet, select assets, and enter a destination address");
       return;
@@ -302,14 +315,22 @@ function SwapContent() {
             </div>
           )}
 
-          {/* Swap Button */}
-          <MotionButton
-            onClick={handleSwap}
-            disabled={isLoading || !wallet?.connected || !selectedPath}
-            className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 py-4 rounded-xl font-semibold text-lg transition-colors"
-          >
-            {isLoading ? "Loading..." : !wallet?.connected ? "Connect Wallet to Swap" : "Swap & Send"}
-          </MotionButton>
+          {/* Swap Button — locked down while the swaps circuit breaker is in force */}
+          <PausedActionButton module="swaps">
+            <MotionButton
+              onClick={handleSwap}
+              disabled={isSwapPaused || isLoading || !wallet?.connected || !selectedPath}
+              className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 py-4 rounded-xl font-semibold text-lg transition-colors"
+            >
+              {isSwapPaused
+                ? "Swaps Paused"
+                : isLoading
+                ? "Loading..."
+                : !wallet?.connected
+                ? "Connect Wallet to Swap"
+                : "Swap & Send"}
+            </MotionButton>
+          </PausedActionButton>
         </MotionCard>
 
         {/* Path Breakdown - only show if we have a selected path */}
