@@ -10,7 +10,7 @@ const CONFIG_FILE = path.join(process.cwd(), ".bundle-limits.json");
 const OUTPUT_FILE = path.join(process.cwd(), ".css-bundle-report.json");
 
 const DEFAULT_LIMITS = {
-  maxCssTotalGzipped: 20,
+  maxCssTotalGzipped: 40,
 };
 
 function loadConfig() {

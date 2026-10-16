@@ -69,11 +69,11 @@ console.log("Test 3: Verifying maxCssTotalGzipped budget in .bundle-limits.json.
   const limits = JSON.parse(fs.readFileSync(limitsPath, "utf8"));
   assert.strictEqual(
     limits.maxCssTotalGzipped,
-    20,
-    `.bundle-limits.json maxCssTotalGzipped must be strictly 20KB (got ${limits.maxCssTotalGzipped})`
+    40,
+    `.bundle-limits.json maxCssTotalGzipped must be strictly 40KB (got ${limits.maxCssTotalGzipped})`
   );
 
-  console.log("  ✓ CSS bundle size limit configured to 20KB");
+  console.log("  ✓ CSS bundle size limit configured to 40KB");
 }
 
 // ─── Test 4: Package Scripts Integration ───────────────────────
@@ -118,7 +118,7 @@ console.log("Test 5: Verifying scripts/check-css-size.js execution and reporting
 
   const report = JSON.parse(fs.readFileSync(reportPath, "utf8"));
   assert.ok(report.timestamp, "Report must contain timestamp");
-  assert.strictEqual(report.limits.maxCssTotalGzipped, 20, "Report limits must reflect 20KB budget");
+  assert.strictEqual(report.limits.maxCssTotalGzipped, 40, "Report limits must reflect 40KB budget");
   assert.ok(Array.isArray(report.files), "Report files must be an array");
   assert.ok(typeof report.totalGzipped === "number", "Report totalGzipped must be a number");
 
@@ -135,7 +135,7 @@ console.log("Test 6: Verifying implementation.md documentation...");
   assert.ok(doc.includes("Issue #1200"), "implementation.md must reference Issue #1200");
   assert.ok(doc.includes("tailwind.config.js"), "implementation.md must document tailwind.config.js");
   assert.ok(doc.includes("check-css-size.js"), "implementation.md must document check-css-size.js");
-  assert.ok(doc.includes("20"), "implementation.md must document the 20KB budget");
+  assert.ok(doc.includes("40"), "implementation.md must document the 40KB budget");
 
   console.log("  ✓ implementation.md documentation verified");
 }

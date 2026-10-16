@@ -23,7 +23,11 @@ import { NotificationPreferencesPanel } from '@/components/settings/Notification
 import { LocalStorageSettings } from '@/components/settings/LocalStorageSettings';
 import { KeyboardShortcutsSettings } from '@/components/keyboard-shortcuts/KeyboardShortcutsSettings';
 import { NotificationPreferencesDrawer } from '@/app/components/NotificationPreferencesDrawer';
-import { NetworkProvider } from '@/app/components/providers/NetworkProvider';
+import {
+  NetworkProvider,
+  useNetwork,
+  useNetworkActions,
+} from '@/app/components/providers/NetworkProvider';
 
 interface Settings {
   emailReports: boolean;
@@ -46,6 +50,7 @@ const TOGGLE_STYLES = {
 
 function SettingsContent() {
   const [showKey, setShowKey] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [screenLockModalOpen, setScreenLockModalOpen] = useState(false);
 
   // Custom Horizon endpoint form
@@ -266,6 +271,13 @@ function SettingsContent() {
             Push Notifications
           </h2>
           <NotificationPreferencesPanel compact />
+          <button
+            type="button"
+            onClick={() => setIsDrawerOpen(true)}
+            className="mt-4 text-xs text-blue-400 hover:underline"
+          >
+            Configure alert categories
+          </button>
         </section>
 
         {/* Auto-Lock Security Settings */}

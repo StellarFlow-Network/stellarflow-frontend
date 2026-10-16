@@ -67,7 +67,12 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: subresourceRecoveryScript }} nonce={nonce} />
+        <Script
+          id="subresource-recovery"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: subresourceRecoveryScript }}
+          nonce={nonce}
+        />
         {/*
          * Flash-prevention: blocking inline script runs synchronously before
          * any CSS/JS loads. It reads the stored theme from localStorage and,
@@ -151,6 +156,7 @@ export default async function RootLayout({
         className="antialiased font-sans flex flex-col min-h-screen"
       >
         <GlobalErrorBoundary>
+        <CircuitBreakerProvider>
         <OfflineBanner />
         {/*
           Circuit breaker provider wraps the whole tree so an on-chain
@@ -159,9 +165,7 @@ export default async function RootLayout({
           The banner itself sits above it in document order so it is the first
           thing a user meets when a pause lands.
         */}
-        <CircuitBreakerProvider>
           <CircuitBreakerBanner />
-        </CircuitBreakerProvider>
         <CspReporterInit />
         <StorageSanitizer />
         <SvgSprite />
@@ -216,6 +220,7 @@ export default async function RootLayout({
             </HapticProvider>
           </AccessibilityProvider>
         </ThemeProvider>
+        </CircuitBreakerProvider>
         </GlobalErrorBoundary>
       </body>
     </html>
