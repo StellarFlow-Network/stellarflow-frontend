@@ -8,14 +8,21 @@ export interface SocketMessage {
    * treated as a non-price indexer channel and fanned out to indexer listeners
    * untouched. `string & {}` keeps literal autocompletion for the known tags.
    */
-  type: "price_update" | "delta_update" | "orderbook_update" | (string & {});
+  type:
+    | "price_update"
+    | "delta_update"
+    | "orderbook_update"
+    | "trade_execution"
+    | (string & {});
   assetId?: string;
-  data: PriceData | Partial<PriceData> | OrderBookSnapshot | Record<string, unknown> | undefined;
-interface SocketMessage {
-  type: "price_update" | "delta_update" | "orderbook_update" | "trade_execution";
-  assetId?: string;
-  data: PriceData | Partial<PriceData> | OrderBookSnapshot | AmmTradeEvent;
-  timestamp: number;
+  data:
+    | PriceData
+    | Partial<PriceData>
+    | OrderBookSnapshot
+    | AmmTradeEvent
+    | Record<string, unknown>
+    | undefined;
+  timestamp?: number;
 }
 
 type MessageCallback = (data: PriceData | Partial<PriceData>) => void;
@@ -114,14 +121,14 @@ export class WebSocketManager {
             this.orderBookListeners.forEach((callback) =>
               callback(message.data as OrderBookSnapshot),
             );
-          } else {
-            // Non-price indexer channels ride the same socket. They are fanned
-            // out raw so each channel owns its own payload parsing.
-            this.notifyIndexerEventListeners(message);
           } else if (message.type === "trade_execution") {
             this.tradeListeners.forEach((callback) =>
               callback(message.data as AmmTradeEvent),
             );
+          } else {
+            // Non-price indexer channels ride the same socket. They are fanned
+            // out raw so each channel owns its own payload parsing.
+            this.notifyIndexerEventListeners(message);
           }
         } catch (err) {
           console.error("Failed to parse centralized WebSocket message:", err);
@@ -139,6 +146,33 @@ export class WebSocketManager {
     } catch (err) {
       console.error("Failed to establish centralized WebSocket connection", err);
     }
+  }
+
+  /**
+   * Drop the current socket and open a fresh one, keeping every listener and
+   * asset subscription (#1146). Used after the browser comes back online: a
+   * socket that lived through an outage is often half-open, still reporting
+   * OPEN while nothing arrives. `resendGlobalSubscriptions` runs on open, so
+   * the server gets the same subscriptions back. Does nothing when no
+   * consumer is mounted.
+   */
+  public reconnect(): void {
+    if (typeof window === "undefined" || this.consumerCount === 0) return;
+    if (this.ws) {
+      this.ws.onopen = null;
+      this.ws.onmessage = null;
+      this.ws.onclose = null;
+      this.ws.onerror = null;
+      try {
+        this.ws.close();
+      } catch {
+        // Closing a socket that is already dead can throw in some browsers.
+      }
+      this.ws = null;
+    }
+    this.isConnected = false;
+    this.notifyStatusListeners(false);
+    this.connect();
   }
 
   /** Close the WebSocket and clear all server-side subscriptions. */

@@ -5,6 +5,7 @@ import { ThemeProvider } from "./components/ThemeProvider";
 import { ProgressBarProvider } from "./components/TopLoadingBar";
 import { UserProvider } from "./components/providers/UserProvider";
 import { QueryProvider } from "./components/providers/QueryProvider";
+import { NetworkResync } from "@/components/network/NetworkResync";
 import { ToastProvider } from "@/components/ui/ToastQueue";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Script from "next/script";
@@ -176,6 +177,8 @@ export default async function RootLayout({
             <HapticProvider>
               <UserProvider>
                 <QueryProvider>
+                  {/* Re-syncs queries and the socket after an outage (#1146). */}
+                  <NetworkResync />
                   <ProgressBarProvider>
                       <ToastProvider>
                         <RpcFailoverMonitor />
