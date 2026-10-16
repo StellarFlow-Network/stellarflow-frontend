@@ -55,8 +55,6 @@ export const metadata: Metadata = {
   },
 };
 
-import { subresourceRecoveryScript } from "@/utils/subresourceRecovery";
-
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode; }>) {
@@ -67,9 +65,10 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script
+        <Script
           id="subresource-recovery"
-          dangerouslySetInnerHTML={{ __html: subresourceRecoveryScript }}
+          src="/subresource-recovery.js"
+          strategy="beforeInteractive"
           nonce={nonce}
         />
         {/*
