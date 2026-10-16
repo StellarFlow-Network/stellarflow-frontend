@@ -5,6 +5,10 @@ export { default as WalletBalanceBreakdown } from "./WalletBalanceBreakdown";
 export { default as AssetBreakdownStackedBar } from "./AssetBreakdownStackedBar";
 
 export { default as LPPnLTable, type LPPnLTableProps } from "./LPPnLTable";
+export {
+  ImpermanentLossCalculator,
+  type ImpermanentLossCalculatorProps,
+} from "./ImpermanentLossCalculator";
 
 export {
   LP_PNL_CSV_HEADERS,

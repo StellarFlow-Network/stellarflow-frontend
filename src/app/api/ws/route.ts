@@ -322,12 +322,16 @@ async function simulateTradeExecutions() {
       // exercised by the demo feed rather than only under real load.
       const spike = Math.random() > 0.92 ? 4 + Math.random() * 6 : 1
       const feeAmount = volumeUsd * (pool.feePercent / 100) * spike
+      const spotPrice = pool.spotPrice ?? pool.reserveB / pool.reserveA
 
       const update = {
         type: 'trade_execution',
         assetId: pool.id,
         data: {
           poolId: pool.id,
+          assetPair: pool.pair,
+          side: Math.random() < 0.5 ? 'buy' : 'sell',
+          price: spotPrice,
           volumeUsd,
           feeAmount,
           // Derive the protocol cut as the remainder so the two shares always

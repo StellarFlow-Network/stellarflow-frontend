@@ -33,26 +33,36 @@ const withPwaConfig = withPWA({
   },
   runtimeCaching: [
     {
-      urlPattern: /\/(relayers|logs|contracts)(\/.*)?$/,
-      handler: "StaleWhileRevalidate",
+      urlPattern: ({ request, url }) =>
+        url.origin === self.location.origin && request.mode === "navigate",
+      handler: "NetworkFirst",
       options: {
-        cacheName: "page-shells",
+        cacheName: "app-pages",
+        networkTimeoutSeconds: 3,
         expiration: {
           maxEntries: 50,
           maxAgeSeconds: 30 * 24 * 60 * 60,
         },
+        cacheableResponse: {
+          statuses: [200],
+        },
       },
     },
     {
-      urlPattern: /^https?.*/,
-      handler: "NetworkFirst",
+      urlPattern: ({ request, url }) =>
+        url.origin === self.location.origin &&
+        (url.pathname.startsWith("/_next/static/") ||
+          ["font", "image", "script", "style", "worker"].includes(request.destination)),
+      handler: "StaleWhileRevalidate",
       options: {
-        cacheName: "offlineCache",
+        cacheName: "static-assets",
         expiration: {
           maxEntries: 200,
-          maxAgeSeconds: 24 * 60 * 60,
+          maxAgeSeconds: 30 * 24 * 60 * 60,
         },
-        networkTimeoutSeconds: 10,
+        cacheableResponse: {
+          statuses: [200],
+        },
       },
     },
   ],

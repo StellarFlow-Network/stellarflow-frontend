@@ -63,6 +63,12 @@ export interface OrderBookSnapshot {
 export interface AmmTradeEvent {
   /** Pool the swap routed through, e.g. "xlm-usdc". */
   poolId: string;
+  /** Execution details are optional until every WebSocket producer supplies them. */
+  tradeId?: string;
+  side?: "buy" | "sell";
+  price?: number;
+  amount?: number;
+  assetPair?: string;
   /** Notional USD value of the executed swap. */
   volumeUsd: number;
   /** Total trading fee charged on this swap, in `feeAsset` units. */
