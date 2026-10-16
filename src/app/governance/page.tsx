@@ -12,6 +12,9 @@ import { MobileVoteCard } from '@/components/governance/MobileVoteCard';
 import type { Delegate } from '@/types/delegation';
 
 // --- Mock Data ---
+/** Matches the "Total Staking Power" stat card below; quorum is a share of it. */
+const TOTAL_STAKING_POWER = 2_850_000;
+
 const MOCK_PROPOSALS: ProposalRecord[] = [
   { id: 'SFP-12', title: 'Whitelist West African GHS/XLM Asset Pair Feed', proposer: 'GA5THZLKMNPQRSXYZABCDEFGHIJKLMNBC9A', status: 'Active', votesFor: 785000, votesAgainst: 120000, quorumThreshold: 60, endsInLedgers: 4200 },
   { id: 'SFP-11', title: 'Adjust Global Deviation Threshold from 2.5% to 1.8%', proposer: 'GBC2VHZLKMNPQRSXYZABCDEFGHIJKLMLOPA', status: 'Active', votesFor: 450000, votesAgainst: 410000, quorumThreshold: 60, endsInLedgers: 1150 },
@@ -289,6 +292,7 @@ export default function GovernancePage() {
             proposals={proposals}
             filter={activeTab}
             onVote={(target) => setVoteTarget(target)}
+            totalVotingPower={TOTAL_STAKING_POWER}
           />
         </>
       ) : section === 'delegation-graph' ? (
