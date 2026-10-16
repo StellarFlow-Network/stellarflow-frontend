@@ -8,12 +8,12 @@ function getMockData(): RemittancePayoutRecord[] {
       id: "rem-3001",
       date: "2026-08-19T11:05:47Z",
       transactionHash:
-        "c3d4e5f6789012345678901234567890abcdef1234567890abcdef12345ab",
+        "c3d4e5f6789012345678901234567890abcdef1234567890abcdef1234567890abcdef123456ab",
       anchorName: "Cowrie Anchor Nigeria",
       anchorReference: "COW-NG-88213",
       senderName: "Fuhad Adesanya",
       recipientName: "Bola Adesanya",
-      recipientAddress: "GDQP2PVAFZSSLZ2IKXQREGAQTTXMIMHJZV6G6QQH52S4VD4MT56GD7A5B",
+      recipientAddress: "GDQP2PVAFZSSLZ2IKXQREGAQTTXMIMHJZV6G6QQX52S4VD4MT56GD7A5B",
       amountSent: 250,
       sentCurrency: "USD",
       amountReceived: 371875,
@@ -32,7 +32,7 @@ function getMockData(): RemittancePayoutRecord[] {
       anchorReference: "KTN-KE-40217",
       senderName: "Fuhad Adesanya",
       recipientName: "Wanjiru Mwuangi",
-      recipientAddress: "GBSDFP4ZSSQLEGAQTT2PVAFZSSXHJZV6G6QQH52S4VD4MT56GD7A5B",
+      recipientAddress: "GBSDFP4ZSSQLSGAQTT2PVAFZSSXHJZV6G6QQX52S4VD4MT56GD7A5B",
       amountSent: 100,
       sentCurrency: "EUR",
       amountReceived: 13284,
@@ -51,7 +51,7 @@ function getMockData(): RemittancePayoutRecord[] {
       anchorReference: "YC-GH-11940",
       senderName: "Fuhad Adesanya",
       recipientName: "Kwame Boateng",
-      recipientAddress: "GBAA112233445566778990AABBCCDDEEFFGGHHIIJJKKLLMMNNOOPR",
+      recipientAddress: "GBAA112233445566778990AABBCCDEEFFGGHHIIJJKKLLMMNNOOPR",
       amountSent: 75,
       sentCurrency: "USD",
       amountReceived: 1042.5,
@@ -70,18 +70,79 @@ const QUERY_KEY = ["remittance-payouts"] as const;
 // From the off-ramp partner switching statuses.
 const WEBHOOK_POLL_INTERVAL = 5000;
 
+// SEP-24 interactive flow step states for the progress stepper.
+export type SEP24StepState =
+  | "pending_user_action"
+  | "processing_anchor"
+  | "tokens_dispatched"
+  | "completed"
+  | "error";
+
+export interface SEP24Step {
+  id: SEP24StepState;
+  label: string;
+  description: string;
+}
+
+export const SEP24_STEPS: SEP24Step[] = [
+  {
+    id: "pending_user_action",
+    label: "Pending User Action",
+    description: "Complete the interactive form to continue your transfer.",
+  },
+  {
+    id: "processing_anchor",
+    label: "Processing Anchor",
+    description: "The anchor is processing your fiat transfer.",
+  },
+  {
+    id: "tokens_dispatched",
+    label: "Tokens Dispatched",
+    description: "Funds have been dispatched to the destination.",
+  },
+  {
+    id: "completed",
+    label: "Completed",
+    description: "Your transfer has completed successfully.",
+  },
+];
+
 // Webhook status transitions mapping to stepper steps
-const PAYOUT_STATUS_STEP = {
+const PAYOUT_STATUS_STEP: Record<string, number> = {
+  PENDING: 0,
+  PENDING_USER_ACTION: 0,
+  INCOMPLETE: 0,
   PROCESSING: 1,
+  PROCESSING_ANCHOR: 1,
   DISPATCHED: 2,
+  TOKENS_DISPATCHED: 2,
   DELIVERED: 3,
   COMPLETED: 3,
   FAILED: -1,
   REJECTED: -1,
+  ERROR: -1,
 };
 
 export function getPayoutStep(status: string): number {
   return PAYOUT_STATUS_STEP[status.toUpperCase()] ?? 0;
+}
+
+export function getSEP24StepState(status: string): SEP24StepState {
+  const step = getPayoutStep(status);
+  if (step < 0) return "error";
+  return SEP24_STEPs[step]?.id ?? "pending_user_action";
+}
+
+export function isSEP24Stalled(
+  status: string,
+  updatedAt?: string,
+  thresholdMs = 30 * 60 * 1000
+): boolean {
+  const step = getPayoutStep(status);
+  if (step < 0 || step >= SEP24_STEPS.length) return false;
+  if (!updatedAt) return false;
+  const elapsed = Date.now() - new Date(updatedAt).getTime();
+  return elapsed > thresholdMs;
 }
 
 export function useRemittancePayouts(): UseQueryResult<
