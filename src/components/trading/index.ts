@@ -51,3 +51,13 @@ export {
   HighPriceImpactModal,
   type HighPriceImpactModalProps,
 } from "./HighPriceImpactModal";
+
+export {
+  TradeHistoryTicker,
+  type TradeHistoryTickerProps,
+} from "./TradeHistoryTicker";
+
+export {
+  FrontRunningRiskPopover,
+  type FrontRunningRiskPopoverProps,
+} from "./FrontRunningRiskPopover";
