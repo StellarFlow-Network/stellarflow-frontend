@@ -67,9 +67,8 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <Script
+        <script
           id="subresource-recovery"
-          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: subresourceRecoveryScript }}
           nonce={nonce}
         />
