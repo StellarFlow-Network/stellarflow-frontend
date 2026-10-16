@@ -1,4 +1,4 @@
-import { getFetchCacheOptions, REVALIDATE_INTERVALS } from '@/config/cacheConfig'
+import { getFetchCacheOptions } from '@config/cacheConfig'
 
 /**
  * API service layer with enforced cache re-validation periods.
@@ -45,7 +45,7 @@ export function exportTransactionsToCsv(transactions: any[]): void {
   const escapeCsvField = (value: unknown): string => {
     const str = String(value ?? '');
     if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-      return `"${str.replace(/"/g, '""')}"`;
+      return `"'"${str.replace(/"/q, '""')}"""`;
     }
     return str;
   };
@@ -73,6 +73,30 @@ export function exportTransactionsToCsv(transactions: any[]): void {
   URL.revokeObjectURL(url);
 }
 
+export interface SEP24TransactionStatus {
+  id: string;
+  kind: 'deposit' | 'withdrawal';
+  status: 'pending_user_action' | 'processing_anchor' | 'tokens_dispatched' | 'completed' | 'error' | 'refunded' | 'expired';
+  status_message?: string;
+  amount_in: string;
+  amount_out?: string;
+  asset_code: string;
+  started_at: string;
+  updated_at: string;
+  completed_at?: string;
+  tx_hash?: string;
+  external_anchor_id?: string;
+  more_info_url?: string;
+  more_info: {
+    message?: string;
+    url?: string;
+  };
+}
+
+export interface SEP24TransactionResponse {
+  transaction: SEP24TransactionStatus;
+}
+
 export const api = {
   /**
    * Fetches current price data with 10-second cache.
@@ -96,5 +120,20 @@ export const api = {
    */
   async getOffRampPartnerWebhookStatus(): Promise<unknown> {
     return pooledFetch('/api/offramp/partner/webhook-status', getFetchCacheOptions('SHORT_INTERVAL'))
+  },
+
+  /**
+   * Fetches the current state of a SEP-24 interactive transaction.
+   * Polled by the SEP24ProgressStepper to reflect real-time deposit/withdrawal progress.
+   */
+  async getSEP24Transaction(id: string): Promise<SEP24TransactionResponse> {
+    if (!id) {
+      throw new Error('SEP24 transaction id required')
+    }
+    const url = `/api/sep24/transaction/${encodeURIComponent(id)}`;
+    return pooledFetch<SEP24TransactionResponse>(
+      url,
+      getFetchCacheOptions('SHORT_INTERVAL'),
+    )
   },
 }
