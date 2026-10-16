@@ -12,6 +12,7 @@ import { PathVisualizer } from "./PathVisualizer";
 import { GasEstimateBadge } from "./GasEstimateBadge";
 import { TokenSelectorModal } from "./TokenSelectorModal";
 import { SlippageSettingsModal } from "./SlippageSettingsModal";
+import { VolatilityAlertBanner } from "./VolatilityAlertBanner";
 import type { TokenOption } from "./SwapForm";
 import { SlippageVisualizer } from "@/components/trading/SlippageVisualizer";
 
@@ -46,6 +47,9 @@ export const SwapCard: React.FC<SwapCardProps> = ({ tokens, onSwapSuccess }) => 
   const [toBalance, setToBalance] = useState<string>("0");
 
   const [priceImpact, setPriceImpact] = useState<number>(0);
+  // Market conditions from the quote, when the API provides them (#1152).
+  const [marketSpread, setMarketSpread] = useState<number | undefined>(undefined);
+  const [poolDepth, setPoolDepth] = useState<number | undefined>(undefined);
   const [isLoadingRate, setIsLoadingRate] = useState<boolean>(false);
 
   const [activeSelector, setActiveSelector] = useState<ActiveField>(null);
@@ -79,6 +83,8 @@ export const SwapCard: React.FC<SwapCardProps> = ({ tokens, onSwapSuccess }) => 
       if (!fromAmount || parseFloat(fromAmount) <= 0) {
         setToAmount("");
         setPriceImpact(0);
+        setMarketSpread(undefined);
+        setPoolDepth(undefined);
         return;
       }
 
@@ -92,6 +98,8 @@ export const SwapCard: React.FC<SwapCardProps> = ({ tokens, onSwapSuccess }) => 
         if (isMounted && data) {
           setToAmount(data.estimatedOutput || "");
           setPriceImpact(data.priceImpact || 0);
+          setMarketSpread(typeof data.spread === "number" ? data.spread : undefined);
+          setPoolDepth(typeof data.poolDepth === "number" ? data.poolDepth : undefined);
         }
       } catch (err) {
         console.error("Error fetching swap quote:", err);
@@ -267,6 +275,14 @@ export const SwapCard: React.FC<SwapCardProps> = ({ tokens, onSwapSuccess }) => 
 
         {isValidAmount && minAmountOut !== null && (
           <SlippageVisualizer expectedOutput={Number(toAmount) || 0} outputSymbol={toToken.symbol} slippagePercent={slippagePercent} onSlippageChange={setSlippagePercent} />
+        )}
+
+        {isValidAmount && (
+          <VolatilityAlertBanner
+            spreadPct={marketSpread}
+            tradeAmount={parsedFromAmount}
+            poolDepth={poolDepth}
+          />
         )}
 
         {isValidAmount && <PathVisualizer fromToken={fromToken} toToken={toToken} amount={fromAmount} />}

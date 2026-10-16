@@ -23,3 +23,5 @@ export type { DelegationGraphVisualizerProps } from './DelegationGraphVisualizer
 
 export { VoteSnapshotAuditor } from './VoteSnapshotAuditor';
 export type { VoteSnapshotAuditorProps, VoteSnapshot } from './VoteSnapshotAuditor';
+export { QuorumProgressBar, computeQuorumProgress } from './QuorumProgressBar';
+export type { QuorumProgressBarProps, QuorumProgress, QuorumProgressInput } from './QuorumProgressBar';

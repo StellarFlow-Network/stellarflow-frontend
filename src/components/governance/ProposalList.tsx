@@ -6,6 +6,7 @@ import { useDebounce } from "@/app/hooks/useDebounce";
 import { withShortenedAddressField } from "@/utils/addressUtils";
 import { useIsHydrated } from "@/app/hooks/useIsHydrated";
 import Icon from "@/components/icons/Icon";
+import { QuorumProgressBar } from "./QuorumProgressBar";
 import { ICON_IDS } from "@/components/icons/iconIds";
 import {
   PROPOSAL_STATUS_BADGE_VARIANTS,
@@ -39,6 +40,12 @@ export interface ProposalListProps {
   filter?: "all" | ProposalStatus;
   /** Called when the user clicks Vote on an active proposal. */
   onVote?: (proposal: ProposalRecord) => void;
+  /**
+   * Total staking power that can vote. When provided, active proposals show
+   * a quorum progress bar (#1203), since `quorumThreshold` is a percentage of
+   * this total.
+   */
+  totalVotingPower?: number;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -192,6 +199,7 @@ interface ProposalRowProps {
   ledgersRemaining: number;
   isHydrated: boolean;
   onVote?: (proposal: ProposalRecord & { shortenedAddress: string }) => void;
+  totalVotingPower?: number;
 }
 
 function proposalRowAreEqual(prev: ProposalRowProps, next: ProposalRowProps): boolean {
@@ -202,7 +210,8 @@ function proposalRowAreEqual(prev: ProposalRowProps, next: ProposalRowProps): bo
     prev.proposal.votesAgainst === next.proposal.votesAgainst &&
     prev.ledgersRemaining === next.ledgersRemaining &&
     prev.isHydrated === next.isHydrated &&
-    prev.onVote === next.onVote
+    prev.onVote === next.onVote &&
+    prev.totalVotingPower === next.totalVotingPower
   );
 }
 
@@ -211,6 +220,7 @@ const ProposalRow = React.memo(function ProposalRow({
   ledgersRemaining,
   isHydrated,
   onVote,
+  totalVotingPower,
 }: ProposalRowProps) {
   return (
     <div
@@ -252,6 +262,15 @@ const ProposalRow = React.memo(function ProposalRow({
             Proposed by:{" "}
             <span className="text-gray-400">{proposal.shortenedAddress}</span>
           </p>
+
+          {proposal.status === "Active" && totalVotingPower !== undefined && totalVotingPower > 0 && (
+            <QuorumProgressBar
+              className="max-w-md pt-1"
+              totalVotes={proposal.votesFor + proposal.votesAgainst}
+              quorumRequired={(totalVotingPower * proposal.quorumThreshold) / 100}
+              eligibleVotes={totalVotingPower}
+            />
+          )}
         </div>
 
         {/* Right: Voting bar + action */}
@@ -316,7 +335,12 @@ function EmptyState({
 // ProposalList — main export
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function ProposalList({ proposals, filter = "all", onVote }: ProposalListProps) {
+export function ProposalList({
+  proposals,
+  filter = "all",
+  onVote,
+  totalVotingPower,
+}: ProposalListProps) {
   const isHydrated = useIsHydrated();
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearch = useDebounce(searchTerm, 250);
@@ -405,6 +429,7 @@ export function ProposalList({ proposals, filter = "all", onVote }: ProposalList
               ledgersRemaining={ledgerCounts[proposal.id] ?? proposal.endsInLedgers}
               isHydrated={isHydrated}
               onVote={onVote}
+              totalVotingPower={totalVotingPower}
             />
           ))}
         </div>

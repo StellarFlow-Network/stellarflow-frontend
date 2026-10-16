@@ -102,7 +102,7 @@ export function OfflineBanner({
                   You're back online!
                 </span>
                 <span className="ml-2 text-xs text-green-300">
-                  Connection restored
+                  Connection restored. Re-syncing latest data.
                 </span>
               </div>
             </>
