@@ -3,5 +3,5 @@
   "maxPageBundle": 151,
   "maxTotalGzipped": 1000,
   "maxIndividualGzipped": 151,
-  "maxCssTotalGzipped": 25
+  "maxCssTotalGzipped": 20
 }

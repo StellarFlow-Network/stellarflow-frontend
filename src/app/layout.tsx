@@ -14,6 +14,7 @@ import MobileBottomNav from "@/components/navigation/MobileBottomNav";
 import { PWAInstallGuideModal } from "@/components/pwa/PWAInstallGuideModal";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { SwUpdateBanner } from "@/components/pwa/SwUpdateBanner";
+import { InstallBanner } from "./components/InstallBanner";
 import { OfflineDraftSyncRoot } from "@/components/offline";
 import { ScreenLockProvider } from "@/components/security/ScreenLockModal";
 import { SessionTimeoutManager } from "@/components/security/SessionTimeoutManager";
@@ -34,7 +35,6 @@ import { RpcFailoverMonitor } from "./components/providers/RpcFailoverMonitor";
 import { CommandPalette } from "@/components/command-palette";
 import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 import { CircuitBreakerProvider, CircuitBreakerBanner } from "@/components/circuit-breaker";
-import { MobileBottomNav } from "@/components/navigation";
 
 export const metadata: Metadata = {
   title: "StellarFlow Network Dashboard",
