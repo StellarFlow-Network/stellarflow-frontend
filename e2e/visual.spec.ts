@@ -63,3 +63,143 @@ test.describe('Visual regression — landing page (Issue #603)', () => {
     });
   }
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Trading Page Visual Regression (Issue #1181)
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function prepareTradingSnapshot(page: Page) {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+
+  // Wait for trading view to load
+  await page.locator('body').waitFor({ state: 'visible' });
+
+  // Hide dynamic data components that change between runs
+  await page.evaluate(() => {
+    // Hide real-time price feeds and order books
+    const dynamicSelectors = [
+      '[data-testid="price-feed"]',
+      '[data-testid="order-book"]',
+      '[data-testid="trade-history"]',
+      '.live-price',
+      '.live-depth',
+    ];
+
+    dynamicSelectors.forEach((selector) => {
+      document.querySelectorAll(selector).forEach((el) => {
+        (el as HTMLElement).style.display = 'none';
+      });
+    });
+  });
+
+  await page.waitForTimeout(250);
+}
+
+test.describe('Visual regression — trading page (Issue #1181)', () => {
+  for (const breakpoint of BREAKPOINTS) {
+    test(`matches baseline at ${breakpoint.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: breakpoint.width, height: breakpoint.height });
+      await page.goto('/trading');
+      await page.locator('body').waitFor({ state: 'visible' });
+      await prepareTradingSnapshot(page);
+
+      await expect(page).toHaveScreenshot(`trading-${breakpoint.name}.png`, {
+        fullPage: true,
+        animations: 'disabled',
+        maxDiffPixelRatio: 0.005,
+      });
+    });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Vaults Page Visual Regression (Issue #1181)
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function prepareVaultsSnapshot(page: Page) {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+
+  // Wait for vaults view to load
+  await page.locator('body').waitFor({ state: 'visible' });
+
+  // Hide dynamic APY data and live metrics
+  await page.evaluate(() => {
+    const dynamicSelectors = [
+      '[data-testid="live-apy"]',
+      '[data-testid="vault-metrics"]',
+      '.live-chart',
+      '.realtime-stats',
+    ];
+
+    dynamicSelectors.forEach((selector) => {
+      document.querySelectorAll(selector).forEach((el) => {
+        (el as HTMLElement).style.display = 'none';
+      });
+    });
+  });
+
+  await page.waitForTimeout(250);
+}
+
+test.describe('Visual regression — vaults page (Issue #1181)', () => {
+  for (const breakpoint of BREAKPOINTS) {
+    test(`matches baseline at ${breakpoint.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: breakpoint.width, height: breakpoint.height });
+      await page.goto('/vaults');
+      await page.locator('body').waitFor({ state: 'visible' });
+      await prepareVaultsSnapshot(page);
+
+      await expect(page).toHaveScreenshot(`vaults-${breakpoint.name}.png`, {
+        fullPage: true,
+        animations: 'disabled',
+        maxDiffPixelRatio: 0.005,
+      });
+    });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Governance Page Visual Regression (Issue #1181)
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function prepareGovernanceSnapshot(page: Page) {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+
+  // Wait for governance view to load
+  await page.locator('body').waitFor({ state: 'visible' });
+
+  // Hide live voting data and proposal metrics
+  await page.evaluate(() => {
+    const dynamicSelectors = [
+      '[data-testid="vote-count"]',
+      '[data-testid="proposal-stats"]',
+      '.live-voting',
+      '.realtime-governance',
+    ];
+
+    dynamicSelectors.forEach((selector) => {
+      document.querySelectorAll(selector).forEach((el) => {
+        (el as HTMLElement).style.display = 'none';
+      });
+    });
+  });
+
+  await page.waitForTimeout(250);
+}
+
+test.describe('Visual regression — governance page (Issue #1181)', () => {
+  for (const breakpoint of BREAKPOINTS) {
+    test(`matches baseline at ${breakpoint.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: breakpoint.width, height: breakpoint.height });
+      await page.goto('/governance');
+      await page.locator('body').waitFor({ state: 'visible' });
+      await prepareGovernanceSnapshot(page);
+
+      await expect(page).toHaveScreenshot(`governance-${breakpoint.name}.png`, {
+        fullPage: true,
+        animations: 'disabled',
+        maxDiffPixelRatio: 0.005,
+      });
+    });
+  }
+});

@@ -62,6 +62,8 @@ jobs:
         env:
           PLAYWRIGHT_TEST_BASE_URL: http://localhost:3000
           PLAYWRIGHT_REUSE_EXISTING_SERVER: 'true'
+        # Visual regression tests will fail if pixel diff exceeds 0.5% threshold
+        # configured in playwright.config.ts (maxDiffPixelRatio: 0.005)
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -77,10 +79,12 @@ jobs:
             kill "$(cat /tmp/stellarflow-next.pid)" || true
           fi
 
-      - name: Upload visual diff artifacts
+      - name: Upload visual diff artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: visual-regression-diffs
-          path: test-results/
+          name: visual-regression-diffs-${{ github.run_number }}
+          path: |
+            test-results/
+            e2e/visual.spec.ts-snapshots/
           retention-days: 7

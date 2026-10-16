@@ -18,6 +18,14 @@ export default defineConfig({
      * Maximum time expect() should wait for the condition to be met.
      */
     timeout: 5000,
+    /**
+     * Maximum pixel diff ratio for visual regression tests (0.5% = 0.005).
+     * Fails CI if visual differences exceed this threshold.
+     */
+    toHaveScreenshot: {
+      maxDiffPixels: 0,
+      maxDiffPixelRatio: 0.005,
+    },
   },
   /* Run tests in files in parallel */
   fullyParallel: true,

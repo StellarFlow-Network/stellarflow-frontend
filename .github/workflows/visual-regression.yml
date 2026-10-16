@@ -1,0 +1,115 @@
+name: Visual Regression Tests
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  visual-regression:
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright Browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright OS dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Build Next.js app
+        run: npm run build
+
+      - name: Start Next.js app
+        run: |
+          npm run start > /tmp/stellarflow-next.log 2>&1 &
+          echo $! > /tmp/stellarflow-next.pid
+
+      - name: Wait for app
+        run: |
+          for _ in $(seq 1 60);
+          do
+            if curl -fsS http://localhost:3000 >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Next.js app did not become ready in time"
+          cat /tmp/stellarflow-next.log
+          exit 1
+
+      - name: Run visual regression tests
+        run: npx playwright test e2e/visual.spec.ts
+        env:
+          PLAYWRIGHT_TEST_BASE_URL: http://localhost:3000
+          PLAYWRIGHT_REUSE_EXISTING_SERVER: 'true'
+        # This will fail if pixel diff exceeds 0.5% threshold (maxDiffPixelRatio: 0.005)
+        # configured in playwright.config.ts
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Upload visual diff artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-diffs
+          path: |
+            test-results/
+            e2e/visual.spec.ts-snapshots/
+          retention-days: 7
+
+      - name: Stop Next.js app
+        if: always()
+        run: |
+          if [ -f /tmp/stellarflow-next.pid ]; then
+            kill "$(cat /tmp/stellarflow-next.pid)" || true
+          fi
+
+      - name: Comment PR with visual diff results
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = `## 🚨 Visual Regression Tests Failed
+            
+            The visual regression tests detected pixel differences exceeding the 0.5% threshold.
+            
+            Please review the uploaded artifacts:
+            - **Visual Regression Diffs**: Check the 'visual-regression-diffs' artifact in the Actions run
+            - **Playwright Report**: Check the 'playwright-report' artifact for detailed screenshots
+            
+            To update baselines locally, run:
+            \`\`\`bash
+            npm run test:visual:update
+            \`\`\`
+            
+            If the changes are intentional, please update the baseline snapshots.`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
