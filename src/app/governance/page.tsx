@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { WalletProvider, useWallet, useWalletStatus, useWalletActions } from '@/app/hooks/useWalletState';
 import Icon from '@/components/icons/Icon';
 import { ICON_IDS } from '@/components/icons/iconIds';
@@ -10,6 +10,7 @@ import { DelegationGraphVisualizer } from '@/components/governance/DelegationGra
 import ProposalCreationModal, { type ProposalSubmission } from '@/components/governance/ProposalCreationModal';
 import { MobileVoteCard } from '@/components/governance/MobileVoteCard';
 import type { Delegate } from '@/types/delegation';
+import { ProposalCommentFeed } from '@/components/governance/ProposalCommentFeed';
 
 // --- Mock Data ---
 const MOCK_PROPOSALS: ProposalRecord[] = [
@@ -176,6 +177,7 @@ export default function GovernancePage() {
   const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
   const [proposals, setProposals] = useState<ProposalRecord[]>(MOCK_PROPOSALS);
   const [walletBalance, setWalletBalance] = useState(120000);
+  const [commentTarget, setCommentTarget] = useState<ProposalRecord | null>(null);
   const minimumThreshold = 250000;
 
   const TABS: { key: typeof activeTab; label: string }[] = [
@@ -202,175 +204,107 @@ export default function GovernancePage() {
       votesFor: 0,
       votesAgainst: 0,
       quorumThreshold: 60,
-      endsInLedgers: 1440,
+      endsInLedgers: 5000,
     };
-
-    setProposals((current) => [nextProposal, ...current]);
-    setWalletBalance((current) => Math.max(0, current - 1000));
+    setProposals((prev) => [nextProposal, ...prev]);
     setIsProposalModalOpen(false);
   };
 
-  return (
-    <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
+  const handleVote = useCallback((proposal: ProposalRecord, support: boolean) => {
+    setProposals((prev) =>
+      prev.map((p) =>
+        p.id === proposal.id
+          ? {
+              ...p,
+              votesFor: support ? p.votesFor + walletBalance : p.votesFor,
+              votesAgainst: support ? p.votesAgainst : p.votesAgainst + walletBalance,
+            }
+          : p,
+      ),
+    );
+    setVoteTarget(null);
+  }, [walletBalance]);
 
-      {/* Header */}
+  const filteredProposals =
+    activeTab === 'all' ? proposals : proposals.filter((p) => p.status === activeTab);
+
+  return (
+    <div className="min-h-screen bg-[#0d1117] text-gray-100 p-4 md:p-8">
       <GovernanceWalletControl onCreateProposal={() => setIsProposalModalOpen(true)} />
 
-      {/* Stats — context-aware based on section */}
-      {section === 'proposals' ? (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <StatCard title="Total Staking Power" value="2.85M SF" icon={<Icon id={ICON_IDS.vote} size={20} className="text-blue-400" />} subtitle="Active voting weights" />
-          <StatCard title="Active Ballots" value="2 Proposals" icon={<Icon id={ICON_IDS.clock} size={20} className="text-yellow-500" />} subtitle="Awaiting validation signatures" />
-          <StatCard title="Voter Turnout Avg" value="74.2%" icon={<Icon id={ICON_IDS.users} size={20} className="text-green-400" />} subtitle="High network coordinator interest" />
-          <StatCard title="Passing Invariants" value="100%" icon={<Icon id={ICON_IDS.checkCircle} size={20} className="text-emerald-400" />} subtitle="All parameters safe" />
-        </div>
-      ) : section === 'delegation-graph' ? (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <StatCard title="Network Nodes" value="19 Total" icon={<Icon id={ICON_IDS.network} size={20} className="text-blue-400" />} subtitle="Delegates & active delegators" />
-          <StatCard title="Active Relationships" value="14 Links" icon={<Icon id={ICON_IDS.activity} size={20} className="text-cyan-400" />} subtitle="Directional power delegations" />
-          <StatCard title="Total Delegated" value="5.36M XLM" icon={<Icon id={ICON_IDS.coins} size={20} className="text-yellow-500" />} subtitle="Community voting weight" />
-          <StatCard title="Topology Health" value="100% 60fps" icon={<Icon id={ICON_IDS.checkCircle} size={20} className="text-emerald-400" />} subtitle="Interactive force layout" />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <StatCard title="Registered Delegates" value="5 Delegates" icon={<Icon id={ICON_IDS.users} size={20} className="text-blue-400" />} subtitle="Trusted community representatives" />
-          <StatCard title="Total Delegated" value="5.36M XLM" icon={<Icon id={ICON_IDS.coins} size={20} className="text-yellow-500" />} subtitle="Voting power delegated" />
-          <StatCard title="Avg Delegators" value="657 / Delegate" icon={<Icon id={ICON_IDS.vote} size={20} className="text-green-400" />} subtitle="Community participation" />
-          <StatCard title="Proposals Voted" value="100% Coverage" icon={<Icon id={ICON_IDS.checkCircle} size={20} className="text-emerald-400" />} subtitle="All active proposals covered" />
-        </div>
-      )}
-
-      {/* Section Switcher (Proposals / Delegates / Delegation Graph) */}
-      <div className="flex border-b border-gray-800 mb-6 gap-6">
-        {SECTION_SWITCHER.map(({ key, label, icon }) => (
+      <div className="flex flex-wrap gap-2 mb-6">
+        {SECTION_SWITCHER.map((item) => (
           <button
-            key={key}
-            onClick={() => setSection(key)}
-            className={`flex items-center gap-2 pb-3 text-sm font-medium relative ${
-              section === key
-                ? 'text-blue-400 border-b-2 border-blue-500'
-                : 'text-gray-500'
+            key={item.key}
+            onClick={() => setSection(item.key)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border ${
+              section === item.key
+                ? 'bg-blue-600 border-blue-500 text-white'
+                : 'bg-[#161b22] border-gray-800 text-gray-300'
             }`}
           >
-            {section !== key && (
-              <span className="absolute inset-0 bg-white/4 opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none" />
-            )}
-            <Icon id={ICON_IDS[icon]} size={16} />
-            <span className="relative z-10">{label}</span>
+            <Icon id={ICON_IDS[item.icon]} size={16} />
+            {item.label}
           </button>
         ))}
       </div>
 
-      {/* Conditional Content */}
-      {section === 'proposals' ? (
+      {section === 'proposals' && (
         <>
-          {/* Proposal Filtering Tabs */}
-          <div className="flex border-b border-gray-800 mb-6 gap-6">
-            {TABS.map(({ key, label }) => (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {TABS.map((tab) => (
               <button
-                key={key}
-                onClick={() => setActiveTab(key)}
-                className={`pb-3 text-sm font-medium capitalize relative ${
-                  activeTab === key
-                    ? 'text-blue-400 border-b-2 border-blue-500'
-                    : 'text-gray-500'
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium border ${
+                  activeTab === tab.key
+                    ? 'bg-purple-600 border-purple-500 text-white'
+                    : 'bg-[#161b22] border-gray-800 text-gray-400'
                 }`}
               >
-                {activeTab !== key && (
-                  <span className="absolute inset-0 bg-white/4 opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none" />
-                )}
-                <span className="relative z-10">{label}</span>
+                {tab.label}
               </button>
             ))}
           </div>
 
-          {/* Proposal List */}
           <ProposalList
-            proposals={proposals}
-            filter={activeTab}
-            onVote={(target) => setVoteTarget(target)}
+            proposals={filteredProposals}
+            onVote={(proposal) => setVoteTarget(proposal)}
+            onComment={(proposal) => setCommentTarget(proposal)}
           />
         </>
-      ) : section === 'delegation-graph' ? (
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-bold text-gray-100 flex items-center gap-2">
-                <Icon id={ICON_IDS.network} size={20} className="text-blue-400" />
-                Voting Power Delegation Network
-              </h2>
-              <p className="text-sm text-gray-400 mt-1">
-                Explore voting power delegations between DAO members and delegates. Click a delegate node to open their profile.
-              </p>
-            </div>
-          </div>
-          <DelegationGraphVisualizer delegates={MOCK_DELEGATES} height={640} />
-        </div>
-      ) : (
-        /* Delegate Directory */
-        <DelegateDirectory delegates={MOCK_DELEGATES} />
       )}
 
-      {/* Mobile-First Voting Card Modal Overlay */}
+      {section === 'delegates' && <DelegateDirectory delegates={MOCK_DELEGATES} />}
+
+      {section === 'delegation-graph' && (
+        <DelegationGraphVisualizer delegates={MOCK_DELEGATES} />
+      )}
+
       {voteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-          <div className="w-full max-w-md relative">
-            <button
-              onClick={() => setVoteTarget(null)}
-              className="absolute -top-9 right-1 text-gray-400 hover:text-white text-xs flex items-center gap-1 bg-gray-900/90 px-3 py-1 rounded-full border border-gray-700 z-10 transition-colors"
-              aria-label="Close voting modal"
-            >
-              <span>✕ Close</span>
-            </button>
-            <MobileVoteCard
-              proposal={voteTarget}
-              votingPower={walletBalance > 0 ? walletBalance : 12450}
-              onClose={() => setVoteTarget(null)}
-              onVoteSubmitted={(sub) => {
-                setProposals((current) =>
-                  current.map((p) => {
-                    if (p.id === sub.proposalId) {
-                      return {
-                        ...p,
-                        votesFor:
-                          sub.voteChoice === 'For' ? p.votesFor + sub.votingPower : p.votesFor,
-                        votesAgainst:
-                          sub.voteChoice === 'Against'
-                            ? p.votesAgainst + sub.votingPower
-                            : p.votesAgainst,
-                      };
-                    }
-                    return p;
-                  })
-                );
-              }}
-            />
-          </div>
-        </div>
+        <MobileVoteCard
+          proposal={voteTarget}
+          walletBalance={walletBalance}
+          minimumThreshold={minimumThreshold}
+          onVote={handleVote}
+          onClose={() => setVoteTarget(null)}
+        />
       )}
 
-      <ProposalCreationModal
-        isOpen={isProposalModalOpen}
-        onClose={() => setIsProposalModalOpen(false)}
-        onSubmit={handleProposalSubmit}
-        walletBalance={walletBalance}
-        minimumThreshold={minimumThreshold}
-      />
+      {isProposalModalOpen && (
+        <ProposalCreationModal
+          onSubmit={handleProposalSubmit}
+          onClose={() => setIsProposalModalOpen(false)}
+        />
+      )}
 
-    </div>
-  );
-}
-
-// --- Sub-components ---
-function StatCard({ title, value, icon, subtitle }: { title: string, value: string, icon: React.ReactNode, subtitle: string }) {
-  return (
-    <div className="bg-[#161b22] border border-gray-800 p-6 rounded-xl">
-      <div className="flex justify-between items-start mb-2">
-        <span className="text-gray-400 text-sm font-medium">{title}</span>
-        {icon}
-      </div>
-      <div className="text-2xl font-bold mb-1 tracking-tight">{value}</div>
-      <div className="text-xs text-gray-500">{subtitle}</div>
+      {commentTarget && commentTarget.id && (
+        <ProposalCommentFeed
+          proposalId={commentTarget.id}
+          proposalTitle={commentTarget.title}
+          onClose={() => setCommentTarget(null)}
+        />
+      )}
     </div>
   );
 }

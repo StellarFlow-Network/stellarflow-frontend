@@ -16,9 +16,9 @@ export interface WalletState {
   lastCheckedAt: number;
 }
 
-// ---------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 // Three independent contexts — each slice re-renders only its own consumers.
-// ---------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 
 interface WalletStateContextType {
   wallet: WalletState | null;
@@ -32,6 +32,7 @@ interface WalletStatusContextType {
 
 interface WalletActionsContextType {
   refreshWalletState: () => Promise<WalletState | null>;
+  signMessage: (message: string) => Promise<string | null>;
 }
 interface FreighterExtension {
   getPublicKey?: () => Promise<string>;
@@ -44,6 +45,7 @@ interface WalletWindow extends Window {
   Freighter?: FreighterExtension;
   freighterApi?: FreighterExtension;
   Horizon?: FreighterExtension;
+  freighter?: FreighterExtension;
 }
 export const WalletStateContext = createContext<WalletStateContextType | null>(null);
 export const WalletStatusContext = createContext<WalletStatusContextType | null>(null);
@@ -141,6 +143,46 @@ const walletWindow = window as WalletWindow;
   return createFallbackState('none');
 }
 
+async function signWalletMessage(message: string): Promise<string | null> {
+  if (typeof window === 'undefined') return null;
+
+  const walletWindow = window as WalletWindow;
+  const extension =
+    walletWindow.stellar ||
+    walletWindow.Freighter ||
+    walletWindow.freighterApi ||
+    walletWindow.Horizon ||
+    walletWindow.freighter ||
+    null;
+
+  const signer = extension as unknown as {
+    signMessage?: (message: string) => Promise<unknown>;
+    signBlob?: (blob: string) => Promise<unknown>;
+  };
+
+  try {
+    if (typeof signer?.signMessage === 'function') {
+      const result = await signer.signMessage(message);
+      if (typeof result === 'string') return result;
+      if (result && typeof result === 'object' && 'signature' in result) {
+        const signature = (result as { signature?: unknown }).signature;
+        if (typeof signature === 'string') return signature;
+      }
+      return null;
+    }
+
+    if (typeof signer?.signBlob === 'function') {
+      const result = await signer.signBlob(message);
+      if (typeof result === 'string') return result;
+      return null;
+    }
+  } catch {
+    // User rejected or extension unavailable — surface as null to caller.
+  }
+
+  return null;
+}
+
 async function getWalletState(): Promise<WalletState | null> {
   const now = Date.now();
   if (cache && cache.expiresAt > now) {
@@ -222,7 +264,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   );
 
   const actionsValue = useMemo<WalletActionsContextType>(
-    () => ({ refreshWalletState }),
+    () => ({
+      refreshWalletState,
+      signMessage: signWalletMessage,
+    }),
     [refreshWalletState],
   );
 
@@ -230,7 +275,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   if (!mounted) {
     const placeholderState: WalletStateContextType = { wallet: null, isConnected: false };
     const placeholderStatus: WalletStatusContextType = { isChecking: false, error: null };
-    const placeholderActions: WalletActionsContextType = { refreshWalletState: () => Promise.resolve(null) };
+    const placeholderActions: WalletActionsContextType = {
+      refreshWalletState: () => Promise.resolve(null),
+      signMessage: () => Promise.resolve(null),
+    };
 
     return (
       <WalletStateContext.Provider value={placeholderState}>
@@ -254,9 +302,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ---------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 // Granular consumer hooks
-// ---------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 
 export function useWallet(): WalletStateContextType {
   const ctx = useContext(WalletStateContext);
@@ -300,7 +348,7 @@ export function useWalletActions(): WalletActionsContextType {
 
 /**
  * @deprecated Use the granular hooks instead:
- *   - `useWallet()`       for wallet state keys
+ *   - `useWallet()`      for wallet state keys
  *   - `useWalletStatus()`  for isChecking / error
  *   - `useWalletActions()` for refreshWalletState callback
  */
@@ -313,5 +361,6 @@ export function useWalletState() {
     isChecking: status.isChecking,
     error: status.error,
     refreshWalletState: actions.refreshWalletState,
+    signMessage: actions.signMessage,
   };
 }

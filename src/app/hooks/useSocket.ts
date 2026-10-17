@@ -21,6 +21,18 @@ export interface UseSocketOptions {
   reconnectInterval?: number;
   maxReconnectAttempts?: number;
   errorTimeoutMs?: number;
+  /** Governance proposal id to join the live comment feed for. */
+  proposalId?: string;
+}
+
+export interface ProposalComment {
+  id: string;
+  proposalId: string;
+  parentId: string | null;
+  author: string;
+  body: string;
+  createdAt: number;
+  voteBadge?: string;
 }
 
 export interface UseSocketReturn {
@@ -33,19 +45,26 @@ export interface UseSocketReturn {
   unsubscribeFromAsset: (assetId: string) => void;
   disconnect: () => void;
   reconnect: () => void;
+  /** Live governance proposal comments, keyed by proposalId. */
+  proposalComments: Record<string, ProposalComment[]>;
+  /** Post a signed comment to the live proposal feed. */
+  postProposalComment: (comment: ProposalComment) => void;
 }
 
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------
 // Internal hook — delegates all transport concerns to WebSocketManager so
 // that this hook only manages per-consumer state (lastUpdate, isConnected).
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------
 
 function useSocketState(options: UseSocketOptions): UseSocketReturn {
-  const { assetIds = [], errorTimeoutMs = 5000 } = options;
+  const { assetIds = [], errorTimeoutMs = 5000, proposalId } = options;
 
   const [isConnected, setIsConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<PriceData | null>(null);
   const [payoutStatus, setPayoutStatus] = useState<PayoutStatus | null>(null);
+  const [proposalComments, setProposalComments] = useState<
+    Record<string, ProposalComment[]>
+  >({});
   const { error, setError } = useErrorTimeout({ timeoutMs: errorTimeoutMs });
 
   // Track which assets this consumer instance has subscribed to so that
@@ -61,10 +80,10 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
   const wsManager = WebSocketManager.getInstance();
 
   // Flush pending updates to state and IndexedDB
-  // ------------------------------------------------------------------
+// -------------------------------------------------------------------------
   // flushPendingUpdates — collapses all buffered ticks into one setState.
   // Stable identity (empty dep-array) so the RAF interval never restarts.
-  // ------------------------------------------------------------------
+  // -------------------------------------------------------------------------
   const flushPendingUpdates = useCallback(() => {
     if (pendingUpdatesRef.current.length === 0) return;
 
@@ -73,7 +92,8 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
     
     // Stream into IndexedDB for offline replay / instant rehydration
     const priceUpdates = updates.filter(
-      (u): u is PriceData => 'id' in u && 'assetPair' in u && 'timestamp' in u,
+      (u: PriceData | Partial<PriceData>): u is PriceData =>
+        'id' in u && 'assetPair' in u && 'timestamp' in u,
     );
     if (priceUpdates.length > 0) {
       savePriceBatch(priceUpdates).catch(() => {});
@@ -100,9 +120,9 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
     setIsConnected(false);
   }, [wsManager]);
 
-  // ------------------------------------------------------------------
+  // -------------------------------------------------------------------------
   // subscribeToAsset / unsubscribeFromAsset — delegate to the manager.
-  // ------------------------------------------------------------------
+  // -------------------------------------------------------------------------
   const subscribeToAsset = useCallback(
     (assetId: string) => {
       if (!subscribedAssetsRef.current.has(assetId)) {
@@ -123,22 +143,61 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
     [wsManager],
   );
 
-  // ------------------------------------------------------------------
+  // -------------------------------------------------------------------------
   // reconnect — tears down and re-connects via the manager.
-  // ------------------------------------------------------------------
+  // -------------------------------------------------------------------------
   const reconnect = useCallback(() => {
     wsManager.connect();
   }, [wsManager]);
 
-  // ------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // postProposalComment — optimistically append a signed comment locally
+  // and broadcast it through the shared transport so other clients receive
+  // it in real-time.
+  // -------------------------------------------------------------------------
+  const postProposalComment = useCallback(
+    (comment: ProposalComment) => {
+      setProposalComments((prev) => {
+        const existing = prev[comment.proposalId] ?? [];
+        if (existing.some((c) => c.id === comment.id)) return prev;
+        return {
+          ...prev,
+          [comment.proposalId]: [...existing, comment],
+        };
+      });
+      wsManager.send({ type: "proposal_comment", payload: comment });
+    },
+    [wsManager],
+  );
+
+  // -------------------------------------------------------------------------
   // Mount effect — register listeners and initial asset subscriptions.
   // Runs once per visibility transition; all callbacks are scoped to this
   // consumer so global WebSocket traffic does not force unrelated trees to
   // reconcile.
-  // ------------------------------------------------------------------
+  // -------------------------------------------------------------------------
   useEffect(() => {
     const handleIncomingData = (data: any) => {
       if (!isVisible) return;
+      if (
+        data &&
+        typeof data === "object" &&
+        "type" in data &&
+        data.type === "proposal_comment"
+      ) {
+        const comment = data.payload as ProposalComment | undefined;
+        if (comment && comment.id && comment.proposalId) {
+          setProposalComments((prev) => {
+            const existing = prev[comment.proposalId] ?? [];
+            if (existing.some((c) => c.id === comment.id)) return prev;
+            return {
+              ...prev,
+              [comment.proposalId]: [...existing, comment],
+            };
+          });
+        }
+        return;
+      }
       if (
         data &&
         typeof data === "object" &&
@@ -176,6 +235,10 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
       wsManager.subscribeToAssets(assetsOnMount);
     }
 
+    if (proposalId) {
+      wsManager.send({ type: "join_proposal", proposalId });
+    }
+
     return () => {
       wsManager.unsubscribeFromMessages(handleIncomingData);
       wsManager.unsubscribeFromStatus(handleStatusChange);
@@ -187,10 +250,13 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
         wsManager.unsubscribeFromAssets(remaining);
         subscribedAssetsRef.current.clear();
       }
+      if (proposalId) {
+        wsManager.send({ type: "leave_proposal", proposalId });
+      }
       flushPendingUpdates();
       wsManager.removeConsumer();
     };
-  }, [wsManager, isVisible, setError, flushPendingUpdates]);
+  }, [wsManager, isVisible, setError, flushPendingUpdates, proposalId]);
 
   // Master layout clock — flush buffered price ticks at most once per frame
   // while the socket is connected, keeping all state writes off the critical
@@ -207,12 +273,14 @@ function useSocketState(options: UseSocketOptions): UseSocketReturn {
     unsubscribeFromAsset,
     disconnect,
     reconnect,
+    proposalComments,
+    postProposalComment,
   };
 }
 
-// ---------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 // Public API — selector-based `useSocket`.
-// ---------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 
 /**
  * Subscribe to WebSocket state with an optional selector to pick only the
@@ -247,6 +315,8 @@ export function useSocket<Selected = UseSocketReturn>(
       state.unsubscribeFromAsset,
       state.disconnect,
       state.reconnect,
+      state.proposalComments,
+      state.postProposalComment,
     ],
   );
 }
