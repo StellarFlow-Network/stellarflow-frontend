@@ -20,6 +20,10 @@ export {
 } from "./BeneficiaryForm";
 export { ReceiptModal, type ReceiptData } from "./ReceiptModal";
 export {
+  ZKNoteQRCodeModal,
+  type ZKNoteQRCodeModalProps,
+} from "./ZKNoteQRCodeModal";
+export {
   RemittanceHistoryModal,
   type RemittanceHistoryModalProps,
 } from "./RemittanceHistoryModal";

@@ -12,6 +12,7 @@ import {
   type ShieldedProofStage,
   type ShieldedProofStatus,
 } from "./ShieldedProofProgress";
+import { ZKNoteQRCodeModal } from "./ZKNoteQRCodeModal";
 
 export interface ShieldedDepositModalProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ export function ShieldedDepositModal({ isOpen, onClose, onDeposit }: ShieldedDep
   const [error, setError] = useState("");
   const [isGeneratingNote, setIsGeneratingNote] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isQrCodeOpen, setIsQrCodeOpen] = useState(false);
 
   const handleClose = () => {
     if (status === "running") return;
@@ -39,6 +41,7 @@ export function ShieldedDepositModal({ isOpen, onClose, onDeposit }: ShieldedDep
     setCurrentStage("generating-proof");
     setError("");
     setCopied(false);
+    setIsQrCodeOpen(false);
     onClose();
   };
 
@@ -46,6 +49,7 @@ export function ShieldedDepositModal({ isOpen, onClose, onDeposit }: ShieldedDep
     setError("");
     setCredentials(null);
     setCopied(false);
+    setIsQrCodeOpen(false);
     setStatus("idle");
     setCurrentStage("generating-proof");
     setIsGeneratingNote(true);
@@ -193,6 +197,13 @@ export function ShieldedDepositModal({ isOpen, onClose, onDeposit }: ShieldedDep
                 <p className="text-xs leading-relaxed text-white/55">
                   Keep this note private. The downloadable JSON includes the recovery secret and can authorize redemption when a shielded pool is connected.
                 </p>
+                <button
+                  type="button"
+                  onClick={() => setIsQrCodeOpen(true)}
+                  className="inline-flex min-h-12 w-full items-center justify-center rounded-lg border border-lime-300/30 bg-lime-300/[0.07] px-3 text-sm font-semibold text-lime-200 transition-colors hover:bg-lime-300/15"
+                >
+                  Show QR code
+                </button>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -231,6 +242,13 @@ export function ShieldedDepositModal({ isOpen, onClose, onDeposit }: ShieldedDep
             )}
           </motion.section>
         </div>
+      )}
+      {isOpen && credentials && (
+        <ZKNoteQRCodeModal
+          isOpen={isQrCodeOpen}
+          onClose={() => setIsQrCodeOpen(false)}
+          note={credentials.note}
+        />
       )}
     </AnimatePresence>
   );
