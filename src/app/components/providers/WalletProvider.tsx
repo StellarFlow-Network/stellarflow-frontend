@@ -32,6 +32,13 @@ interface WalletStatusContextType {
 
 interface WalletActionsContextType {
   refreshWalletState: () => Promise<WalletState | null>;
+  signTransaction: (xdr: string, opts?: { network?: string }) => Promise<string>;
+  signMessage: (message: string) => Promise<string>;
+}
+
+interface SigningExtension {
+  signTransaction?: (xdr: string, opts?: { network?: string }) => Promise<string>;
+  signMessage?: (message: string) => Promise<string>;
 }
 interface FreighterExtension {
   getPublicKey?: () => Promise<string>;
