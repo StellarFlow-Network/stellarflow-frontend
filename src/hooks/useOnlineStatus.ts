@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 
 type OnlineStatusState = {
   isOnline: boolean;
@@ -15,6 +15,11 @@ let globalState: OnlineStatusState = {
 };
 
 const listeners = new Set<() => void>();
+const serverSnapshot: OnlineStatusState = {
+  isOnline: true,
+  lastOnlineTime: null,
+  lastOfflineTime: null,
+};
 
 function subscribe(callback: () => void) {
   listeners.add(callback);
@@ -26,7 +31,7 @@ function getSnapshot() {
 }
 
 function getServerSnapshot() {
-  return { isOnline: true, lastOnlineTime: null, lastOfflineTime: null };
+  return serverSnapshot;
 }
 
 function notifyListeners() {

@@ -21,6 +21,13 @@ import { useThemeContext, type Theme } from '@/context/ThemeContext';
 import { CustomTokenSettings } from '@/components/tokens/CustomTokenSettings';
 import { NotificationPreferencesPanel } from '@/components/settings/NotificationPreferencesPanel';
 import { LocalStorageSettings } from '@/components/settings/LocalStorageSettings';
+import { KeyboardShortcutsSettings } from '@/components/keyboard-shortcuts/KeyboardShortcutsSettings';
+import { NotificationPreferencesDrawer } from '@/app/components/NotificationPreferencesDrawer';
+import {
+  NetworkProvider,
+  useNetwork,
+  useNetworkActions,
+} from '@/app/components/providers/NetworkProvider';
 
 interface Settings {
   emailReports: boolean;
@@ -43,6 +50,7 @@ const TOGGLE_STYLES = {
 
 function SettingsContent() {
   const [showKey, setShowKey] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [screenLockModalOpen, setScreenLockModalOpen] = useState(false);
 
   // Custom Horizon endpoint form
@@ -210,8 +218,6 @@ function SettingsContent() {
               </div>
             </div>
           </section>
-          </div>
-        </section>
 
         <section className="bg-[#161b22] border border-gray-800 rounded-xl p-6">
           <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
@@ -265,6 +271,13 @@ function SettingsContent() {
             Push Notifications
           </h2>
           <NotificationPreferencesPanel compact />
+          <button
+            type="button"
+            onClick={() => setIsDrawerOpen(true)}
+            className="mt-4 text-xs text-blue-400 hover:underline"
+          >
+            Configure alert categories
+          </button>
         </section>
 
         {/* Auto-Lock Security Settings */}
@@ -306,7 +319,14 @@ function SettingsContent() {
           </div>
         </section>
 
-            <form onSubmit={handleSaveCustomRpc} className="space-y-4">
+        <section className="bg-[#161b22] border border-gray-800 rounded-xl p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Icon id={ICON_IDS.globe} size={20} className="text-emerald-400" />
+              Custom Network Endpoint
+            </h2>
+          </div>
+          <form onSubmit={handleSaveCustomRpc} className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">
                   Custom Horizon URL
@@ -362,13 +382,13 @@ function SettingsContent() {
                 )}
               </div>
             </form>
+        </section>
       </div>
 
       <NotificationPreferencesDrawer 
         isOpen={isDrawerOpen} 
         onClose={() => setIsDrawerOpen(false)} 
       />
-          </div>
     </div>
   );
 }

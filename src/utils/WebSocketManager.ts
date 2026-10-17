@@ -8,14 +8,10 @@ export interface SocketMessage {
    * treated as a non-price indexer channel and fanned out to indexer listeners
    * untouched. `string & {}` keeps literal autocompletion for the known tags.
    */
-  type: "price_update" | "delta_update" | "orderbook_update" | (string & {});
+  type: "price_update" | "delta_update" | "orderbook_update" | "trade_execution" | (string & {});
   assetId?: string;
-  data: PriceData | Partial<PriceData> | OrderBookSnapshot | Record<string, unknown> | undefined;
-interface SocketMessage {
-  type: "price_update" | "delta_update" | "orderbook_update" | "trade_execution";
-  assetId?: string;
-  data: PriceData | Partial<PriceData> | OrderBookSnapshot | AmmTradeEvent;
-  timestamp: number;
+  data: PriceData | Partial<PriceData> | OrderBookSnapshot | AmmTradeEvent | Record<string, unknown> | undefined;
+  timestamp?: number;
 }
 
 type MessageCallback = (data: PriceData | Partial<PriceData>) => void;
@@ -114,14 +110,19 @@ export class WebSocketManager {
             this.orderBookListeners.forEach((callback) =>
               callback(message.data as OrderBookSnapshot),
             );
-          } else {
-            // Non-price indexer channels ride the same socket. They are fanned
-            // out raw so each channel owns its own payload parsing.
-            this.notifyIndexerEventListeners(message);
           } else if (message.type === "trade_execution") {
             this.tradeListeners.forEach((callback) =>
               callback(message.data as AmmTradeEvent),
             );
+          } else if (
+            message.type === "multisig_signature_request" ||
+            message.type === "multisig_signature_resolved"
+          ) {
+            this.notifyMultisigEventListeners(message);
+          } else {
+            // Non-price indexer channels ride the same socket. They are fanned
+            // out raw so each channel owns its own payload parsing.
+            this.notifyIndexerEventListeners(message);
           }
         } catch (err) {
           console.error("Failed to parse centralized WebSocket message:", err);
@@ -204,6 +205,14 @@ export class WebSocketManager {
     this.indexerEventListeners.delete(callback);
   }
 
+  public subscribeToMultisigEvents(callback: MultisigCallback) {
+    this.multisigListeners.add(callback);
+  }
+
+  public unsubscribeFromMultisigEvents(callback: MultisigCallback) {
+    this.multisigListeners.delete(callback);
+  }
+
   // Dynamic asset registration commands sent up to raw socket pipeline
   public subscribeToAssets(assetIds: string[]) {
     let checkNew = false;
@@ -243,6 +252,10 @@ export class WebSocketManager {
 
   private notifyIndexerEventListeners(message: SocketMessage) {
     this.indexerEventListeners.forEach((callback) => callback(message));
+  }
+
+  private notifyMultisigEventListeners(message: SocketMessage) {
+    this.multisigListeners.forEach((callback) => callback(message));
   }
 
   public getConnectedStatus(): boolean {

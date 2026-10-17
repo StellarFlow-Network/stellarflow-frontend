@@ -1,9 +1,17 @@
 import { expect, test } from '@playwright/test';
 
 test('keyboard focus rings cover native and ARIA controls, but not mouse focus', async ({ page }) => {
-  await page.goto('/offline');
-  await page.evaluate(() => {
-    document.body.innerHTML = `
+  // Reuse the app stylesheet while mounting the synthetic controls outside
+  // React, so page hydration and route effects cannot replace the fixture.
+  await page.goto('/');
+  const stylesheets = await page.locator('link[rel="stylesheet"]').evaluateAll((links) =>
+    links.map((link) => (link as HTMLLinkElement).href),
+  );
+  await page.setContent(`
+    <!doctype html>
+    <html>
+      <head>${stylesheets.map((href) => `<link rel="stylesheet" href="${href}">`).join('')}</head>
+      <body>
       <main>
         <a href="#target">Link</a>
         <button type="button">Button</button>
@@ -18,10 +26,11 @@ test('keyboard focus rings cover native and ARIA controls, but not mouse focus',
         <div role="dialog" aria-label="Dialog" tabindex="0">Dialog</div>
         <div contenteditable="true" aria-label="Editable text">Editable</div>
       </main>
-    `;
-  });
+      </body>
+    </html>
+  `);
 
-  const button = page.getByRole('button', { name: 'Button' });
+  const button = page.getByRole('button', { name: 'Button', exact: true });
   await button.click();
   await expect(button).toBeFocused();
   expect(await button.evaluate((element) => element.matches(':focus-visible'))).toBe(false);
@@ -36,7 +45,7 @@ test('keyboard focus rings cover native and ARIA controls, but not mouse focus',
     page.getByRole('menuitem', { name: 'Menu item' }),
     page.getByRole('tab', { name: 'Tab' }),
     page.getByRole('dialog', { name: 'Dialog' }),
-    page.getByRole('textbox', { name: 'Editable text' }),
+    page.locator('[contenteditable="true"][aria-label="Editable text"]'),
   ];
 
   for (const target of keyboardTargets) {
@@ -48,7 +57,11 @@ test('keyboard focus rings cover native and ARIA controls, but not mouse focus',
   }
 
   await page.evaluate(() => document.documentElement.classList.add('high-contrast'));
-  await page.keyboard.press('Tab');
-  await expect(page.getByRole('link', { name: 'Link' })).toBeFocused();
-  await expect(page.getByRole('link', { name: 'Link' })).toHaveCSS('outline-color', 'rgb(255, 255, 0)');
+  const link = page.getByRole('link', { name: 'Link' });
+  for (let index = 0; index < keyboardTargets.length + 3; index += 1) {
+    if (await link.evaluate((element) => element === document.activeElement)) break;
+    await page.keyboard.press('Tab');
+  }
+  await expect(link).toBeFocused();
+  await expect(link).toHaveCSS('outline-color', 'rgb(255, 255, 0)');
 });
