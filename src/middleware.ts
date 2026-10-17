@@ -59,6 +59,7 @@ export function middleware(request: NextRequest): NextResponse {
     frame-src 'self' ${sep24FrameOrigins.join(' ')};
     script-src ${scriptSrc};
     style-src 'self' 'nonce-${nonce}';
+    style-src-attr 'unsafe-inline';
     connect-src ${connectSrc};
     img-src 'self' blob: data: https://*.basemaps.cartocdn.com;
     font-src 'self';
