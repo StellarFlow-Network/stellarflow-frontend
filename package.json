@@ -90,6 +90,6 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^5.0.2",
-    "webpack-bundle-analyzer": "^4.9.0"
+    "webpack-bundle-analyzer": "^5.4.0"
   }
 }
