@@ -1,8 +1,7 @@
 name: Cypress E2E Tests
 
-# Cross-border remittance suite (#1078). Runs against a dev server because the
-# suite stubs the SEP-38 quote and corridor APIs, so it needs no seeded data and
-# no production build step.
+# Cypress swap and cross-border remittance suites run against a dev server;
+# their upstream services are stubbed so no seeded data or production build is needed.
 on:
   push:
     branches: [main]

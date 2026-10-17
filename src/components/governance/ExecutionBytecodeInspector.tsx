@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import OptimizedDialog from "@/app/components/OptimizedDialog";
 import { rpcManager } from "@/services/rpc";
+import { SorobanSimulationDebuggerModal } from "./SorobanSimulationDebuggerModal";
 
 export interface ExecutionBytecodeInspectorProps {
   /** Base64 encoded Stellar transaction/envelope, InvokeHostFunctionOp, or HostFunction XDR. */
@@ -287,28 +287,15 @@ export function ExecutionBytecodeInspector({
         )}
       </section>
 
-      <OptimizedDialog
+      <SorobanSimulationDebuggerModal
         isOpen={simulation.open}
         onClose={() => setSimulation((current) => ({ ...current, open: false }))}
-        title="Simulation Trace"
-        size="xl"
-      >
-        <div className="space-y-4">
-          {simulation.loading ? (
-            <div className="rounded-lg border border-gray-800 bg-[#0d1117] p-6 text-sm text-gray-400">Running Soroban simulation against testnet RPC…</div>
-          ) : simulation.error ? (
-            <div role="alert" className="rounded-lg border border-rose-900/60 bg-rose-950/30 p-4 text-sm text-rose-300">{simulation.error}</div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>Testnet RPC: {rpcUrl}</span>
-                <span>{simulation.durationMs?.toFixed(1)}ms</span>
-              </div>
-              <JsonValue value={simulation.trace} />
-            </>
-          )}
-        </div>
-      </OptimizedDialog>
+        rpcUrl={rpcUrl}
+        loading={simulation.loading}
+        result={simulation.trace}
+        error={simulation.error}
+        durationMs={simulation.durationMs}
+      />
     </>
   );
 }

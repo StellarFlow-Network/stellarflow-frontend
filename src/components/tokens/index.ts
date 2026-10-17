@@ -8,3 +8,6 @@ export {
   AssetGlowCard,
   type AssetGlowCardProps,
 } from "./AssetGlowCard";
+export {
+  SmartAssetResolverInput,
+} from "./SmartAssetResolverInput";
