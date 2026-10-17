@@ -11,19 +11,19 @@ const statusConfig: Record<HealthStatus, { label: string; textColor: string; dot
     label: "ACTIVE",
     textColor: "text-[#39FF14]",
     dotColor: "bg-[#39FF14]",
-    dotGlow: "shadow-[0_0_8px_3px_rgba(57,255,20,0.8)]",
+    dotGlow: "shadow-[-0_0_8px_3px_rgba(57,255,20,0.8)]",
   },
   INACTIVE: {
     label: "INACTIVE",
     textColor: "text-zinc-400",
     dotColor: "bg-zinc-400",
-    dotGlow: "shadow-[0_0_6px_2px_rgba(161,161,170,0.4)]",
+    dotGlow: "shadow-[-0_0_6px_2px_rgba(161,161,170,0.4)]",
   },
   WARNING: {
     label: "WARNING",
     textColor: "text-yellow-400",
     dotColor: "bg-yellow-400",
-    dotGlow: "shadow-[0_0_8px_3px_rgba(250,204,21,0.7)]",
+    dotGlow: "shadow-[-0_0_8px_3px_rgba(250,204,21,0.7)]",
   },
 };
 
@@ -32,20 +32,23 @@ const GlobalHealthIndicator = ({ status = "ACTIVE" }: GlobalHealthIndicatorProps
   const isActive = status === "ACTIVE";
 
   return (
-    <div className="flex items-center gap-2" >
-      {/* Label */}
+    <div className="flex items-center gap-2">
+      {/*Label*/}
       <span className={`text-sm font-bold font-mono tracking-widest ${config.textColor}`}>
         Global Health:
       </span>
 
-      {/* Status */}
+      {/*Status*/}
       <span className={`text-sm font-bold font-mono tracking-widest ${config.textColor}`}>
         [ {config.label.charAt(0) + config.label.slice(1).toLowerCase()} ]
       </span>
 
-      {/* Glowing orb */}
+      {/*Glowing orb*/}
       <div className="relative flex items-center justify-center w-4 h-4 ml-1">
-
+        <span
+          aria-hidden="true"
+          className={`rounded-full w-2.5 h-2.5 ${config.dotColor} ${config.dotGlow} ${isActive ? "animate-pulse" : ""}`}
+        />
       </div>
     </div>
   );

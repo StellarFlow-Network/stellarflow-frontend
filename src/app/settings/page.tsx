@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { useNetwork, useNetworkActions, NetworkProvider } from '@/context/NetworkContext';
 import Icon from '@/components/icons/Icon';
 import { ICON_IDS } from '@/components/icons/iconIds';
 import { useDebounce } from '../hooks/useDebounce';
@@ -21,6 +22,7 @@ import { useThemeContext, type Theme } from '@/context/ThemeContext';
 import { CustomTokenSettings } from '@/components/tokens/CustomTokenSettings';
 import { NotificationPreferencesPanel } from '@/components/settings/NotificationPreferencesPanel';
 import { LocalStorageSettings } from '@/components/settings/LocalStorageSettings';
+import { RPCNodeSelector } from '@/components/RPCNodeSelector';
 
 interface Settings {
   emailReports: boolean;
@@ -44,6 +46,7 @@ const TOGGLE_STYLES = {
 function SettingsContent() {
   const [showKey, setShowKey] = useState(false);
   const [screenLockModalOpen, setScreenLockModalOpen] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // Custom Horizon endpoint form
   const { horizonUrl, customHorizonUrl } = useNetwork();
@@ -52,6 +55,16 @@ function SettingsContent() {
   const [isValidating, setIsValidating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [rpcNodeId, setRpcNodeId] = useState<string>('');
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('soroban-rpc-node-id');
+      if (stored) setRpcNodeId(stored);
+    } catch {
+      // ignore storage access errors
+    }
+  }, []);
 
   const handleSaveCustomRpc = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -210,8 +223,6 @@ function SettingsContent() {
               </div>
             </div>
           </section>
-          </div>
-        </section>
 
         <section className="bg-[#161b22] border border-gray-800 rounded-xl p-6">
           <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
@@ -276,6 +287,18 @@ function SettingsContent() {
 
         <LocalStorageSettings />
 
+        <RPCNodeSelector
+          selectedNodeId={rpcNodeId}
+          onSelectNode={(id) => {
+            setRpcNodeId(id);
+            try {
+              localStorage.setItem('soroban-rpc-node-id', id);
+            } catch {
+              // ignore storage access errors
+            }
+          }}
+        />
+
         <section className="bg-[#161b22] border border-gray-800 rounded-xl p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -306,6 +329,7 @@ function SettingsContent() {
           </div>
         </section>
 
+        <section className="bg-[#161b22] border border-gray-800 rounded-xl p-6">
             <form onSubmit={handleSaveCustomRpc} className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">
@@ -362,13 +386,13 @@ function SettingsContent() {
                 )}
               </div>
             </form>
+        </section>
       </div>
 
       <NotificationPreferencesDrawer 
         isOpen={isDrawerOpen} 
         onClose={() => setIsDrawerOpen(false)} 
       />
-          </div>
     </div>
   );
 }
@@ -376,6 +400,7 @@ function SettingsContent() {
 export default function SettingsPage() {
   return <NetworkProvider><SettingsContent /></NetworkProvider>;
 }
+
 
 function ToggleItem({ icon, title, description, enabled, onToggle, onConfigure }: { icon: React.ReactNode, title: string, description: string, enabled: boolean, onToggle: () => void, onConfigure?: () => void }) {
   const trackClasses = enabled ? TOGGLE_STYLES.enabled.track : TOGGLE_STYLES.disabled.track;
@@ -435,5 +460,37 @@ function MonitorIcon({ className = "" }: { className?: string }) {
       <rect x="2" y="3" width="20" height="14" rx="2" />
       <path d="M8 21h8M12 17v4" />
     </svg>
+  );
+}
+
+function KeyboardShortcutsSettings() {
+  return (
+    <section className="bg-[#161b22] border border-gray-800 rounded-xl p-6">
+      <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
+        <Icon id={ICON_IDS.key} size={20} className="text-purple-400" />
+        Keyboard Shortcuts
+      </h2>
+      <p className="text-xs text-gray-500">Keyboard shortcut customization is coming soon.</p>
+    </section>
+  );
+}
+
+function NotificationPreferencesDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/50" onClick={onClose}>
+      <div
+        className="w-full max-w-md h-full bg-[#161b22] border-l border-gray-800 p-6 overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-semibold text-gray-100">Notification Preferences</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-300" aria-label="Close">
+            <Icon id={ICON_IDS.eyeOff} size={16} />
+          </button>
+        </div>
+        <NotificationPreferencesPanel />
+      </div>
+    </div>
   );
 }
