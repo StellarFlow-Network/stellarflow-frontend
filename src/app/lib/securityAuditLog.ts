@@ -103,7 +103,7 @@ export function getSecurityAuditLog(): SecurityAuditEntry[] {
 }
 
 export function getBlockedPhishingAttempts(): SecurityAuditEntry[] {
-  return getSecurityAuditLog().filter((e => e.event === "blocked_phishing_attempt");
+  return getSecurityAuditLog().filter((e) => e.event === "blocked_phishing_attempt");
 }
 
 export function clearSecurityAuditLog(): void {
