@@ -12,6 +12,10 @@ export interface TokenOption {
   address: string;
   decimals: number;
   iconUrl?: string;
+  verified?: boolean;
+  isCustom?: boolean;
+  tags?: string[];
+  balance?: string;
 }
 
 interface SwapFormProps {

@@ -65,7 +65,7 @@ const WalletConnectButtonContent = memo(() => {
           className="transition-transform group-hover:rotate-12"
         />
         <span className="truncate">{walletLabel}</span>
-        {wallet?.connected && (
+        {wallet?.connected && wallet.publicKey && (
            <Icon
              id={ICON_IDS.chevronRight}
              size={14}

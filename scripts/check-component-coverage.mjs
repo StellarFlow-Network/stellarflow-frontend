@@ -24,6 +24,7 @@ const TARGET_COMPONENTS = [
   { name: 'SwapCard', file: 'src/components/swap/SwapCard.tsx' },
   { name: 'WalletConnectButton', file: 'src/app/components/WalletConnectButton.tsx' },
   { name: 'HealthFactorGauge', file: 'src/components/vaults/HealthFactorGauge.tsx' },
+  { name: 'TokenSelectorModal', file: 'src/components/swap/TokenSelectorModal.tsx' },
 ];
 
 const IMPORT_PATTERNS = [

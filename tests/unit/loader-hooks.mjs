@@ -78,7 +78,11 @@ export async function resolve(specifier, context, nextResolve) {
   if (candidatePath) {
     const resolved = resolveFile(candidatePath);
     if (resolved) {
-      const double = MODULE_DOUBLES[moduleKey(resolved)];
+      const key = moduleKey(resolved);
+      const parentName = context.parentURL ? path.basename(context.parentURL).toLowerCase() : '';
+      const baseName = path.basename(resolved, path.extname(resolved)).toLowerCase();
+      const isDirectTest = parentName.includes(baseName) || (baseName === 'tokenselectormodal' && parentName.includes('token-selector-modal'));
+      const double = isDirectTest ? null : MODULE_DOUBLES[key];
       return { url: double ?? pathToFileURL(resolved).href, shortCircuit: true };
     }
   }
