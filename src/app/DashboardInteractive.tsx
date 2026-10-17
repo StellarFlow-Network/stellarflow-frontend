@@ -36,10 +36,13 @@ const PriceFeedCard = dynamic(() => import("./components/PriceFeedCard"), {
   loading: () => <PriceFeedCardSkeleton />,
 });
 
-const OrderBookFeed = dynamic(() => import("./components/OrderBookFeed"), {
-  ssr: false,
-  loading: () => <PriceFeedCardSkeleton />,
-});
+const OrderBookTable = dynamic(
+  () => import("@/components/trading/OrderBookTable").then((module) => module.OrderBookTable),
+  {
+    ssr: false,
+    loading: () => <PriceFeedCardSkeleton />,
+  },
+);
 
 const CumulativeDepthChart = dynamic(
   () => import("@/components/trading/CumulativeDepthChart").then((m) => m.CumulativeDepthChart),
@@ -333,7 +336,7 @@ export default function DashboardInteractive({
             <PriceFeedCard refreshInterval={30000} />
           </div>
           <div className="min-w-0 w-full max-w-full aspect-auto sm:aspect-4/3 min-h-[260px] sm:min-h-[320px] overflow-hidden">
-            <OrderBookFeed assetId={ASSET_SYMBOLS.NGN_XLM} />
+            <OrderBookTable assetId={ASSET_SYMBOLS.NGN_XLM} />
           </div>
           <div className="min-w-0 w-full max-w-full aspect-auto sm:aspect-4/3 min-h-[260px] sm:min-h-[320px] overflow-hidden">
             <RpcHealthPanel />

@@ -51,3 +51,8 @@ export {
   HighPriceImpactModal,
   type HighPriceImpactModalProps,
 } from "./HighPriceImpactModal";
+
+export {
+  OrderBookTable,
+  type OrderBookTableProps,
+} from "./OrderBookTable";
