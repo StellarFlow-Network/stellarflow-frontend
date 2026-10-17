@@ -5,3 +5,4 @@
  */
 
 export { HighContrastToggle } from "./HighContrastToggle";
+export { SEP24WebviewModal } from "./SEP24WebviewModal";
