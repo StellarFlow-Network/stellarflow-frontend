@@ -1,13 +1,13 @@
 "use client";
 
 /**
- * OrderBookDepthChart — Issue #711
+ * OrderBookDepthChart -- Issue #711
  *
  * Renders a live bid/ask order book depth chart as an SVG cumulative-volume
  * curve. Bids render in green, asks in red, and hovering either curve shows
  * the cumulative volume available at that price level.
  *
- * The chart is intentionally presentational — it takes already-fetched
+ * The chart is intentionally presentational -- it takes already-fetched
  * `bids`/`asks` and renders them. Callers that need a live-updating feed
  * (e.g. the corridor monitor dashboard) wrap this component and push fresh
  * data down as props; see `src/app/dashboard/corridors/LiquidityDepthChart.tsx`.
@@ -174,7 +174,7 @@ export default function OrderBookDepthChart({
     : undefined;
 
   return (
-    <div ref={containerRef} className={`w-full ${className}`} data-testid="order-book-depth-chart">
+    <div ref={containerRef} className={`wfull ${className}`} data-testid="order-book-depth-chart">
       {label && (
         <div className="mb-2 flex items-center justify-between text-[11px] text-neutral-400">
           <span className="uppercase tracking-[0.2em]">{label}</span>

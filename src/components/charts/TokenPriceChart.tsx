@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import {
   createChart,
   IChartApi,
@@ -12,6 +13,23 @@ import {
 import { getItem, setItem } from '@/utils/storage';
 import { calculateSimpleMovingAverage, calculateRSI } from '@/app/charts/chartCalculations';
 import { Activity, BarChart2, TrendingUp, Sliders, RefreshCw } from 'lucide-react';
+
+const ChartSkeleton = ({ height }: { height: number }) => (
+  <div
+    role="status"
+    aria-label="Loading chart"
+    aria-busy="true"
+    className="w-full animate-pulse rounded-xl bg-gray-800/40"
+    style={{ height }}
+  >
+    <span className="sr-only">Loading chart...</span>
+  </div>
+);
+
+const DynamicChartCanvas = dynamic(() => import('./ChartCanvas'), {
+  ssr: false,
+  loading: () => <ChartSkeleton height={420} />,
+});
 
 export type Timeframe = '1H' | '24H' | '7D' | '1M' | '1Y' | 'ALL';
 
@@ -238,6 +256,7 @@ export const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
   // Initialize Main Lightweight Chart instance
   useEffect(() => {
     if (!chartContainerRef.current) return;
+    if (typeof window === 'undefined') return;
 
     const chart = createChart(chartContainerRef.current, {
       height: indicators.rsi ? height - 120 : height,
@@ -327,6 +346,7 @@ export const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
   // Initialize RSI Chart when toggled on
   useEffect(() => {
     if (!indicators.rsi || !rsiContainerRef.current) {
+      if (typeof window === 'undefined') return;
       if (rsiChartRef.current) {
         rsiChartRef.current.remove();
         rsiChartRef.current = null;
@@ -687,7 +707,11 @@ export const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
             </span>
           </div>
         )}
-        <div ref={chartContainerRef} className="w-full h-full" />
+        {typeof window === 'undefined' ? (
+          <ChartSkeleton height={indicators.rsi ? height - 120 : height} />
+        ) : (
+          <div ref={chartContainerRef} className="w-full h-full" />
+        )}
       </div>
 
       {/* RSI Subchart Container */}
@@ -697,7 +721,11 @@ export const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
             <span>RSI (14)</span>
             <span className="text-gray-500">Overbought: 70 | Oversold: 30</span>
           </div>
-          <div ref={rsiContainerRef} className="w-full" style={{ height: 110 }} />
+          {typeof window === 'undefined' ? (
+            <ChartSkeleton height={110} />
+          ) : (
+            <div ref={rsiContainerRef} className="w-full" style={{ height: 110 }} />
+          )}
         </div>
       )}
     </div>
@@ -705,3 +733,4 @@ export const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
 };
 
 export default TokenPriceChart;
+export { DynamicChartCanvas };

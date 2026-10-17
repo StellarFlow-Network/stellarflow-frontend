@@ -152,6 +152,22 @@ const nextConfig: NextConfig = {
           priority: 30,
         };
 
+        cacheGroups["lightweightCharts"] = {
+          name: "vendor-lightweight-charts",
+          test: /[\\/]node_modules[\\/](lightweight-charts)[\\/]/,
+          chunks: "all" as const,
+          enforce: true,
+          priority: 30,
+        };
+
+        cacheGroups["tradingview"] = {
+          name: "vendor-tradingview",
+          test: /[\\/]node_modules[\\/](tradingview)([\\/])/,
+          chunks: "all" as const,
+          enforce: true,
+          priority: 30,
+        };
+
         cacheGroups["framerMotion"] = {
           name: "vendor-framer-motion",
           test: /[\\/]node_modules[\\/]framer-motion[\\/]/,

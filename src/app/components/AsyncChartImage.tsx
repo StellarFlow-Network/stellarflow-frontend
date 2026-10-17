@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { useImageWorker } from "../images/useImageWorker";
+
+const ChartSkeleton = dynamic(
+  () => import("./ChartSkeleton").then((mod) => mod.default),
+  { ssr: false, loading: () => null },
+);
 
 interface AsyncChartImageProps {
   src: string;
@@ -158,9 +164,11 @@ export default function AsyncChartImage({
   return (
     <div className={`relative ${className}`} style={{ width, height }}>
       {isLoading && (
-        <div className="absolute inset-0 bg-gray-800 animate-pulse flex items-center justify-center">
-          <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
-        </div>
+        <ChartSkeleton
+          width={width}
+          height={height}
+          label={`Loading ${alt}`}
+        />
       )}
       <canvas
         ref={canvasRef}

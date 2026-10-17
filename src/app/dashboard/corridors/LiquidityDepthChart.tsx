@@ -1,9 +1,26 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { useCorridorStream } from "@/context/CorridorContext";
 import type { OrderBookEntry } from "../../hooks/useCorridorMetrics";
-import OrderBookDepthChart from "@/components/charts/OrderBookDepthChart";
+
+const CHART_HEIGHT = 192;
+
+const OrderBookDepthChart = dynamic(() => import("@/components/charts/OrderBookDepthChart"), {
+  ssr: false,
+  loading: () => (
+    <div
+      role="status"
+      aria-livel="polite"
+      aria-label="Loading liquidity depth chart"
+      className="w-full animate-pulse rounded-xl bg-neutral-900/60"
+      style={{ height: CHART_HEIGHT }}
+    >
+      <span className="sr-only">Loading liquidity depth chart</span>
+    </div>
+  ),
+});
 
 type LiquidityDepthChartProps = {
   bids: OrderBookEntry[];
@@ -33,10 +50,8 @@ function applyPriceDelta(
 }
 
 /**
- * Live-updating wrapper around the shared `OrderBookDepthChart`. Subscribes
- * to the corridor price stream and nudges the mock bid/ask book on every
- * tick so the depth curves feel "live" on the monitor dashboard, then hands
- * the resulting book off to the presentational chart component.
+ * Live-updating wrapper around the shared `OrderBookDepthChart`. Subscribes to the corridor price stream and nudges the mock bid/ask book on every
+ * tick so the depth curves feel "live" on the monitor dashboard, then hands the resulting book off to the presentational chart component.
  */
 export default function LiquidityDepthChart({ bids, asks, activePair }: LiquidityDepthChartProps) {
   const { lastUpdate } = useCorridorStream();
@@ -76,7 +91,7 @@ export default function LiquidityDepthChart({ bids, asks, activePair }: Liquidit
         </div>
       </div>
 
-      <OrderBookDepthChart bids={liveBids} asks={liveAsks} height={192} />
+      <OrderBookDepthChart bids={liveBids} asks={liveAsks} height={CHART_HEIGHT} />
 
       <div className="mt-2 text-right text-[11px] text-neutral-500">
         Mid: <span className="font-mono text-neutral-200">{midPrice.toFixed(2)}</span>
