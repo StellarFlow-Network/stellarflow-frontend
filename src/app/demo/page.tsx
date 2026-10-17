@@ -11,12 +11,14 @@ import {
   Smartphone,
   ArrowRight,
   Info,
+  PenTool,
 } from "lucide-react";
 const OfflineBanner = dynamic(() => import("@/components/pwa/OfflineBanner").then((module) => module.OfflineBanner), { ssr: false });
 const PushNotificationManager = dynamic(() => import("@/components/notifications/PushNotificationManager").then((module) => module.PushNotificationManager), { ssr: false });
 const HarvestHistoryModal = dynamic(() => import("@/components/yield/HarvestHistoryModal").then((module) => module.HarvestHistoryModal), { ssr: false });
 const OrderBookView = dynamic(() => import("@/components/trading/OrderBookView").then((module) => module.OrderBookView), { ssr: false });
 const NotificationPreferencesPanel = dynamic(() => import("@/components/settings/NotificationPreferencesPanel").then((module) => module.NotificationPreferencesPanel), { ssr: false });
+const ChartWithDrawingTools = dynamic(() => import("@/components/trading/ChartWithDrawingTools").then((module) => module.ChartWithDrawingTools), { ssr: false });
 
 /**
  * Demo page showcasing all new PWA and notification components
@@ -58,10 +60,10 @@ export default function DemoPage() {
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center py-8">
-          <h1 className="text-4xl font-bold mb-4">StellarFlow PWA Features Demo</h1>
+          <h1 className="text-4xl font-bold mb-4">StellarFlow Trading Components Demo</h1>
           <p className="text-neutral-400 max-w-2xl mx-auto">
-            Comprehensive demonstration of Progressive Web App capabilities, push notifications, 
-            yield vault management, and real-time trading components.
+            Comprehensive demonstration of technical chart drawing tools, real-time order book streaming,
+            Progressive Web App capabilities, push notifications, and yield vault management.
           </p>
         </div>
 
@@ -105,7 +107,38 @@ export default function DemoPage() {
 
         {/* Component Showcase Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          
+
+          {/* Chart with Drawing Tools */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <PenTool className="h-5 w-5 text-amber-400" />
+              <h2 className="text-xl font-semibold">Chart Drawing Tools</h2>
+            </div>
+            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+              <div className="h-[500px]">
+                <ChartWithDrawingTools
+                  pairId="XLM_USDC"
+                  baseSymbol="XLM"
+                  quoteSymbol="USDC"
+                  height={500}
+                  fillParent={false}
+                  showTimeframeControls={true}
+                />
+              </div>
+            </div>
+            <div className="text-sm text-neutral-400 bg-neutral-900/50 border border-neutral-800 rounded-lg p-3">
+              <p><strong>Features:</strong></p>
+              <ul className="mt-2 space-y-1 list-disc list-inside text-xs">
+                <li>Interactive drawing tools (trendlines, horizontal lines, rectangles, Fibonacci)</li>
+                <li>Customizable colors and line widths</li>
+                <li>Undo functionality with history tracking</li>
+                <li>Drawings persist to localStorage per trading pair</li>
+                <li>Toggle visibility and delete individual drawings</li>
+                <li>Keyboard shortcuts (Esc, Ctrl+Z, Delete)</li>
+              </ul>
+            </div>
+          </div>
+
           {/* Real-time Order Book */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -113,11 +146,11 @@ export default function DemoPage() {
               <h2 className="text-xl font-semibold">Real-time Order Book</h2>
             </div>
             <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
-              <div className="h-[600px]">
-                <OrderBookView 
-                  pair="XLM/USDC" 
-                  depth={15} 
-                  enableGrouping 
+              <div className="h-[500px]">
+                <OrderBookView
+                  pair="XLM/USDC"
+                  depth={15}
+                  enableGrouping
                   compact={false}
                 />
               </div>
@@ -141,7 +174,7 @@ export default function DemoPage() {
               <Bell className="h-5 w-5 text-blue-400" />
               <h2 className="text-xl font-semibold">Push Notification Preferences</h2>
             </div>
-            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 max-h-[600px] overflow-y-auto">
+            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 max-h-[500px] overflow-y-auto">
               <NotificationPreferencesPanel compact />
             </div>
             <div className="text-sm text-neutral-400 bg-neutral-900/50 border border-neutral-800 rounded-lg p-3">
@@ -225,14 +258,15 @@ export default function DemoPage() {
                   <li>#918: Yield Vault Harvest Rewards History & Breakdown Modal</li>
                   <li>#894: Custom Price & Health Factor Browser Push Notification Engine</li>
                   <li>#855: Real-Time Order Book Delta Streaming Component</li>
+                  <li><strong>New:</strong> Technical Chart Drawing Tools Overlay Component</li>
                 </ul>
                 <p className="mt-3">
-                  <strong>Next.js PWA Configuration:</strong> The next-pwa plugin is already configured in next.config.ts with 
+                  <strong>Next.js PWA Configuration:</strong> The next-pwa plugin is already configured in next.config.ts with
                   proper caching strategies and offline fallbacks.
                 </p>
                 <p>
-                  <strong>Testing:</strong> Use browser dev tools to simulate offline mode, test push notification permissions, 
-                  and verify PWA installation prompts on mobile devices.
+                  <strong>Testing:</strong> Use browser dev tools to simulate offline mode, test push notification permissions,
+                  verify PWA installation prompts on mobile devices, and try the chart drawing tools by clicking the settings icon.
                 </p>
               </div>
             </div>
