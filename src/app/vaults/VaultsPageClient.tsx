@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import LpVaultStrategyBacktester from "@/components/vaults/LpVaultStrategyBacktester";
+import VaultRiskDashboard from "@/components/vaults/VaultRiskDashboard";
 
 // Lazy-load the heavy visualizer so vault charts stay out of the critical bundle.
 // `ssr: false` requires a Client Component boundary, so this is split out of
@@ -27,6 +28,7 @@ const VaultYieldHarvestVisualizer = dynamic(
 export default function VaultsPageClient() {
   return (
     <>
+      <VaultRiskDashboard />
       <LpVaultStrategyBacktester />
       <VaultYieldHarvestVisualizer />
     </>
