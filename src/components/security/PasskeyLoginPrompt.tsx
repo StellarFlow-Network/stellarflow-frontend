@@ -149,24 +149,6 @@ export function PasskeyLoginPrompt({
     }
   }, [isOpen]);
 
-  // ── Auto-start challenge on open once support is confirmed ───────────────
-  useEffect(() => {
-    if (isOpen && isSupported === true && phase === "idle") {
-      startAuthentication();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, isSupported]);
-
-  // ── Keyboard shortcut ────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [isOpen, onClose]);
-
   // ── Authentication flow ──────────────────────────────────────────────────
   const startAuthentication = useCallback(async () => {
     setPhase("scanning");
@@ -204,6 +186,24 @@ export function PasskeyLoginPrompt({
       setErrorCode(code);
     }
   }, [getOptions, verifyResponse, onSuccess, onClose, storeSetError]);
+
+  // ── Auto-start challenge on open once support is confirmed ───────────────
+  useEffect(() => {
+    if (isOpen && isSupported === true && phase === "idle") {
+      startAuthentication();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, isSupported, startAuthentication]);
+
+  // ── Keyboard shortcut ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 

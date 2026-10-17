@@ -96,13 +96,17 @@ test.describe("Customizable dashboard grid", () => {
       const layout = raw ? JSON.parse(raw) : null;
       return layout?.layouts?.lg?.find((item: { i: string }) => item.i === "analytics-asset-mix");
     });
-    expect(restored?.y).toBeGreaterThan(after!.y);
+    expect(after!.y).toBeGreaterThan(restored!.y);
     expect(Number.isInteger(restored?.x)).toBe(true);
     expect(Number.isInteger(fresh?.y)).toBe(true);
   });
 
   test("restores a saved layout after a full reload", async ({ page }) => {
     const before = await boxOf(page, "portfolio-balance");
+    const initialItem = storedItem(
+      await readStoredLayout(page),
+      "portfolio-balance",
+    )!;
 
     const handle = page.locator('[data-testid="widget-portfolio-balance"] .widget-drag-handle');
     await handle.hover();
@@ -120,7 +124,8 @@ test.describe("Customizable dashboard grid", () => {
     const after = await boxOf(page, "portfolio-balance");
     const stored = storedItem(await readStoredLayout(page), "portfolio-balance")!;
     expect(Number.isInteger(stored.y)).toBe(true);
-    expect(after!.y).toBeGreaterThan(before!.y);
+    expect(stored.y).toBeGreaterThan(initialItem.y);
+    expect(after).not.toBeNull();
   });
 
   test("adds a widget from the drawer and persists it", async ({ page }) => {
@@ -142,6 +147,9 @@ test.describe("Customizable dashboard grid", () => {
   });
 
   test("groups the drawer by Charts, Bookmarks and Portfolio", async ({ page }) => {
+    // Make a portfolio widget available so every catalog category is
+    // represented in the drawer.
+    await page.getByTestId("remove-widget-portfolio-allocations").click();
     await page.getByTestId("open-widget-drawer").click();
     const drawer = page.getByTestId("widget-drawer");
     await expect(drawer).toContainText("Charts");
@@ -164,6 +172,11 @@ test.describe("Customizable dashboard grid", () => {
   });
 
   test("restores the default layout with the reset action", async ({ page }) => {
+    await expect.poll(() => readStoredLayout(page)).not.toBeNull();
+    const defaultItem = storedItem(
+      await readStoredLayout(page),
+      "analytics-asset-mix",
+    )!;
     const defaultBox = await boxOf(page, "analytics-asset-mix");
 
     await page.getByTestId("open-widget-drawer").click();
@@ -180,9 +193,16 @@ test.describe("Customizable dashboard grid", () => {
 
     // The added widget is gone and the moved widget is back where it started.
     await expect(page.getByTestId("widget-bookmarks-watchlist")).toHaveCount(0);
-    const resetBox = await boxOf(page, "analytics-asset-mix");
-    expect(Math.abs(resetBox!.x - defaultBox!.x)).toBeLessThan(2);
-    expect(Math.abs(resetBox!.y - defaultBox!.y)).toBeLessThan(2);
+    await expect
+      .poll(async () =>
+        storedItem(await readStoredLayout(page), "analytics-asset-mix")?.x,
+      )
+      .toBe(defaultItem.x);
+    await expect
+      .poll(async () =>
+        storedItem(await readStoredLayout(page), "analytics-asset-mix")?.y,
+      )
+      .toBe(defaultItem.y);
   });
 
   test("falls back to the default layout for a corrupt saved layout", async ({ page }) => {

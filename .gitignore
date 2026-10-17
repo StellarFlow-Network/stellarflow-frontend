@@ -43,6 +43,7 @@ next-env.d.ts
 # bundle analysis
 .bundle-report.json
 .bundle-report.baseline.json
+.css-bundle-report.json
 .env.local
 
 branch_structure.json

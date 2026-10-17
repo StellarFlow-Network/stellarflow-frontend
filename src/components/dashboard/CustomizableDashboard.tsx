@@ -9,7 +9,7 @@
  * machine can be unit-tested without a DOM or a layout engine.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { forwardRef, useCallback, useEffect, useMemo, useState } from "react";
 import { Responsive, useContainerWidth, type Layout } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 
@@ -199,8 +199,8 @@ export function CustomizableDashboard() {
             dragConfig={{
               enabled: true,
               handle: ".widget-drag-handle",
-              // The remove button lives inside the drag handle; a click on it
-              // must remove the widget rather than start a drag.
+              // The remove button lives inside the drag handle, so exclude
+              // buttons from drag start.
               cancel: "button",
             }}
             resizeConfig={{ enabled: true }}
@@ -223,46 +223,57 @@ export function CustomizableDashboard() {
   );
 }
 
-interface DashboardWidgetCardProps {
+type DashboardWidgetCardProps = Omit<
+  React.ComponentPropsWithoutRef<"section">,
+  "id"
+> & {
   id: string;
   onRemove: (id: string) => void;
-}
+};
 
-function DashboardWidgetCard({ id, onRemove }: DashboardWidgetCardProps) {
-  const definition = getWidgetDefinition(id);
-  if (!definition) return null;
+const DashboardWidgetCard = forwardRef<HTMLElement, DashboardWidgetCardProps>(
+  function DashboardWidgetCard({ id, onRemove, className, style, ...sectionProps }, ref) {
+    const definition = getWidgetDefinition(id);
+    if (!definition) return null;
 
-  return (
-    <section
-      data-testid={`widget-${id}`}
-      aria-label={definition.title}
-      className="flex h-full flex-col overflow-hidden rounded-lg border border-gray-800 bg-[#161b22]"
-    >
-      <header className="widget-drag-handle flex cursor-grab items-center justify-between gap-2 border-b border-gray-800 px-3 py-2 active:cursor-grabbing">
-        <div className="flex min-w-0 items-center gap-2">
-          <Icon id="sliders" size={14} className="shrink-0 text-gray-500" />
-          <h3 className="truncate text-sm font-medium text-white">{definition.title}</h3>
+    return (
+      <section
+        {...sectionProps}
+        ref={ref}
+        data-testid={`widget-${id}`}
+        aria-label={definition.title}
+        className={[
+          "flex h-full flex-col overflow-hidden rounded-lg border border-gray-800 bg-[#161b22]",
+          className,
+        ].filter(Boolean).join(" ")}
+        style={style}
+      >
+        <header className="widget-drag-handle flex cursor-grab items-center justify-between gap-2 border-b border-gray-800 px-3 py-2 active:cursor-grabbing">
+          <div className="flex min-w-0 items-center gap-2">
+            <Icon id="sliders" size={14} className="shrink-0 text-gray-500" />
+            <h3 className="truncate text-sm font-medium text-white">{definition.title}</h3>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onRemove(id)}
+            aria-label={`Remove ${definition.title}`}
+            data-testid={`remove-widget-${id}`}
+            className="shrink-0 rounded p-1 text-gray-500 hover:bg-gray-800 hover:text-red-400"
+          >
+            <Icon id="xCircle" size={16} />
+          </button>
+        </header>
+
+        <div className="flex flex-1 flex-col justify-center gap-1 p-3">
+          <p className="text-sm text-gray-300">{definition.description}</p>
+          <p className="text-xs text-gray-500">
+            Drag the header to move · drag the corner to resize
+          </p>
         </div>
-
-        <button
-          type="button"
-          onClick={() => onRemove(id)}
-          aria-label={`Remove ${definition.title}`}
-          data-testid={`remove-widget-${id}`}
-          className="shrink-0 rounded p-1 text-gray-500 hover:bg-gray-800 hover:text-red-400"
-        >
-          <Icon id="xCircle" size={16} />
-        </button>
-      </header>
-
-      <div className="flex flex-1 flex-col justify-center gap-1 p-3">
-        <p className="text-sm text-gray-300">{definition.description}</p>
-        <p className="text-xs text-gray-500">
-          Drag the header to move · drag the corner to resize
-        </p>
-      </div>
-    </section>
-  );
-}
+      </section>
+    );
+  },
+);
 
 export default CustomizableDashboard;

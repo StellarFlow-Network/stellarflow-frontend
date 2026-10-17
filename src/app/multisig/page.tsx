@@ -1,4 +1,7 @@
-import React from "react";
+"use client";
+
+import React, { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { parseMultisigApprovalParams } from "@/services/multisigNotifications";
 import { MultisigDesk } from "./MultisigDesk";
 
@@ -9,12 +12,17 @@ import { MultisigDesk } from "./MultisigDesk";
  * desk, so the co-signer notification badge / push click (#962) can deep link
  * straight into the approval queue without losing server rendering.
  */
-export default async function MultisigPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const { filter, requestId } = parseMultisigApprovalParams(await searchParams);
+function MultisigPageContent() {
+  const searchParams = useSearchParams();
+  const { filter, requestId } = parseMultisigApprovalParams(searchParams.toString());
 
   return <MultisigDesk initialFilter={filter} highlightRequestId={requestId} />;
+}
+
+export default function MultisigPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-[#071016]" />}>
+      <MultisigPageContent />
+    </Suspense>
+  );
 }
