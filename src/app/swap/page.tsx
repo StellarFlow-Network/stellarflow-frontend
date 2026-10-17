@@ -182,7 +182,7 @@ function SwapContent() {
           sendMax: selectedPath.source_amount,
           destination: destinationAddress,
           destAsset: destAsset,
-          destMin: minReceiveAmount,
+          destAmount: minReceiveAmount || selectedPath.destination_amount,
           path: path
         }))
         .setTimeout(30)
@@ -372,7 +372,7 @@ function SwapContent() {
         )}
 
         {/* Slippage Dialog */}
-        <OptimizedDialog open={slippageDialogOpen} onClose={() => setSlippageDialogOpen(false)}>
+        <OptimizedDialog isOpen={slippageDialogOpen} onClose={() => setSlippageDialogOpen(false)}>
           <div className="p-6">
             <h3 className="text-xl font-semibold mb-4">Set Slippage Tolerance</h3>
             <div className="grid grid-cols-4 gap-2 mb-4">
