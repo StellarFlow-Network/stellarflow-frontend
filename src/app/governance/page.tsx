@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { WalletProvider, useWallet, useWalletStatus, useWalletActions } from '@/app/hooks/useWalletState';
 import Icon from '@/components/icons/Icon';
 import { ICON_IDS } from '@/components/icons/iconIds';
@@ -8,6 +8,7 @@ import { ProposalList, type ProposalRecord, type ProposalStatus } from '@/compon
 import { DelegateDirectory } from '@/components/governance/DelegateDirectory';
 import { DelegationGraphVisualizer } from '@/components/governance/DelegationGraphVisualizer';
 import ProposalCreationModal, { type ProposalSubmission } from '@/components/governance/ProposalCreationModal';
+import { DelegateSearchDrawer } from '@/components/governance/DelegateSearchDrawer';
 import { MobileVoteCard } from '@/components/governance/MobileVoteCard';
 import type { Delegate } from '@/types/delegation';
 
@@ -176,6 +177,7 @@ export default function GovernancePage() {
   const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
   const [proposals, setProposals] = useState<ProposalRecord[]>(MOCK_PROPOSALS);
   const [walletBalance, setWalletBalance] = useState(120000);
+  const [isDelegateDrawerOpen, setIsDelegateDrawerOpen] = useState(false);
   const minimumThreshold = 250000;
 
   const TABS: { key: typeof activeTab; label: string }[] = [
@@ -210,6 +212,10 @@ export default function GovernancePage() {
     setIsProposalModalOpen(false);
   };
 
+  const handleDelegateVotes = (delegate: Delegate) => {
+    setIsDelegateDrawerOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-8">
 
@@ -239,6 +245,20 @@ export default function GovernancePage() {
           <StatCard title="Proposals Voted" value="100% Coverage" icon={<Icon id={ICON_IDS.checkCircle} size={20} className="text-emerald-400" />} subtitle="All active proposals covered" />
         </div>
       )}
+
+      {/* Delegate Search & Select Drawer Trigger */}
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={() => setIsDelegateDrawerOpen(true)}
+          className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium relative overflow-hidden"
+          style={{ transition: 'transform 150ms ease, box-shadow 150ms ease' }}
+        >
+          <span className="relative z-10 flex items-center gap-2">
+            <Icon id={ICON_IDS.users} size={16} />
+            Find a Delegate
+          </span>
+        </button>
+      </div>
 
       {/* Section Switcher (Proposals / Delegates / Delegation Graph) */}
       <div className="flex border-b border-gray-800 mb-6 gap-6">
@@ -355,6 +375,13 @@ export default function GovernancePage() {
         onSubmit={handleProposalSubmit}
         walletBalance={walletBalance}
         minimumThreshold={minimumThreshold}
+      />
+
+      <DelegateSearchDrawer
+        isOpen={isDelegateDrawerOpen}
+        onClose={() => setIsDelegateDrawerOpen(false)}
+        delegates={MOCK_DELEGATES}
+        onDelegateVotes={handleDelegateVotes}
       />
 
     </div>

@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { X, BellRing, BellOff, Loader2 } from 'lucide-react';
+import { X, BellRing, BellOff, Loader2, Search, Users, ShieldCheck, CheckCircle2, Wallet } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDebounce } from '../hooks/useDebounce';
 
 interface NotificationPreferencesDrawerProps {
   isOpen: boolean;
   onClose: () => void;
+}
+
+interface Delegate {
+  id: string;
+  name: string;
+  address: string;
+  participationRate: number;
+  statement: string;
 }
 
 const TOGGLE_STYLES = {
@@ -19,6 +27,30 @@ const TOGGLE_STYLES = {
   },
 };
 
+const MOCK_DELEGATES: Delegate[] = [
+  {
+    id: '1',
+    name: 'StellarWhale',
+    address: 'GABC1234DEF5678GHIJ9012KLMN3456OPQR7890STUV1234WXYZ',
+    participationRate: 98,
+    statement: 'Focused on protocol security and long-term ecosystem sustainability.',
+  },
+  {
+    id: '2',
+    name: 'LumenGuard',
+    address: 'GDEF5678GHIJ9012KLMN3456OPQR7890STUV1234WXYZ5678ABCD',
+    participationRate: 87,
+    statement: 'Advocating for transparent treasury management and developer grants.',
+  },
+  {
+    id: '3',
+    name: 'NovaValidator',
+    address: 'GHIJ9012KLMN3456OPQR7890STUV1234WXYZ5678ABCD9012EFGH',
+    participationRate: 72,
+    statement: 'Prioritizing decentralization and validator incentive alignment.',
+  },
+];
+
 export function NotificationPreferencesDrawer({ isOpen, onClose }: NotificationPreferencesDrawerProps) {
   const [preferences, setPreferences] = useState({
     orderFills: true,
@@ -29,6 +61,34 @@ export function NotificationPreferencesDrawer({ isOpen, onClose }: NotificationP
   
   const [mutedUntil, setMutedUntil] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<'notifications' | 'delegation'>('notifications');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [delegatingId, setDelegatingId] = useState<string | null>(null);
+
+  const filteredDelegates = MOCK_DELEGATES.filter((delegate) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      delegate.name.toLowerCase().includes(query) ||
+      delegate.address.toLowerCase().includes(query)
+    );
+  });
+
+  const handleDelegate = async (delegate: Delegate) => {
+    setDelegatingId(delegate.id);
+    try {
+      // Simulating wallet signature prompt for governance delegation
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      console.log('Delegating votes to', delegate.address, 'with contract params:', {
+        contract: 'governance',
+        method: 'delegate',
+        delegatee: delegate.address,
+      });
+    } catch (err) {
+      console.error('Delegation failed', err);
+    } finally {
+      setDelegatingId(null);
+    }
+  };
 
   const debouncedPreferences = useDebounce(preferences, 1000);
   const [initialLoaded, setInitialLoaded] = useState(false);
@@ -128,6 +188,23 @@ export function NotificationPreferencesDrawer({ isOpen, onClose }: NotificationP
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-200">
+              <div className="flex gap-2 p-1 bg-[#0d1117] rounded-xl border border-gray-800">
+                <button
+                  onClick={() => setActiveTab('notifications')}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'notifications' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-gray-200'}`}
+                >
+                  Notifications
+                </button>
+                <button
+                  onClick={() => setActiveTab('delegation')}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'delegation' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-gray-200'}`}
+                >
+                  Delegation
+                </button>
+              </div>
+
+              {activeTab === 'notifications' && (
+                <>
               <section className="space-y-4">
                 <div className="flex justify-between items-center pb-2 border-b border-gray-800/50">
                   <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Channels</h3>
@@ -194,6 +271,71 @@ export function NotificationPreferencesDrawer({ isOpen, onClose }: NotificationP
                   Verifies client delivery and browser permissions.
                 </p>
               </section>
+                </>
+              )}
+
+              {activeTab === 'delegation' && (
+                <section className="space-y-4">
+                  <div className="flex justify-between items-center pb-2 border-b border-gray-800/50">
+                    <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Community Delegates</h3>
+                    <Users size={16} className="text-blue-500" />
+                  </div>
+                  <div className="relative">
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search by name or address..."
+                      className="w-full bg-[#0d1117] border border-gray-800 rounded-xl pl-9 pr-3 py-2.5 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-600 transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    {filteredDelegates.length === 0 && (
+                      <p className="text-xs text-gray-500 text-center py-6">No delegates match your search.</p>
+                    )}
+                    {filteredDelegates.map((delegate) => (
+                      <div
+                        key={delegate.id}
+                        className="bg-[#0d1117] p-4 rounded-xl border border-gray-800 space-y-3"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-2">
+                            <ShieldCheck size={18} className="text-blue-400" />
+                            <div>
+                              <p className="font-medium text-sm text-gray-100">{delegate.name}</p>
+                              <p className="text-xs text-gray-500 font-mono truncate max-w-[180px]">
+                                {delegate.address.slice(0, 6)}...{delegate.address.slice(-4)}
+                              </p>
+                            </div>
+                          </div>
+                          <span className={`text-xs font-semibold px-2 py-1 rounded-full ${delegate.participationRate >= 90 ? 'bg-green-900/40 text-green-400' : delegate.participationRate >= 75 ? 'bg-yellow-900/40 text-yellow-400' : 'bg-gray-800 text-gray-400'}`}>
+                            {delegate.participationRate}% participation
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-400 leading-relaxed">{delegate.statement}</p>
+                        <button
+                          onClick={() => handleDelegate(delegate)}
+                          disabled={delegatingId !== null}
+                          className="w-full flex items-center justify-center gap-2 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-900/50 py-2.5 rounded-lg transition-colors font-medium text-sm disabled:opacity-50"
+                        >
+                          {delegatingId === delegate.id ? (
+                            <>
+                              <Loader2 size={16} className="animate-spin" />
+                              Awaiting Signature...
+                            </>
+                          ) : (
+                            <>
+                              <Wallet size={16} />
+                              Delegate Votes
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
             </div>
           </motion.div>
         </>

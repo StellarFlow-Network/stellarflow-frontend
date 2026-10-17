@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useDebounce } from "./useDebounce";
 
 /**
@@ -14,5 +14,14 @@ import { useDebounce } from "./useDebounce";
 export function useDebouncedInput<T>(initial: T, delay = 300) {
   const [value, setValue] = useState<T>(initial);
   const debounced = useDebounce<T>(value, delay);
-  return { value, setValue, debounced };
+
+  // Stable setter that accepts either a value or an updater function, mirroring
+  // React's setState signature so consumers can avoid unnecessary re-renders.
+  const setInputValue = useCallback((next: T | ((prev: T) => T)) => {
+    setValue((prev) =>
+      typeof next === "function" ? (next as (prev: T) => T)(prev) : next
+    );
+  }, []);
+
+  return { value, setValue: setInputValue, debounced };
 }
