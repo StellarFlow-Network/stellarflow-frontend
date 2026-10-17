@@ -3,9 +3,17 @@
 import { useEffect } from 'react';
 import { useOptionalToast } from '@/components/ui/ToastQueue';
 import { rpcManager } from '@/services/rpc';
+import { useRpcNodeSelector } from '@/hooks/useRpcNodeSelector';
 
 export function RpcFailoverMonitor() {
   const toast = useOptionalToast();
+  const { selectedUrl } = useRpcNodeSelector();
+
+  useEffect(() => {
+    if (selectedUrl) {
+      rpcManager.setActiveUrl(selectedUrl);
+    }
+  }, [selectedUrl]);
 
   useEffect(() => {
     const stopMonitoring = rpcManager.startHealthMonitor();

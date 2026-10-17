@@ -13,23 +13,6 @@ export type NetworkTarget = "testnet" | "mainnet";
 
 /** Per-network endpoint + passphrase bundle, keyed by `NetworkTarget`. */
 export interface NetworkConfig {
-  horizonUrl: string;
-  sorobanUrl: string;
-  networkPassphrase: string;
-}
-
-/** Static network configuration, usable outside a `NetworkProvider`. */
-export const NETWORK_CONFIGS: Record<NetworkTarget, NetworkConfig> = {
-  testnet: {
-    horizonUrl: "https://horizon-testnet.stellar.org",
-    sorobanUrl: "https://soroban-testnet.stellar.org",
-    networkPassphrase: "Test SDF Network ; September 2015",
-  },
-  mainnet: {
-    horizonUrl: "https://horizon.stellar.org",
-    sorobanUrl: "https://soroban-mainnet.stellar.org",
-    networkPassphrase: "Public Global Stellar Network ; September 2015",
-export interface NetworkConfig {
   /** Human-readable network label. */
   label: string;
   network: NetworkTarget;
@@ -48,7 +31,7 @@ export const NETWORK_CONFIGS: Record<NetworkTarget, NetworkConfig> = {
   testnet: {
     label: "Testnet",
     network: "testnet",
-    networkPassphrase: "Test SDF Network ; September 2015",
+    networkPassphrase: "Test DF Network ; September 2015",
     horizonUrl: "https://horizon-testnet.stellar.org",
     sorobanRpcUrl: "https://soroban-testnet.stellar.org",
   },
@@ -61,25 +44,74 @@ export const NETWORK_CONFIGS: Record<NetworkTarget, NetworkConfig> = {
   },
 };
 
+/** A configured Soroban RPC node available for selection. */
+export interface RPCNode {
+  id: string;
+  label: string;
+  url: string;
+  network: NetworkTarget;
+}
+
+/** Static Soroban RPC node catalog, grouped by network. */
+export const RPC_NODES: Record<NetworkTarget, RPCNode[]> = {
+  testnet: [
+    {
+      id: "testnet-sdf",
+      label: "SDF Testnet",
+      url: "https://soroban-testnet.stellar.org",
+      network: "testnet",
+    },
+  ],
+  mainnet: [
+    {
+      id: "mainnet-sdf",
+      label: "SDF Public",
+      url: "https://soroban-mainnet.stellar.org",
+      network: "mainnet",
+    },
+  ],
+};
+
+export type RPCStatus = "online" | "degraded" | "offline" | "unknown";
+
+export interface RPCLatencyResult {
+  nodeId: string;
+  url: string;
+  /** Round-trip time in milliseconds, or null when the ping failed. */
+  latencyMs: number | null;
+  status: RPCStatus;
+  checkedAt: number;
+}
+
 interface NetworkContextType {
   network: NetworkTarget;
   horizonUrl: string;
   sorobanUrl: string;
   customHorizonUrl: string;
-  /** Resolved config for the active network, following any custom endpoint. */
   /** Active network config (honours a custom Horizon endpoint when set). */
   config: NetworkConfig;
+  /** Active Soroban RPC node identifier. */
+  activeRpcNodeId: string;
+  /** Available Soroban RPC nodes for the active network. */
+  rpcNodes: RPCNode[];
+  /** Latest latency results keyed by node id. */
+  rpcLatencies: Record<string, RPCLatencyResult>;
 }
 
 interface NetworkActionsType {
   switchNetwork: (target: NetworkTarget) => Promise<void>;
   setCustomHorizonEndpoint: (url: string) => Promise<boolean>;
   resetToDefaultEndpoint: () => void;
+  /** Select the active Soroban RPC node (persisted in local storage). */
+  selectRpcNode: (nodeId: string) => void;
+  /** Measure round-trip latency for all available RPC nodes. */
+  measureRpcLatencies: () => Promise<void>;
 }
 
 interface NetworkStatusType {
   isSwitching: boolean;
   isValidating: boolean;
+  isPinging: boolean;
   error: string | null;
 }
 
@@ -98,10 +130,55 @@ const DEFAULT_ENDPOINTS: Record<NetworkTarget, { horizon: string; soroban: strin
   },
 };
 
+const STORAGE_KEYS = {
+  network: "stellarflow_network",
+  customHorizon: "stellarflow_custom_horizon",
+  rpcNode: "stellarflow_rpc_node",
+} as const;
+
+/** Latency threshold (ms) below which a node is considered healthy. */
+const LATENCY_GOOD_MS = 300;
+/** Latency threshold (ms) above which a node is considered slow/degraded. */
+const LATENCY_SLOW_MS = 1000;
+const PING_TIMEOUT_MS = 5000;
+const PING_INTERVAL_MS = 30000;
+
+/** Classify a latency measurement into a status dot colour. */
+export function classifyLatency(latencyMs: number | null): RPCStatus {
+  if (latencyMs === null) return "offline";
+  if (latencyMs <= LATENCY_GOOD_MS) return "online";
+  if (latencyMs <= LATENCY_SLOW_MS) return "degraded";
+  return "offline";
+}
+
+/** Measure a single RPC endpoint's round-trip time in milliseconds. */
+async function pingEndpoint(url: string): Promise<number | null> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), PING_TIMEOUT_MS);
+  const start = typeof performance !== "undefined" ? performance.now() : Date.now();
+  try {
+    // A JSON-RPC post is the most representative probe of a Soroban RPC node.
+    const response = await fetch(url.replace(/\/+$/, ""), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getHealth", params: [] }),
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    const end = typeof performance !== "undefined" ? performance.now() : Date.now();
+    if (!response.ok) return null;
+    return Math.round(end - start);
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 export function NetworkProvider({ children }: { children: React.ReactNode }) {
   const [network, setNetwork] = useState<NetworkTarget>(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("stellarflow_network");
+      const saved = localStorage.getItem(STORAGE_KEYS.network);
       if (saved === "testnet" || saved === "mainnet") return saved;
     }
     return "testnet";
@@ -109,30 +186,55 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
 
   const [customHorizonUrl, setCustomHorizonUrlState] = useState<string>(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("stellarflow_custom_horizon") || "";
+      return localStorage.getItem(STORAGE_KEYS.customHorizon) || "";
     }
     return "";
   });
 
+  const [activeRpcNodeId, setActiveRpcNodeId] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(STORAGE_KEYS.rpcNode);
+      if (saved) return saved;
+    }
+    return RPC_NODES.testnet[0].id;
+  });
+
+  const [rpcLatencies, setRpcLatencies] = useState<Record<string, RPCLatencyResult>>({});
+  const [isPinging, setIsPinging] = useState<boolean>(false);
   const [isSwitching, setIsSwitching] = useState<boolean>(false);
   const [isValidating, setIsValidating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  const rpcNodes = useMemo<RPCNode[]>(() => RPC_NODES[network] ?? [], [network]);
+
+  // Ensure the active node id always refers to a node on the current network.
+  useEffect(() => {
+    if (!rpcNodes.some((node) => node.id === activeRpcNodeId)) {
+      setActiveRpcNodeId(rpcNodes[0]?.id ?? "");
+    }
+  }, [rpcNodes, activeRpcNodeId]);
+
   useEffect(() => {
     if (typeof window !== "undefined") {
-      localStorage.setItem("stellarflow_network", network);
+      localStorage.setItem(STORAGE_KEYS.network, network);
     }
   }, [network]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       if (customHorizonUrl) {
-        localStorage.setItem("stellarflow_custom_horizon", customHorizonUrl);
+        localStorage.setItem(STORAGE_KEYS.customHorizon, customHorizonUrl);
       } else {
-        localStorage.removeItem("stellarflow_custom_horizon");
+        localStorage.removeItem(STORAGE_KEYS.customHorizon);
       }
     }
   }, [customHorizonUrl]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && activeRpcNodeId) {
+      localStorage.setItem(STORAGE_KEYS.rpcNode, activeRpcNodeId);
+    }
+  }, [activeRpcNodeId]);
 
   const horizonUrl = useMemo(() => {
     if (customHorizonUrl) {
@@ -142,16 +244,16 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
   }, [network, customHorizonUrl]);
 
   const sorobanUrl = useMemo(() => {
-    return DEFAULT_ENDPOINTS[network].soroban;
-  }, [network]);
+    const selected = rpcNodes.find((node) => node.id === activeRpcNodeId);
+    return selected?.url ?? DEFAULT_ENDPOINTS[network].soroban;
+  }, [network, rpcNodes, activeRpcNodeId]);
 
   const validateEndpoint = async (url: string): Promise<boolean> => {
     if (!url.trim()) return false;
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
-      // Try hitting the root or /fee_stats or / to check connectivity
+
       const response = await fetch(url.replace(/\/+$/, ""), {
         method: "GET",
         headers: { Accept: "application/json" },
@@ -164,12 +266,49 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const measureRpcLatencies = useCallback(async (): Promise<void> => {
+    const nodes = RPC_NODES[network] ?? [];
+    if (nodes.length === 0) return;
+    setIsPinging(true);
+    try {
+      const results = await Promise.all(
+        nodes.map(async (node) => {
+          const latencyMs = await pingEndpoint(node.url);
+          const result: RPCLatencyResult = {
+            nodeId: node.id,
+            url: node.url,
+            latencyMs,
+            status: classifyLatency(latencyMs),
+            checkedAt: Date.now(),
+          };
+          return result;
+        }),
+      );
+      setRpcLatencies((prev) => {
+        const next = { ...prev };
+        for (const result of results) {
+          next[result.nodeId] = result;
+        }
+        return next;
+      });
+    } finally {
+      setIsPinging(false);
+    }
+  }, [network]);
+
+  // Poll latencies for the active network on mount and at a fixed interval.
+  useEffect(() => {
+    void measureRpcLatencies();
+    const intervalId = setInterval(() => {
+      void measureRpcLatencies();
+    }, PING_INTERVAL_MS);
+    return () => clearInterval(intervalId);
+  }, [measureRpcLatencies]);
+
   const switchNetwork = useCallback(async (target: NetworkTarget) => {
     setIsSwitching(true);
     setError(null);
     try {
-      // Simulate client re-instantiation / network ping check
-      await new Promise((resolve) => setTimeout(resolve, 300));
       const targetUrl = DEFAULT_ENDPOINTS[target].horizon;
       const ok = await validateEndpoint(targetUrl);
       if (!ok) {
@@ -199,7 +338,6 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     try {
       const isValid = await validateEndpoint(trimmed);
       if (!isValid) {
-        // Fallback to public network default if endpoint ping fails
         setError("Custom endpoint ping failed. Falling back to default network Horizon.");
         setCustomHorizonUrlState("");
         setIsValidating(false);
@@ -222,6 +360,16 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     setError(null);
   }, []);
 
+  const selectRpcNode = useCallback((nodeId: string) => {
+    const exists = (RPC_NODES[network] ?? []).some((node) => node.id === nodeId);
+    if (!exists) {
+      setError("Selected RPC node is not available on this network.");
+      return;
+    }
+    setActiveRpcNodeId(nodeId);
+    setError(null);
+  }, [network]);
+
   const contextValue = useMemo<NetworkContextType>(
     () => ({
       network,
@@ -231,29 +379,29 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
       config: {
         ...NETWORK_CONFIGS[network],
         horizonUrl,
-        sorobanUrl,
+        sorobanRpcUrl: sorobanUrl,
       },
-      config: { ...NETWORK_CONFIGS[network], horizonUrl },
+      activeRpcNodeId,
+      rpcNodes,
+      rpcLatencies,
     }),
-    [network, horizonUrl, sorobanUrl, customHorizonUrl],
+    [network, horizonUrl, sorobanUrl, customHorizonUrl, activeRpcNodeId, rpcNodes, rpcLatencies],
   );
 
-  const actionsValue = useMemo(
+  const actionsValue = useMemo<NetworkActionsType>(
     () => ({
       switchNetwork,
       setCustomHorizonEndpoint,
       resetToDefaultEndpoint,
+      selectRpcNode,
+      measureRpcLatencies,
     }),
-    [switchNetwork, setCustomHorizonEndpoint, resetToDefaultEndpoint],
+    [switchNetwork, setCustomHorizonEndpoint, resetToDefaultEndpoint, selectRpcNode, measureRpcLatencies],
   );
 
-  const statusValue = useMemo(
-    () => ({
-      isSwitching,
-      isValidating,
-      error,
-    }),
-    [isSwitching, isValidating, error],
+  const statusValue = useMemo<NetworkStatusType>(
+    () => ({ isSwitching, isValidating, isPinging, error }),
+    [isSwitching, isValidating, isPinging, error],
   );
 
   return (
@@ -267,39 +415,20 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useNetwork() {
-  const context = useContext(NetworkContext);
-  if (!context) {
-    throw new Error("useNetwork must be used within a NetworkProvider");
-  }
-  return context;
+export function useNetwork(): NetworkContextType {
+  const ctx = useContext(NetworkContext);
+  if (!ctx) throw new Error("useNetwork must be used within a NetworkProvider");
+  return ctx;
 }
 
-/**
- * Read the network context without requiring a `NetworkProvider` ancestor.
- * Returns `null` when rendered outside the provider so standalone pages
- * (diagnostics, RPC benchmark) can fall back to their own defaults.
- */
-export function useOptionalNetwork(): NetworkContextType | undefined {
- * Non-throwing variant for components/hooks that must also render outside a
- * `<NetworkProvider>` (diagnostics page, RPC health checks, wallet panels).
- */
-export function useOptionalNetwork() {
-  return useContext(NetworkContext);
+export function useNetworkActions(): NetworkActionsType {
+  const ctx = useContext(NetworkActionsContext);
+  if (!ctx) throw new Error("useNetworkActions must be used within a NetworkProvider");
+  return ctx;
 }
 
-export function useNetworkActions() {
-  const context = useContext(NetworkActionsContext);
-  if (!context) {
-    throw new Error("useNetworkActions must be used within a NetworkProvider");
-  }
-  return context;
-}
-
-export function useNetworkStatus() {
-  const context = useContext(NetworkStatusContext);
-  if (!context) {
-    throw new Error("useNetworkStatus must be used within a NetworkProvider");
-  }
-  return context;
+export function useNetworkStatus(): NetworkStatusType {
+  const ctx = useContext(NetworkStatusContext);
+  if (!ctx) throw new Error("useNetworkStatus must be used within a NetworkProvider");
+  return ctx;
 }

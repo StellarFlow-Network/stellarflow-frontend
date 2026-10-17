@@ -457,6 +457,8 @@ export default function RpcBenchmarkPage() {
               </span>
             </div>
           )}
+
+          {/* ── Network Status Bar ─────────────────────────────────────────────── */}
         </SectionCard>
 
         {/* ── Results Table ───────────────────────────────────────────────────── */}
