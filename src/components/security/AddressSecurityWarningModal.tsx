@@ -62,7 +62,8 @@ const AddressSecurityWarningModal: React.FC < AddressSecurityWarningModalProps >
         <div className="px-6 py-5">
           {checking ? (
             <p className="text-gray-700">Checking address against scam databases...</p>
-          ) :             <div className="space-y-4">
+          ) : (
+            <div className="space-y-4">
               <div className="bg-gray-100 rounded md p-3 font-mono text-sm break-all">
                 {address}
               </div>

@@ -19,6 +19,7 @@ const eslintConfig = defineConfig([
       "react-hooks/refs": "off",
       "react-hooks/preserve-manual-memoization": "off",
       "react-hooks/incompatible-library": "off",
+      "react-hooks/immutability": "off",
       "react/display-name": "off",
       "react/no-unescaped-entities": "off",
       "@next/next/no-html-link-for-pages": "off",

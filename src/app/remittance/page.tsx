@@ -1,16 +1,20 @@
 "use client";
 
 import React, { useState } from "react";
-import { FxRateTicker, FxComparisonTable, FiatOnRampModal, SEP38RateChart } from "@/components/remittance";
-import { CorridorStatusMap, FxRateTicker, FxComparisonTable, FiatOnRampModal, type RemittanceCorridor } from "@/components/remittance";
-import { CorridorStatusMap, FxRateTicker, FxComparisonTable, FiatOnRampModal, SEP24InteractiveModal, type RemittanceCorridor } from "@/components/remittance";
+import {
+  CorridorStatusMap,
+  FxRateTicker,
+  FxComparisonTable,
+  FiatOnRampModal,
+  SEP24InteractiveModal,
+  SEP38RateChart,
+  type RemittanceCorridor,
+} from "@/components/remittance";
 import { RedeemNoteForm } from "@/components/remittance/RedeemNoteForm";
 import { ShieldedDepositModal } from "@/components/remittance/ShieldedDepositModal";
 import { useOptionalWallet, useOptionalWalletActions } from "@/app/components/providers/WalletProvider";
 import Link from "next/link";
 import { ArrowDownToLine, ArrowUpFromLine, CreditCard, LockKeyhole, Send, ShieldAlert } from "lucide-react";
-import { ArrowDownToLine, ArrowUpFromLine, CreditCard, LockKeyhole, ShieldAlert } from "lucide-react";
-import { RedeemNoteForm } from "@/components/remittance/RedeemNoteForm";
 import type { SEP24Operation } from "@/lib/sep24Interactive";
 
 export default function RemittancePage() {

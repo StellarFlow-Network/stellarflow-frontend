@@ -13,23 +13,6 @@ export type NetworkTarget = "testnet" | "mainnet";
 
 /** Per-network endpoint + passphrase bundle, keyed by `NetworkTarget`. */
 export interface NetworkConfig {
-  horizonUrl: string;
-  sorobanUrl: string;
-  networkPassphrase: string;
-}
-
-/** Static network configuration, usable outside a `NetworkProvider`. */
-export const NETWORK_CONFIGS: Record<NetworkTarget, NetworkConfig> = {
-  testnet: {
-    horizonUrl: "https://horizon-testnet.stellar.org",
-    sorobanUrl: "https://soroban-testnet.stellar.org",
-    networkPassphrase: "Test SDF Network ; September 2015",
-  },
-  mainnet: {
-    horizonUrl: "https://horizon.stellar.org",
-    sorobanUrl: "https://soroban-mainnet.stellar.org",
-    networkPassphrase: "Public Global Stellar Network ; September 2015",
-export interface NetworkConfig {
   /** Human-readable network label. */
   label: string;
   network: NetworkTarget;
@@ -37,6 +20,7 @@ export interface NetworkConfig {
   networkPassphrase: string;
   horizonUrl: string;
   sorobanRpcUrl: string;
+  sorobanUrl?: string;
 }
 
 /**
@@ -51,6 +35,7 @@ export const NETWORK_CONFIGS: Record<NetworkTarget, NetworkConfig> = {
     networkPassphrase: "Test SDF Network ; September 2015",
     horizonUrl: "https://horizon-testnet.stellar.org",
     sorobanRpcUrl: "https://soroban-testnet.stellar.org",
+    sorobanUrl: "https://soroban-testnet.stellar.org",
   },
   mainnet: {
     label: "Public",
@@ -58,6 +43,7 @@ export const NETWORK_CONFIGS: Record<NetworkTarget, NetworkConfig> = {
     networkPassphrase: "Public Global Stellar Network ; September 2015",
     horizonUrl: "https://horizon.stellar.org",
     sorobanRpcUrl: "https://soroban-mainnet.stellar.org",
+    sorobanUrl: "https://soroban-mainnet.stellar.org",
   },
 };
 
@@ -277,15 +263,11 @@ export function useNetwork() {
 
 /**
  * Read the network context without requiring a `NetworkProvider` ancestor.
- * Returns `null` when rendered outside the provider so standalone pages
+ * Returns `undefined` when rendered outside the provider so standalone pages
  * (diagnostics, RPC benchmark) can fall back to their own defaults.
  */
 export function useOptionalNetwork(): NetworkContextType | undefined {
- * Non-throwing variant for components/hooks that must also render outside a
- * `<NetworkProvider>` (diagnostics page, RPC health checks, wallet panels).
- */
-export function useOptionalNetwork() {
-  return useContext(NetworkContext);
+  return useContext(NetworkContext) ?? undefined;
 }
 
 export function useNetworkActions() {
