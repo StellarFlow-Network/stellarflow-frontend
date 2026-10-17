@@ -369,6 +369,7 @@ const TokenField: React.FC<TokenFieldProps> = ({
       <button
         type="button"
         onClick={onOpenSelector}
+        aria-label={`Select ${label} token`}
         className="flex items-center gap-2 rounded-lg bg-gray-700 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-600"
       >
         <TokenIcon src={token.iconUrl} symbol={token.symbol} size={20} />

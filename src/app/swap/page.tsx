@@ -204,6 +204,12 @@ function SwapContent() {
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold mb-2">Swap & Send</h1>
         <p className="text-gray-400 mb-8">Send Token A, receiver gets Token B automatically via Stellar Path Payments</p>
+        <a
+          href="/swap/trade"
+          className="mb-8 inline-flex rounded-lg border border-blue-500/40 px-4 py-2 text-sm font-medium text-blue-300 transition-colors hover:bg-blue-500/10"
+        >
+          Open instant asset swap
+        </a>
 
         <div className="mb-8">
           <CandlestickChart
@@ -302,6 +308,7 @@ function SwapContent() {
             </div>
             <MotionButton
               onClick={() => setSlippageDialogOpen(true)}
+              data-testid="swap-slippage-button"
               className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition-colors"
             >
               {slippagePercent}%
@@ -312,6 +319,15 @@ function SwapContent() {
           {error && (
             <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 text-red-300">
               {error}
+            </div>
+          )}
+
+          {transactionPrepared && (
+            <div role="status" className="rounded-lg border border-emerald-700 bg-emerald-900/20 p-4 text-emerald-200">
+              <p className="font-semibold">Transaction prepared</p>
+              <p className="mt-1 text-sm text-emerald-100/80">
+                The unsigned path-payment transaction is ready for wallet signing. It has not been submitted to the network.
+              </p>
             </div>
           )}
 
@@ -372,7 +388,12 @@ function SwapContent() {
         )}
 
         {/* Slippage Dialog */}
-        <OptimizedDialog open={slippageDialogOpen} onClose={() => setSlippageDialogOpen(false)}>
+        <OptimizedDialog
+          isOpen={slippageDialogOpen}
+          onClose={() => setSlippageDialogOpen(false)}
+          title="Set Slippage Tolerance"
+          size="sm"
+        >
           <div className="p-6">
             <h3 className="text-xl font-semibold mb-4">Set Slippage Tolerance</h3>
             <div className="grid grid-cols-4 gap-2 mb-4">
@@ -383,6 +404,7 @@ function SwapContent() {
                     setSlippagePercent(percent);
                     setSlippageDialogOpen(false);
                   }}
+                  data-testid={`slippage-option-${percent}`}
                   className={`py-2 rounded-lg ${slippagePercent === percent ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}
                 >
                   {percent}%

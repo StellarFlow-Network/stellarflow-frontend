@@ -147,6 +147,12 @@ function ContractExplorerPage() {
               </p>
             </div>
           </div>
+          <a
+            href="/developer/simulation-debugger"
+            className="mt-4 inline-flex rounded-lg border border-blue-500/40 px-3 py-2 text-xs font-medium text-blue-300 transition-colors hover:bg-blue-500/10"
+          >
+            Open Soroban pre-flight debugger
+          </a>
         </div>
       </header>
 
